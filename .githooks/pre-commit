@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Pre-commit hook: blocks direct commits to main unless ALLOW_MAIN=1, and scans for secrets.
+set -euo pipefail
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [[ "$branch" == "main" && "${ALLOW_MAIN:-0}" != "1" ]]; then
+  echo "ERROR: Direct commits to 'main' are blocked. Work on a branch (e.g. feat/topic) or set ALLOW_MAIN=1 for initial commit." >&2
+  exit 1
+fi
+
+if command -v ripsecrets >/dev/null 2>&1; then
+  git diff --staged --name-only -z | xargs -0 ripsecrets --strict-ignore 2>/dev/null || true
+fi
