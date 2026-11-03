@@ -1,0 +1,15 @@
+schema_version = 1
+id = "default"
+name = "Kynex Default"
+version = "0.1.0"
+author = "Kynex Project contributors"
+license = "MIT"
+kind = "full"
+archetype = "dock"
+min_shell_api = 1
+
+[entry]
+shell = "Shell.qml"
+
+[tokens]
+file = "tokens.toml"

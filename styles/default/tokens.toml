@@ -1,0 +1,37 @@
+schema_version = 1
+
+[color.dark]
+surface = "#14161c"
+surface_raised = "#1d2029"
+text = "#eceff4"
+text_muted = "#9aa3b2"
+accent = "#6aa6ff"
+danger = "#ff6b6b"
+success = "#4cd1a0"
+
+[color.light]
+surface = "#f6f7fa"
+surface_raised = "#ffffff"
+text = "#14161c"
+text_muted = "#5b6475"
+accent = "#2f6fe0"
+danger = "#d63c3c"
+success = "#1f9d73"
+
+[spacing]
+unit = 4
+
+[radius]
+small = 6
+medium = 12
+large = 20
+
+[motion]
+fast_ms = 90
+normal_ms = 150
+slow_ms = 240
+
+[typography]
+family = "Inter"
+fallback = "sans-serif"
+base_px = 14
