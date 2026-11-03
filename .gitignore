@@ -1,0 +1,42 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+*.cargo-ok
+
+# C++ / CMake / Build
+/build/
+CMakeFiles/
+CMakeCache.txt
+*.ninja
+.ninja_*
+*.o
+*.a
+*.so
+*.dylib
+
+# Dev / logs / temporary files
+/dev/
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# Internal documentation and dev tooling
+/docs/
+/templates/
+SETUP.md
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_ed25519*
+id_rsa*
+
+# Testing & Coverage
+/coverage/
+*.profraw
+*.profdata
