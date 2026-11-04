@@ -196,6 +196,6 @@ Contributions, bug reports, and suggestions are welcome!
 Kynex Shell is open-source software licensed under the **[GNU General Public License v3.0 or later](LICENSE)** (`GPL-3.0-or-later`).
 
 - **Copyleft Protection**: No third-party or corporate entity can make proprietary, closed-source forks of this desktop environment.
-- **Relicensing & Commercial Rights**: All relicensing and commercial rights are reserved by the author, **Saif Mnasri**. External contributions are accepted pursuant to the Contributor License Agreement in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Relicensing & Commercial Rights**: All relicensing and commercial rights are reserved by the author, **Saifeddine Mnasri**. External contributions are accepted pursuant to the Contributor License Agreement in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - **Dependency Philosophy**: The project strictly prefers permissive licenses (**MIT**, **BSD**, **Apache-2.0**) for third-party libraries and dependencies.
 - **Assets**: Third-party and original asset licenses are documented in [`assets/LICENSES.md`](assets/LICENSES.md).

@@ -6,7 +6,7 @@ members = ["crates/*"]
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
-authors = ["Saif Mnasri <saif.mnasri@gmail.com>"]
+authors = ["Saifeddine Mnasri <saif.mnasri@gmail.com>"]
 publish = false
 
 [workspace.lints.rust]
