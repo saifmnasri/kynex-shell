@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Startup script for KynexOS desktop session on KWin 6 (Wayland)
+set -euo pipefail
+
+# Ensure standard desktop environment variables
+export XDG_CURRENT_DESKTOP="Kynex"
+export XDG_SESSION_DESKTOP="Kynex"
+export XDG_SESSION_TYPE="wayland"
+export QT_QPA_PLATFORM="wayland"
+export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+
+# Target session wrapper path
+SESSION_BIN="/usr/lib/kynex/kynex-session"
+
+if [[ ! -x "$SESSION_BIN" ]]; then
+  # Fallback to direct binary if available
+  SESSION_BIN="$(command -v kynex-shell || true)"
+fi
+
+exec kwin_wayland --exit-with-session "${SESSION_BIN:-/bin/true}"
+
