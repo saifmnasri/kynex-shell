@@ -5,7 +5,7 @@
 **A fast, memory-safe, and modular desktop shell for Linux**  
 *Built on KWin 6 (Wayland), powered by Rust, styled with modern Qt Quick, and engineered for enterprise-grade speed, polish, and security.*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.99+-orange.svg)](rust-toolchain.toml)
 [![Qt](https://img.shields.io/badge/Qt-6.4+-green.svg)](https://www.qt.io/)
 [![Wayland](https://img.shields.io/badge/Wayland-KWin%206-purple.svg)](https://invent.kde.org/plasma/kwin)
@@ -193,5 +193,9 @@ Contributions, bug reports, and suggestions are welcome!
 
 ## License
 
-Kynex Shell is open-source software licensed under the **[MIT License](LICENSE)**.  
-Third-party and original asset licenses are documented in [`assets/LICENSES.md`](assets/LICENSES.md).
+Kynex Shell is open-source software licensed under the **[GNU General Public License v3.0 or later](LICENSE)** (`GPL-3.0-or-later`).
+
+- **Copyleft Protection**: No third-party or corporate entity can make proprietary, closed-source forks of this desktop environment.
+- **Relicensing & Commercial Rights**: All relicensing and commercial rights are reserved by the author, **Saif Mnasri**. External contributions are accepted pursuant to the Contributor License Agreement in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Dependency Philosophy**: The project strictly prefers permissive licenses (**MIT**, **BSD**, **Apache-2.0**) for third-party libraries and dependencies.
+- **Assets**: Third-party and original asset licenses are documented in [`assets/LICENSES.md`](assets/LICENSES.md).
