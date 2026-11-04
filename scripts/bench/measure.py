@@ -47,12 +47,12 @@ def main():
     while time.time() < end:
         time.sleep(a.interval)
         for name in a.procs:
-            tot_pss = tot_rss = tot_thr = 0
+            tot_pss = tot_rss = tot_threads = 0
             for pid in pids(name):
                 try:
-                    pss, rss = read_mem(pid); tot_pss += pss; tot_rss += rss; tot_thr += threads(pid)
+                    pss, rss = read_mem(pid); tot_pss += pss; tot_rss += rss; tot_threads += threads(pid)
                 except OSError: pass
-            samples[name].append((tot_pss, tot_rss, tot_thr))
+            samples[name].append((tot_pss, tot_rss, tot_threads))
     elapsed = time.time() - t0
     result = {"label": a.label, "date": datetime.datetime.now().isoformat(), "duration_s": round(elapsed, 1), "procs": {}}
     print(f"\n{'process':<16}{'PSS MB (avg)':>14}{'PSS MB (max)':>14}{'RSS MB (avg)':>14}{'threads':>9}{'CPU % (avg)':>13}")

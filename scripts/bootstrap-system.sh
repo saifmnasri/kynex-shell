@@ -19,7 +19,7 @@ PACKAGES=(
   qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts qml6-module-qtquick-window
   qml6-module-qtquick-templates qml6-module-qtqml qml6-module-qtqml-workerscript qml6-module-qttest
   # compositor + layer shell
-  kwin-wayland kwin-wayland-backend-virtual kwin-wayland-backend-x11 xwayland
+  kwin-wayland xwayland
   layer-shell-qt liblayershellqtinterface-dev
   libwayland-dev wayland-protocols libxkbcommon-dev
   # system services we reuse
@@ -31,12 +31,31 @@ PACKAGES=(
   openssh-server spice-vdagent
 )
 
-apt-get update
+# Ensure system clock matches hardware clock to avoid "Release file is not valid yet" errors
+if command -v timedatectl >/dev/null 2>&1; then
+  rtc_time="$(timedatectl status 2>/dev/null | grep 'RTC time:' | awk '{print $3, $4}')"
+  if [[ -n "$rtc_time" ]]; then
+    timedatectl set-ntp false 2>/dev/null || true
+    timedatectl set-time "$rtc_time" 2>/dev/null || date -s "$rtc_time" 2>/dev/null || true
+    timedatectl set-ntp true 2>/dev/null || true
+  fi
+fi
+
+wait_for_dpkg_lock() {
+  while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || fuser /var/lib/dpkg/lock >/dev/null 2>&1 || fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+    echo "Waiting for other apt/dpkg process to release lock..."
+    sleep 3
+  done
+}
+
+wait_for_dpkg_lock
+apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false update
 
 INSTALL=()
 MISSING=()
 for p in "${PACKAGES[@]}"; do
-  if apt-cache show "$p" >/dev/null 2>&1; then
+  cand="$(apt-cache policy "$p" 2>/dev/null | grep 'Candidate:' | awk '{print $2}')"
+  if [[ -n "$cand" && "$cand" != "(none)" ]]; then
     INSTALL+=("$p")
   else
     MISSING+=("$p")
@@ -44,7 +63,8 @@ for p in "${PACKAGES[@]}"; do
 done
 
 echo "Installing ${#INSTALL[@]} packages..."
-apt-get install -y --no-install-recommends "${INSTALL[@]}"
+wait_for_dpkg_lock
+apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "${INSTALL[@]}"
 
 if ((${#MISSING[@]})); then
   echo
