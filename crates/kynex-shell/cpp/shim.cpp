@@ -18,8 +18,13 @@ void kynex_set_style_tokens(
     rust::Str text_muted,
     rust::Str accent,
     rust::Str danger,
+    rust::Str warning,
     rust::Str success,
     uint32_t spacing_unit,
+    uint32_t spacing_small,
+    uint32_t spacing_medium,
+    uint32_t spacing_large,
+    uint32_t spacing_panel,
     uint32_t radius_small,
     uint32_t radius_medium,
     uint32_t radius_large,
@@ -39,10 +44,17 @@ void kynex_set_style_tokens(
         QString::fromUtf8(text_muted.data(), static_cast<qsizetype>(text_muted.size())),
         QString::fromUtf8(accent.data(), static_cast<qsizetype>(accent.size())),
         QString::fromUtf8(danger.data(), static_cast<qsizetype>(danger.size())),
+        QString::fromUtf8(warning.data(), static_cast<qsizetype>(warning.size())),
         QString::fromUtf8(success.data(), static_cast<qsizetype>(success.size()))
     );
 
-    s->spacing()->setUnit(static_cast<int>(spacing_unit));
+    s->spacing()->setSpacing(
+        static_cast<int>(spacing_unit),
+        static_cast<int>(spacing_small),
+        static_cast<int>(spacing_medium),
+        static_cast<int>(spacing_large),
+        static_cast<int>(spacing_panel)
+    );
     s->radius()->setRadii(
         static_cast<int>(radius_small),
         static_cast<int>(radius_medium),

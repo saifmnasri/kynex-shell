@@ -6,7 +6,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use kynex_daemon::DaemonServer;
-use kynex_ipc::Daemon1Proxy;
+use kynex_ipc::Core1Proxy;
 
 const TEST_DESTINATION: &str = "org.kynexos.DaemonTest";
 const TEST_PATH: &str = "/org/kynexos/DaemonTest";
@@ -32,7 +32,7 @@ async fn test_dbus_session_bus_roundtrip() -> Result<(), Box<dyn std::error::Err
     // Build client connection to call the server
     let client_conn = zbus::connection::Builder::session().build().await?;
 
-    let proxy = Daemon1Proxy::builder(&client_conn)
+    let proxy = Core1Proxy::builder(&client_conn)
         .destination(TEST_DESTINATION)
         .path(TEST_PATH)
         .build()

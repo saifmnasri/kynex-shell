@@ -9,9 +9,9 @@ use kynex_ipc::{
 fn test_ipc_constants() {
     assert_eq!(DAEMON_DESTINATION, "org.kynexos.Daemon");
     assert_eq!(DAEMON_PATH, "/org/kynexos/Daemon");
-    assert_eq!(DAEMON_INTERFACE, "org.kynexos.Daemon1");
+    assert_eq!(DAEMON_INTERFACE, "org.kynexos.Daemon.Core1");
     assert_eq!(OBJECT_PATH_PREFIX, "/org/kynexos");
-    assert_eq!(interface_name("Daemon1"), "org.kynexos.Daemon1");
+    assert_eq!(interface_name("Daemon.Core1"), "org.kynexos.Daemon.Core1");
     assert_eq!(interface_name("Power1"), "org.kynexos.Power1");
 }
 

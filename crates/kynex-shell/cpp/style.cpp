@@ -8,6 +8,7 @@ StyleColors::StyleColors(QObject *parent)
     , m_textMuted("#9aa3b2")
     , m_accent("#6aa6ff")
     , m_danger("#ff6b6b")
+    , m_warning("#e5a50a")
     , m_success("#4cd1a0")
 {
 }
@@ -15,7 +16,7 @@ StyleColors::StyleColors(QObject *parent)
 void StyleColors::setColors(const QString &surface, const QString &surfaceRaised,
                            const QString &text, const QString &textMuted,
                            const QString &accent, const QString &danger,
-                           const QString &success)
+                           const QString &warning, const QString &success)
 {
     m_surface = QColor(surface);
     m_surfaceRaised = QColor(surfaceRaised);
@@ -23,6 +24,7 @@ void StyleColors::setColors(const QString &surface, const QString &surfaceRaised
     m_textMuted = QColor(textMuted);
     m_accent = QColor(accent);
     m_danger = QColor(danger);
+    m_warning = QColor(warning);
     m_success = QColor(success);
     Q_EMIT changed();
 }
@@ -30,15 +32,21 @@ void StyleColors::setColors(const QString &surface, const QString &surfaceRaised
 StyleSpacing::StyleSpacing(QObject *parent)
     : QObject(parent)
     , m_unit(4)
+    , m_small(8)
+    , m_medium(12)
+    , m_large(16)
+    , m_panel(48)
 {
 }
 
-void StyleSpacing::setUnit(int unit)
+void StyleSpacing::setSpacing(int unit, int small, int medium, int large, int panel)
 {
-    if (m_unit != unit) {
-        m_unit = unit;
-        Q_EMIT changed();
-    }
+    m_unit = unit;
+    m_small = small;
+    m_medium = medium;
+    m_large = large;
+    m_panel = panel;
+    Q_EMIT changed();
 }
 
 StyleRadius::StyleRadius(QObject *parent)

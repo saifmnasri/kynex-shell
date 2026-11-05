@@ -6,11 +6,11 @@ LayerSurface {
     id: panel
     visible: true
     width: Screen.width
-    height: Style.spacing.unit * 12
+    height: Style.spacing.panel
 
     layer: LayerSurface.LayerTop
     anchors: LayerSurface.AnchorBottom | LayerSurface.AnchorLeft | LayerSurface.AnchorRight
-    exclusiveZone: Style.spacing.unit * 12
+    exclusiveZone: Style.spacing.panel
     leftMargin: 0
     rightMargin: 0
     topMargin: 0
@@ -39,7 +39,7 @@ LayerSurface {
 
         Row {
             anchors.centerIn: parent
-            spacing: Style.spacing.unit * 3
+            spacing: Style.spacing.medium
 
             Text {
                 text: clock.date

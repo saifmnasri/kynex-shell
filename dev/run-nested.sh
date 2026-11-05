@@ -22,11 +22,11 @@ cat << EOF > "$WRAPPER"
 set -euo pipefail
 
 # Start daemon in background
-"$ROOT_DIR/target/debug/kynex-daemon" > "$DAEMON_LOG" 2>&1 &
+"$ROOT_DIR/target/debug/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
 DAEMON_PID=\$!
 
 # Start shell in foreground
-"$ROOT_DIR/target/debug/kynex-shell" > "$SHELL_LOG" 2>&1 &
+"$ROOT_DIR/target/debug/kynex-shell" 2>&1 | tee "$SHELL_LOG" &
 SHELL_PID=\$!
 
 cleanup() {
@@ -59,5 +59,5 @@ export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
 
 exec dbus-run-session bash -c "
   exec kwin_wayland --width 1280 --height 720 \
-    --no-lockscreen --no-global-shortcuts --exit-with-session \"$WRAPPER\" > \"$KWIN_LOG\" 2>&1
+    --no-lockscreen --no-global-shortcuts --exit-with-session \"$WRAPPER\" 2>&1 | tee \"$KWIN_LOG\"
 "

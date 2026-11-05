@@ -12,6 +12,7 @@ class StyleColors : public QObject {
     Q_PROPERTY(QColor textMuted READ textMuted NOTIFY changed)
     Q_PROPERTY(QColor accent READ accent NOTIFY changed)
     Q_PROPERTY(QColor danger READ danger NOTIFY changed)
+    Q_PROPERTY(QColor warning READ warning NOTIFY changed)
     Q_PROPERTY(QColor success READ success NOTIFY changed)
 
 public:
@@ -23,12 +24,13 @@ public:
     QColor textMuted() const { return m_textMuted; }
     QColor accent() const { return m_accent; }
     QColor danger() const { return m_danger; }
+    QColor warning() const { return m_warning; }
     QColor success() const { return m_success; }
 
     void setColors(const QString &surface, const QString &surfaceRaised,
                    const QString &text, const QString &textMuted,
                    const QString &accent, const QString &danger,
-                   const QString &success);
+                   const QString &warning, const QString &success);
 
 Q_SIGNALS:
     void changed();
@@ -40,24 +42,38 @@ private:
     QColor m_textMuted;
     QColor m_accent;
     QColor m_danger;
+    QColor m_warning;
     QColor m_success;
 };
 
 class StyleSpacing : public QObject {
     Q_OBJECT
     Q_PROPERTY(int unit READ unit NOTIFY changed)
+    Q_PROPERTY(int small READ small NOTIFY changed)
+    Q_PROPERTY(int medium READ medium NOTIFY changed)
+    Q_PROPERTY(int large READ large NOTIFY changed)
+    Q_PROPERTY(int panel READ panel NOTIFY changed)
 
 public:
     explicit StyleSpacing(QObject *parent = nullptr);
 
     int unit() const { return m_unit; }
-    void setUnit(int unit);
+    int small() const { return m_small; }
+    int medium() const { return m_medium; }
+    int large() const { return m_large; }
+    int panel() const { return m_panel; }
+
+    void setSpacing(int unit, int small, int medium, int large, int panel);
 
 Q_SIGNALS:
     void changed();
 
 private:
     int m_unit = 4;
+    int m_small = 8;
+    int m_medium = 12;
+    int m_large = 16;
+    int m_panel = 48;
 };
 
 class StyleRadius : public QObject {

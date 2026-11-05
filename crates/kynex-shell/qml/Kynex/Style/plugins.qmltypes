@@ -12,6 +12,7 @@ Module {
         Property { name: "textMuted"; type: "QColor"; read: "textMuted"; notify: "changed" }
         Property { name: "accent"; type: "QColor"; read: "accent"; notify: "changed" }
         Property { name: "danger"; type: "QColor"; read: "danger"; notify: "changed" }
+        Property { name: "warning"; type: "QColor"; read: "warning"; notify: "changed" }
         Property { name: "success"; type: "QColor"; read: "success"; notify: "changed" }
     }
     Component {
@@ -20,6 +21,10 @@ Module {
         accessSemantics: "reference"
         prototype: "QObject"
         Property { name: "unit"; type: "int"; read: "unit"; notify: "changed" }
+        Property { name: "small"; type: "int"; read: "small"; notify: "changed" }
+        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed" }
+        Property { name: "large"; type: "int"; read: "large"; notify: "changed" }
+        Property { name: "panel"; type: "int"; read: "panel"; notify: "changed" }
     }
     Component {
         file: "cpp/style.h"
