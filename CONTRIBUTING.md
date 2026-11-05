@@ -12,7 +12,8 @@ Thank you for your interest in contributing to Kynex Shell!
    ./scripts/verify.sh
    ```
    All 10 verification gates (rustfmt, clippy with zero warnings, unit tests, cargo-deny, security audit, secret scan, typos, shellcheck, desktop-file-validate) must pass.
-5. **Dependency Policy**: We strictly prefer permissive licenses (**MIT**, **BSD-2/3-Clause**, **Apache-2.0**, **ISC**) for third-party dependencies and libraries. Any dependency requiring an exception must be justified.
+5. **Dependency Policy**: We strictly prefer permissive licenses (**MIT**, **BSD-2-Clause**, **BSD-3-Clause**, **Apache-2.0**, **ISC**, **Zlib**, **0BSD**, **CC0-1.0**) for third-party dependencies. All dependencies must be strictly compatible with GPL-3.0. Licenses such as **GPL-2.0-only** are strictly banned. Qt 6 is dynamically linked under LGPL-3.0, and KWin runs as a separate process communicating via Wayland and D-Bus.
+6. **Merge Policy**: PRs are merged via squash-merge only after `./scripts/verify.sh` and CI are fully green AND the project owner approves with "merge" in chat.
 
 ---
 

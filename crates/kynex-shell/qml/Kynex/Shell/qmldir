@@ -1,0 +1,3 @@
+module Kynex.Shell
+depends QtQuick
+typeinfo plugins.qmltypes

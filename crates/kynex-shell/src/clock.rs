@@ -6,6 +6,9 @@ use cxx_qt_lib::QString;
 /// CXX-Qt bridge module for the Clock `QObject`.
 #[cxx_qt::bridge]
 pub mod qobject {
+    // SAFETY: FFI bridge declarations to Qt's QString provided by cxx-qt-lib.
+    // QString is a standard Qt value type whose C++ layout and invariants are managed
+    // by cxx-qt-lib and guaranteed memory-safe across the FFI boundary.
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
         /// Alias to Qt QString

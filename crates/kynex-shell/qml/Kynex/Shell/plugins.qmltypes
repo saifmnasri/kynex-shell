@@ -1,0 +1,64 @@
+import QtQuick.tooling 1.2
+
+Module {
+    Component {
+        file: "cpp/layersurface.h"
+        name: "LayerSurface"
+        accessSemantics: "reference"
+        defaultProperty: "data"
+        prototype: "QQuickWindow"
+        exports: ["Kynex.Shell/LayerSurface 1.0"]
+        exportMetaObjectRevisions: [256]
+        Enum {
+            name: "Layer"
+            values: [
+                "LayerBackground",
+                "LayerBottom",
+                "LayerTop",
+                "LayerOverlay"
+            ]
+        }
+        Enum {
+            name: "Anchor"
+            isFlag: true
+            values: [
+                "AnchorNone",
+                "AnchorTop",
+                "AnchorBottom",
+                "AnchorLeft",
+                "AnchorRight"
+            ]
+        }
+        Enum {
+            name: "KeyboardInteractivity"
+            values: [
+                "KeyboardInteractivityNone",
+                "KeyboardInteractivityExclusive",
+                "KeyboardInteractivityOnDemand"
+            ]
+        }
+        Property { name: "layer"; type: "Layer"; read: "layer"; write: "setLayer"; notify: "layerChanged" }
+        Property { name: "anchors"; type: "int"; read: "anchors"; write: "setAnchors"; notify: "anchorsChanged" }
+        Property { name: "exclusiveZone"; type: "int"; read: "exclusiveZone"; write: "setExclusiveZone"; notify: "exclusiveZoneChanged" }
+        Property { name: "margins"; type: "QMargins"; read: "margins"; write: "setMargins"; notify: "marginsChanged" }
+        Property { name: "leftMargin"; type: "int"; read: "leftMargin"; write: "setLeftMargin"; notify: "marginsChanged" }
+        Property { name: "rightMargin"; type: "int"; read: "rightMargin"; write: "setRightMargin"; notify: "marginsChanged" }
+        Property { name: "topMargin"; type: "int"; read: "topMargin"; write: "setTopMargin"; notify: "marginsChanged" }
+        Property { name: "bottomMargin"; type: "int"; read: "bottomMargin"; write: "setBottomMargin"; notify: "marginsChanged" }
+        Property { name: "keyboardInteractivity"; type: "KeyboardInteractivity"; read: "keyboardInteractivity"; write: "setKeyboardInteractivity"; notify: "keyboardInteractivityChanged" }
+        Property { name: "scope"; type: "QString"; read: "scope"; write: "setScope"; notify: "scopeChanged" }
+    }
+    Component {
+        file: "src/clock.rs"
+        name: "Clock"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Shell/Clock 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "time"; type: "QString"; read: "time"; notify: "timeChanged" }
+        Property { name: "date"; type: "QString"; read: "date"; notify: "dateChanged" }
+        Method {
+            name: "update"
+        }
+    }
+}

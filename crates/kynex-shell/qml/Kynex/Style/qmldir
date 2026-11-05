@@ -1,0 +1,3 @@
+module Kynex.Style
+depends QtQuick
+typeinfo plugins.qmltypes
