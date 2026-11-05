@@ -34,7 +34,7 @@ fi
 have typos && step "typos" typos || skip "typos" "not installed"
 have ripsecrets && step "secret scan" ripsecrets --strict-ignore . || skip "secret scan" "ripsecrets not installed"
 
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317,SC2329
 check_style_tokens() {
   local violations=0
   while IFS= read -r file; do
@@ -53,7 +53,14 @@ check_style_tokens() {
 step "style tokens lint" check_style_tokens
 [[ -f scripts/test-token-lint.sh ]] && step "style tokens linter test" ./scripts/test-token-lint.sh
 
-QMLLINT="$(command -v qmllint || ls /usr/lib/qt6/bin/qmllint 2>/dev/null || true)"
+export QT_SELECT=qt6
+QMLLINT=""
+if [[ -x /usr/lib/qt6/bin/qmllint ]]; then
+  QMLLINT="/usr/lib/qt6/bin/qmllint"
+elif have qmllint; then
+  QMLLINT="qmllint"
+fi
+
 mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
 if ((${#QMLFILES[@]})); then
   if [[ -n "$QMLLINT" ]]; then

@@ -1,5 +1,21 @@
 #include "layersurface.h"
 #include <QScreen>
+#include <type_traits>
+
+namespace {
+template <typename T, typename = void>
+struct has_setDesiredSize : std::false_type {};
+
+template <typename T>
+struct has_setDesiredSize<T, std::void_t<decltype(std::declval<T>().setDesiredSize(std::declval<QSize>()))>> : std::true_type {};
+
+template <typename W>
+void setLayerShellDesiredSize(W *lsWindow, const QSize &size) {
+    if constexpr (has_setDesiredSize<W>::value) {
+        lsWindow->setDesiredSize(size);
+    }
+}
+} // namespace
 
 LayerSurface::LayerSurface(QWindow *parent)
     : QQuickWindow(parent)
@@ -11,13 +27,13 @@ LayerSurface::LayerSurface(QWindow *parent)
     connect(this, &QWindow::widthChanged, this, [this](int w) {
         if (auto *ls = LayerShellQt::Window::get(this)) {
             int h = height() > 0 ? height() : 48;
-            ls->setDesiredSize(QSize(w, h));
+            setLayerShellDesiredSize(ls, QSize(w, h));
         }
     });
     connect(this, &QWindow::heightChanged, this, [this](int h) {
         if (auto *ls = LayerShellQt::Window::get(this)) {
             int w = width() > 0 ? width() : 1280;
-            ls->setDesiredSize(QSize(w, h));
+            setLayerShellDesiredSize(ls, QSize(w, h));
         }
     });
 }
@@ -138,7 +154,7 @@ void LayerSurface::applyLayerShellSettings()
 
     int w = width() > 0 ? width() : (screen() ? screen()->size().width() : 1280);
     int h = height() > 0 ? height() : 48;
-    lsWindow->setDesiredSize(QSize(w, h));
+    setLayerShellDesiredSize(lsWindow, QSize(w, h));
 
     lsWindow->setKeyboardInteractivity(
         static_cast<LayerShellQt::Window::KeyboardInteractivity>(m_keyboardInteractivity));

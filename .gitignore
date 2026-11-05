@@ -43,3 +43,5 @@ id_rsa*
 /coverage/
 *.profraw
 *.profdata
+sbom.json
+**/sbom.json

@@ -27,7 +27,7 @@ public:
     Q_ENUM(Layer)
 
     enum Anchor {
-        AnchorNone = LayerShellQt::Window::AnchorNone,
+        AnchorNone = 0,
         AnchorTop = LayerShellQt::Window::AnchorTop,
         AnchorBottom = LayerShellQt::Window::AnchorBottom,
         AnchorLeft = LayerShellQt::Window::AnchorLeft,
