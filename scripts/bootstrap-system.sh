@@ -54,6 +54,9 @@ apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false update
 INSTALL=()
 MISSING=()
 for p in "${PACKAGES[@]}"; do
+  if dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok installed"; then
+    continue
+  fi
   cand="$(apt-cache policy "$p" 2>/dev/null | grep 'Candidate:' | awk '{print $2}')"
   if [[ -n "$cand" && "$cand" != "(none)" ]]; then
     INSTALL+=("$p")
@@ -62,9 +65,13 @@ for p in "${PACKAGES[@]}"; do
   fi
 done
 
-echo "Installing ${#INSTALL[@]} packages..."
-wait_for_dpkg_lock
-apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "${INSTALL[@]}"
+if ((${#INSTALL[@]})); then
+  echo "Installing ${#INSTALL[@]} packages..."
+  wait_for_dpkg_lock
+  apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "${INSTALL[@]}"
+else
+  echo "All required system packages are already installed."
+fi
 
 if ((${#MISSING[@]})); then
   echo
