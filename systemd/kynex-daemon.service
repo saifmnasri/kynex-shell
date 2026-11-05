@@ -1,0 +1,28 @@
+[Unit]
+Description=KynexOS Background Daemon
+Documentation=https://github.com/saifmnasri/kynex-shell
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=org.kynexos.Daemon
+ExecStart=/usr/bin/kynex-daemon
+Restart=on-failure
+RestartSec=2s
+
+# Sandboxing and Security Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallFilter=@system-service
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=graphical-session.target
