@@ -6,52 +6,52 @@ Module {
         name: "StyleColors"
         accessSemantics: "reference"
         prototype: "QObject"
-        Property { name: "surface"; type: "QColor"; read: "surface"; notify: "changed" }
-        Property { name: "surfaceRaised"; type: "QColor"; read: "surfaceRaised"; notify: "changed" }
-        Property { name: "text"; type: "QColor"; read: "text"; notify: "changed" }
-        Property { name: "textMuted"; type: "QColor"; read: "textMuted"; notify: "changed" }
-        Property { name: "accent"; type: "QColor"; read: "accent"; notify: "changed" }
-        Property { name: "danger"; type: "QColor"; read: "danger"; notify: "changed" }
-        Property { name: "warning"; type: "QColor"; read: "warning"; notify: "changed" }
-        Property { name: "success"; type: "QColor"; read: "success"; notify: "changed" }
+        Property { name: "surface"; type: "QColor"; read: "surface"; notify: "changed"; isFinal: true }
+        Property { name: "surfaceRaised"; type: "QColor"; read: "surfaceRaised"; notify: "changed"; isFinal: true }
+        Property { name: "text"; type: "QColor"; read: "text"; notify: "changed"; isFinal: true }
+        Property { name: "textMuted"; type: "QColor"; read: "textMuted"; notify: "changed"; isFinal: true }
+        Property { name: "accent"; type: "QColor"; read: "accent"; notify: "changed"; isFinal: true }
+        Property { name: "danger"; type: "QColor"; read: "danger"; notify: "changed"; isFinal: true }
+        Property { name: "warning"; type: "QColor"; read: "warning"; notify: "changed"; isFinal: true }
+        Property { name: "success"; type: "QColor"; read: "success"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
         name: "StyleSpacing"
         accessSemantics: "reference"
         prototype: "QObject"
-        Property { name: "unit"; type: "int"; read: "unit"; notify: "changed" }
-        Property { name: "small"; type: "int"; read: "small"; notify: "changed" }
-        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed" }
-        Property { name: "large"; type: "int"; read: "large"; notify: "changed" }
-        Property { name: "panel"; type: "int"; read: "panel"; notify: "changed" }
+        Property { name: "unit"; type: "int"; read: "unit"; notify: "changed"; isFinal: true }
+        Property { name: "small"; type: "int"; read: "small"; notify: "changed"; isFinal: true }
+        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed"; isFinal: true }
+        Property { name: "large"; type: "int"; read: "large"; notify: "changed"; isFinal: true }
+        Property { name: "panel"; type: "int"; read: "panel"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
         name: "StyleRadius"
         accessSemantics: "reference"
         prototype: "QObject"
-        Property { name: "small"; type: "int"; read: "small"; notify: "changed" }
-        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed" }
-        Property { name: "large"; type: "int"; read: "large"; notify: "changed" }
+        Property { name: "small"; type: "int"; read: "small"; notify: "changed"; isFinal: true }
+        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed"; isFinal: true }
+        Property { name: "large"; type: "int"; read: "large"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
         name: "StyleMotion"
         accessSemantics: "reference"
         prototype: "QObject"
-        Property { name: "fastMs"; type: "int"; read: "fastMs"; notify: "changed" }
-        Property { name: "normalMs"; type: "int"; read: "normalMs"; notify: "changed" }
-        Property { name: "slowMs"; type: "int"; read: "slowMs"; notify: "changed" }
+        Property { name: "fastMs"; type: "int"; read: "fastMs"; notify: "changed"; isFinal: true }
+        Property { name: "normalMs"; type: "int"; read: "normalMs"; notify: "changed"; isFinal: true }
+        Property { name: "slowMs"; type: "int"; read: "slowMs"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
         name: "StyleTypography"
         accessSemantics: "reference"
         prototype: "QObject"
-        Property { name: "family"; type: "QString"; read: "family"; notify: "changed" }
-        Property { name: "fallback"; type: "QString"; read: "fallback"; notify: "changed" }
-        Property { name: "basePx"; type: "int"; read: "basePx"; notify: "changed" }
+        Property { name: "family"; type: "QString"; read: "family"; notify: "changed"; isFinal: true }
+        Property { name: "fallback"; type: "QString"; read: "fallback"; notify: "changed"; isFinal: true }
+        Property { name: "basePx"; type: "int"; read: "basePx"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
@@ -62,10 +62,10 @@ Module {
         isCreatable: false
         isSingleton: true
         exportMetaObjectRevisions: [256]
-        Property { name: "colors"; type: "StyleColors"; isPointer: true; read: "colors" }
-        Property { name: "spacing"; type: "StyleSpacing"; isPointer: true; read: "spacing" }
-        Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius" }
-        Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion" }
-        Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography" }
+        Property { name: "colors"; type: "StyleColors"; isPointer: true; read: "colors"; isConstant: true; isReadonly: true; isFinal: true }
+        Property { name: "spacing"; type: "StyleSpacing"; isPointer: true; read: "spacing"; isConstant: true; isReadonly: true; isFinal: true }
+        Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius"; isConstant: true; isReadonly: true; isFinal: true }
+        Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion"; isConstant: true; isReadonly: true; isFinal: true }
+        Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography"; isConstant: true; isReadonly: true; isFinal: true }
     }
 }

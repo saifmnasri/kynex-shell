@@ -37,39 +37,7 @@ have ripsecrets && step "secret scan" ripsecrets --strict-ignore . || skip "secr
 # shellcheck disable=SC2317,SC2329
 check_style_tokens() {
   local target_dir="${1:-styles}"
-  local violations=0
-  while IFS= read -r file; do
-    # 1. Reject org.kde.* imports
-    if grep -En '^[[:space:]]*import[[:space:]]+org\.kde\b' "$file" >&2; then
-      echo "ERROR: $file contains forbidden org.kde import" >&2
-      violations=$((violations + 1))
-    fi
-    # 2. Reject hex color literals
-    if grep -En '#[0-9a-fA-F]{3,8}\b' "$file" | grep -v '^[[:space:]]*//' >&2; then
-      echo "ERROR: $file contains forbidden hex color literal" >&2
-      violations=$((violations + 1))
-    fi
-    # 3. Reject named color string literals (e.g. "red", 'blue')
-    if grep -En '(color|border\.color)[[:space:]]*:[[:space:]]*["'\''][a-zA-Z]+["'\'']' "$file" | grep -v '^[[:space:]]*//' >&2; then
-      echo "ERROR: $file contains forbidden named color literal" >&2
-      violations=$((violations + 1))
-    fi
-    # 4. Reject functional color constructors (Qt.rgba, rgb, etc.)
-    if grep -En '\b(Qt\.(rgba?|hsla?|color)|rgba?|hsla?)[[:space:]]*\(' "$file" | grep -v '^[[:space:]]*//' >&2; then
-      echo "ERROR: $file contains forbidden functional color constructor" >&2
-      violations=$((violations + 1))
-    fi
-    # 5. Reject bare numbers and numbers inside JS expressions for styling and geometry properties.
-    # Allowed numbers: only 0 and 1 (documented: 0 for resets/offsets, 1 for unit increments).
-    while IFS= read -r line; do
-      clean_line="${line%%//*}"
-      if echo "$clean_line" | grep -Eq '\b(font\.)?(pixelSize|width|height|spacing|radius|margins?|leftMargin|rightMargin|topMargin|bottomMargin|exclusiveZone)[[:space:]]*:[^;}]*(\b([2-9]|[1-9][0-9]+)\b|[0-9]+\.[0-9]+)'; then
-        echo "ERROR: $file contains hard-coded styling number or JS number expression: $clean_line" >&2
-        violations=$((violations + 1))
-      fi
-    done < "$file"
-  done < <(find "$target_dir" -name '*.qml' 2>/dev/null)
-  return "$violations"
+  ./scripts/check-style-tokens.py "$target_dir"
 }
 
 step "style tokens lint" check_style_tokens
@@ -86,7 +54,11 @@ fi
 mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
 if ((${#QMLFILES[@]})); then
   if [[ -n "$QMLLINT" ]]; then
-    step "qmllint" "$QMLLINT" -I crates/kynex-shell/qml "${QMLFILES[@]}"
+    QMLLINT_ARGS=(-I crates/kynex-shell/qml)
+    if "$QMLLINT" --help 2>&1 | grep -q -- '--compiler'; then
+      QMLLINT_ARGS+=(--compiler warning)
+    fi
+    step "qmllint" "$QMLLINT" "${QMLLINT_ARGS[@]}" "${QMLFILES[@]}"
   else
     skip "qmllint" "not installed"
   fi
