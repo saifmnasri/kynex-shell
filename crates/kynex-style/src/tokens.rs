@@ -51,8 +51,15 @@ pub struct Palette {
     pub accent: String,
     /// Error/danger state color.
     pub danger: String,
+    /// Warning state color.
+    #[serde(default = "default_warning_color")]
+    pub warning: String,
     /// Success state color.
     pub success: String,
+}
+
+fn default_warning_color() -> String {
+    "#e5a50a".to_string()
 }
 
 /// Spacing system tokens.
@@ -60,6 +67,34 @@ pub struct Palette {
 pub struct SpacingConfig {
     /// Base grid unit in pixels.
     pub unit: u32,
+    /// Small spacing in pixels.
+    #[serde(default = "default_small_spacing")]
+    pub small: u32,
+    /// Medium spacing in pixels.
+    #[serde(default = "default_medium_spacing")]
+    pub medium: u32,
+    /// Large spacing in pixels.
+    #[serde(default = "default_large_spacing")]
+    pub large: u32,
+    /// Panel height/thickness in pixels.
+    #[serde(default = "default_panel_spacing")]
+    pub panel: u32,
+}
+
+fn default_small_spacing() -> u32 {
+    8
+}
+
+fn default_medium_spacing() -> u32 {
+    12
+}
+
+fn default_large_spacing() -> u32 {
+    16
+}
+
+fn default_panel_spacing() -> u32 {
+    48
 }
 
 /// Corner radius tokens.
@@ -124,6 +159,7 @@ impl TokensManifest {
             &palette.text_muted,
             &palette.accent,
             &palette.danger,
+            &palette.warning,
             &palette.success,
         ];
 

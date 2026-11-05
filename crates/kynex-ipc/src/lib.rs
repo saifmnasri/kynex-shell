@@ -3,7 +3,9 @@
 pub mod daemon;
 pub mod service;
 
-pub use daemon::{Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH};
+pub use daemon::{
+    Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
+};
 pub use service::{BoxFuture, Service, ServiceHealth};
 
 use kynex_common::NAMESPACE;
