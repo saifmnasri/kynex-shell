@@ -64,3 +64,4 @@ if [[ -d "$HOME/.config/systemd" ]]; then
 fi
 
 echo "SUCCESS: Unit ran with full sandboxing, acquired D-Bus name, Power1 was queried, journal is clean, and ~/.config/systemd was untouched."
+

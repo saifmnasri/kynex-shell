@@ -9,7 +9,7 @@ LayerSurface {
     height: Style.spacing.panel
 
     layer: LayerSurface.LayerTop
-    anchors: LayerSurface.AnchorBottom | LayerSurface.AnchorLeft | LayerSurface.AnchorRight
+    anchors: LayerSurface.AnchorBottom + LayerSurface.AnchorLeft + LayerSurface.AnchorRight
     exclusiveZone: Style.spacing.panel
     leftMargin: 0
     rightMargin: 0

@@ -62,10 +62,10 @@ Module {
         isCreatable: false
         isSingleton: true
         exportMetaObjectRevisions: [256]
-        Property { name: "colors"; type: "StyleColors"; isPointer: true; read: "colors"; isConstant: true; isReadonly: true; isFinal: true }
-        Property { name: "spacing"; type: "StyleSpacing"; isPointer: true; read: "spacing"; isConstant: true; isReadonly: true; isFinal: true }
-        Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius"; isConstant: true; isReadonly: true; isFinal: true }
-        Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion"; isConstant: true; isReadonly: true; isFinal: true }
-        Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography"; isConstant: true; isReadonly: true; isFinal: true }
+        Property { name: "colors"; type: "StyleColors"; isPointer: true; read: "colors"; isReadonly: true; isFinal: true }
+        Property { name: "spacing"; type: "StyleSpacing"; isPointer: true; read: "spacing"; isReadonly: true; isFinal: true }
+        Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius"; isReadonly: true; isFinal: true }
+        Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion"; isReadonly: true; isFinal: true }
+        Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography"; isReadonly: true; isFinal: true }
     }
 }
