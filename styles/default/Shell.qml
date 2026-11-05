@@ -1,15 +1,16 @@
 import QtQuick
-import org.kynexos.core
+import Kynex.Shell
+import Kynex.Style
 
 LayerSurface {
     id: panel
     visible: true
     width: Screen.width
-    height: 48
+    height: Style.spacing.unit * 12
 
     layer: LayerSurface.LayerTop
     anchors: LayerSurface.AnchorBottom | LayerSurface.AnchorLeft | LayerSurface.AnchorRight
-    exclusiveZone: 48
+    exclusiveZone: Style.spacing.unit * 12
     leftMargin: 0
     rightMargin: 0
     topMargin: 0
@@ -30,27 +31,28 @@ LayerSurface {
 
     Rectangle {
         anchors.fill: parent
-        color: "#1d2029"
+        color: Style.colors.surfaceRaised
 
         Row {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: Style.spacing.unit * 3
 
             Text {
                 text: clock.date
-                color: "#9aa3b2"
-                font.pixelSize: 13
+                color: Style.colors.textMuted
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx - 1
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
                 text: clock.time
-                color: "#eceff4"
-                font.pixelSize: 15
+                color: Style.colors.text
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx + 1
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
     }
 }
-

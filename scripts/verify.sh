@@ -34,10 +34,33 @@ fi
 have typos && step "typos" typos || skip "typos" "not installed"
 have ripsecrets && step "secret scan" ripsecrets --strict-ignore . || skip "secret scan" "ripsecrets not installed"
 
+# shellcheck disable=SC2329
+check_style_tokens() {
+  local violations=0
+  while IFS= read -r file; do
+    if grep -En '#[0-9a-fA-F]{3,8}\b' "$file" | grep -v '^[[:space:]]*//' >&2; then
+      echo "ERROR: $file contains forbidden hex color literal" >&2
+      violations=$((violations + 1))
+    fi
+    if grep -En '(font\.)?pixelSize[[:space:]]*:[[:space:]]*[0-9]+' "$file" | grep -v '^[[:space:]]*//' >&2; then
+      echo "ERROR: $file contains forbidden hard-coded pixel size outside token bindings" >&2
+      violations=$((violations + 1))
+    fi
+  done < <(find styles -name '*.qml' 2>/dev/null)
+  return "$violations"
+}
+
+step "style tokens lint" check_style_tokens
+[[ -f scripts/test-token-lint.sh ]] && step "style tokens linter test" ./scripts/test-token-lint.sh
+
 QMLLINT="$(command -v qmllint || ls /usr/lib/qt6/bin/qmllint 2>/dev/null || true)"
-mapfile -t QMLFILES < <(find crates -name '*.qml' 2>/dev/null)
+mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
 if ((${#QMLFILES[@]})); then
-  [[ -n "$QMLLINT" ]] && step "qmllint" "$QMLLINT" "${QMLFILES[@]}" || skip "qmllint" "not installed"
+  if [[ -n "$QMLLINT" ]]; then
+    step "qmllint" "$QMLLINT" -I crates/kynex-shell/qml "${QMLFILES[@]}"
+  else
+    skip "qmllint" "not installed"
+  fi
 fi
 
 mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) 2>/dev/null)
