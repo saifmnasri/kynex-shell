@@ -52,6 +52,12 @@ pub fn read_file_with_limit(path: &Path, max_bytes: u64) -> Result<String, Style
         source: e,
     })?;
 
+    if !metadata.file_type().is_file() {
+        return Err(StyleError::NotARegularFile {
+            path: path.to_path_buf(),
+        });
+    }
+
     if metadata.len() > max_bytes {
         return Err(StyleError::FileTooLarge {
             path: path.to_path_buf(),
@@ -60,17 +66,27 @@ pub fn read_file_with_limit(path: &Path, max_bytes: u64) -> Result<String, Style
         });
     }
 
-    let mut file = File::open(path).map_err(|e| StyleError::Io {
+    let file = File::open(path).map_err(|e| StyleError::Io {
         path: path.to_path_buf(),
         source: e,
     })?;
 
     let mut content = String::new();
-    file.read_to_string(&mut content)
+    let mut reader = file.take(max_bytes + 1);
+    reader
+        .read_to_string(&mut content)
         .map_err(|e| StyleError::Io {
             path: path.to_path_buf(),
             source: e,
         })?;
+
+    if content.len() as u64 > max_bytes {
+        return Err(StyleError::FileTooLarge {
+            path: path.to_path_buf(),
+            max_bytes,
+            found_bytes: content.len() as u64,
+        });
+    }
 
     Ok(content)
 }

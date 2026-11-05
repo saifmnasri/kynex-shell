@@ -1,10 +1,41 @@
 #include "layersurface.h"
+#include <QScreen>
+#include <type_traits>
+
+namespace {
+template <typename T, typename = void>
+struct has_setDesiredSize : std::false_type {};
+
+template <typename T>
+struct has_setDesiredSize<T, std::void_t<decltype(std::declval<T>().setDesiredSize(std::declval<QSize>()))>> : std::true_type {};
+
+template <typename W>
+void setLayerShellDesiredSize(W *lsWindow, const QSize &size) {
+    if constexpr (has_setDesiredSize<W>::value) {
+        lsWindow->setDesiredSize(size);
+    }
+}
+} // namespace
 
 LayerSurface::LayerSurface(QWindow *parent)
     : QQuickWindow(parent)
 {
     setFlags(flags() | Qt::FramelessWindowHint);
     setColor(Qt::transparent);
+    resize(1280, 48);
+
+    connect(this, &QWindow::widthChanged, this, [this](int w) {
+        if (auto *ls = LayerShellQt::Window::get(this)) {
+            int h = height() > 0 ? height() : 48;
+            setLayerShellDesiredSize(ls, QSize(w, h));
+        }
+    });
+    connect(this, &QWindow::heightChanged, this, [this](int h) {
+        if (auto *ls = LayerShellQt::Window::get(this)) {
+            int w = width() > 0 ? width() : 1280;
+            setLayerShellDesiredSize(ls, QSize(w, h));
+        }
+    });
 }
 
 void LayerSurface::setLayer(Layer layer)
@@ -103,6 +134,12 @@ void LayerSurface::showEvent(QShowEvent *event)
     QQuickWindow::showEvent(event);
 }
 
+void LayerSurface::resizeEvent(QResizeEvent *event)
+{
+    applyLayerShellSettings();
+    QQuickWindow::resizeEvent(event);
+}
+
 void LayerSurface::applyLayerShellSettings()
 {
     LayerShellQt::Window *lsWindow = LayerShellQt::Window::get(this);
@@ -114,10 +151,14 @@ void LayerSurface::applyLayerShellSettings()
     lsWindow->setAnchors(LayerShellQt::Window::Anchors::fromInt(m_anchors));
     lsWindow->setExclusiveZone(m_exclusiveZone);
     lsWindow->setMargins(m_margins);
+
+    int w = width() > 0 ? width() : (screen() ? screen()->size().width() : 1280);
+    int h = height() > 0 ? height() : 48;
+    setLayerShellDesiredSize(lsWindow, QSize(w, h));
+
     lsWindow->setKeyboardInteractivity(
         static_cast<LayerShellQt::Window::KeyboardInteractivity>(m_keyboardInteractivity));
     if (!m_scope.isEmpty()) {
         lsWindow->setScope(m_scope);
     }
 }
-

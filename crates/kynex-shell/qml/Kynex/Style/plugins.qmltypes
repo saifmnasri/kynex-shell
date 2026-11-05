@@ -1,0 +1,66 @@
+import QtQuick.tooling 1.2
+
+Module {
+    Component {
+        file: "cpp/style.h"
+        name: "StyleColors"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "surface"; type: "QColor"; read: "surface"; notify: "changed" }
+        Property { name: "surfaceRaised"; type: "QColor"; read: "surfaceRaised"; notify: "changed" }
+        Property { name: "text"; type: "QColor"; read: "text"; notify: "changed" }
+        Property { name: "textMuted"; type: "QColor"; read: "textMuted"; notify: "changed" }
+        Property { name: "accent"; type: "QColor"; read: "accent"; notify: "changed" }
+        Property { name: "danger"; type: "QColor"; read: "danger"; notify: "changed" }
+        Property { name: "success"; type: "QColor"; read: "success"; notify: "changed" }
+    }
+    Component {
+        file: "cpp/style.h"
+        name: "StyleSpacing"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "unit"; type: "int"; read: "unit"; notify: "changed" }
+    }
+    Component {
+        file: "cpp/style.h"
+        name: "StyleRadius"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "small"; type: "int"; read: "small"; notify: "changed" }
+        Property { name: "medium"; type: "int"; read: "medium"; notify: "changed" }
+        Property { name: "large"; type: "int"; read: "large"; notify: "changed" }
+    }
+    Component {
+        file: "cpp/style.h"
+        name: "StyleMotion"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "fastMs"; type: "int"; read: "fastMs"; notify: "changed" }
+        Property { name: "normalMs"; type: "int"; read: "normalMs"; notify: "changed" }
+        Property { name: "slowMs"; type: "int"; read: "slowMs"; notify: "changed" }
+    }
+    Component {
+        file: "cpp/style.h"
+        name: "StyleTypography"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "family"; type: "QString"; read: "family"; notify: "changed" }
+        Property { name: "fallback"; type: "QString"; read: "fallback"; notify: "changed" }
+        Property { name: "basePx"; type: "int"; read: "basePx"; notify: "changed" }
+    }
+    Component {
+        file: "cpp/style.h"
+        name: "Style"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Style/Style 1.0"]
+        isCreatable: false
+        isSingleton: true
+        exportMetaObjectRevisions: [256]
+        Property { name: "colors"; type: "StyleColors"; isPointer: true; read: "colors" }
+        Property { name: "spacing"; type: "StyleSpacing"; isPointer: true; read: "spacing" }
+        Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius" }
+        Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion" }
+        Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography" }
+    }
+}

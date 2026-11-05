@@ -197,5 +197,7 @@ Kynex Shell is open-source software licensed under the **[GNU General Public Lic
 
 - **Copyleft Protection**: No third-party or corporate entity can make proprietary, closed-source forks of this desktop environment.
 - **Relicensing & Commercial Rights**: All relicensing and commercial rights are reserved by the author, **Saifeddine Mnasri**. External contributions are accepted pursuant to the Contributor License Agreement in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-- **Dependency Philosophy**: The project strictly prefers permissive licenses (**MIT**, **BSD**, **Apache-2.0**) for third-party libraries and dependencies.
+- **Dependency Philosophy**: The project strictly prefers permissive licenses (**MIT**, **BSD**, **Apache-2.0**, **ISC**, **Zlib**) for third-party libraries and dependencies. All dependencies must be GPL-3.0-compatible; **GPL-2.0-only** is strictly banned.
+- **Qt 6 Framework**: Qt 6 is dynamically linked under the terms of LGPL-3.0.
+- **KWin Compositor**: KWin 6 runs in a separate process as an independent Wayland compositor and interacts purely via standard Wayland and D-Bus IPC protocols.
 - **Assets**: Third-party and original asset licenses are documented in [`assets/LICENSES.md`](assets/LICENSES.md).

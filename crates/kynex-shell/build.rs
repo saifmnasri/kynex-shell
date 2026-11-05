@@ -3,11 +3,13 @@
 use cxx_qt_build::{CxxQtBuilder, QmlModule};
 
 fn main() {
-    CxxQtBuilder::new_qml_module(QmlModule::new("org.kynexos.core"))
+    CxxQtBuilder::new_qml_module(QmlModule::new("Kynex.Shell"))
         .files(["src/clock.rs", "src/shim.rs"])
         .cpp_files([
             "cpp/layersurface.cpp",
             "cpp/layersurface.h",
+            "cpp/style.cpp",
+            "cpp/style.h",
             "cpp/shim.cpp",
             "cpp/shim.h",
         ])

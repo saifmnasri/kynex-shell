@@ -15,7 +15,8 @@ CMakeCache.txt
 *.dylib
 
 # Dev / logs / temporary files
-/dev/
+/dev/*
+!/dev/run-nested.sh
 *.log
 *.tmp
 *.swp
@@ -42,3 +43,5 @@ id_rsa*
 /coverage/
 *.profraw
 *.profdata
+sbom.json
+**/sbom.json

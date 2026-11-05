@@ -5,7 +5,7 @@
 pub mod clock;
 pub mod shim;
 
-use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
+use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
 use std::path::{Path, PathBuf};
 use tracing::{error, info};
 
@@ -27,12 +27,30 @@ fn find_style_dir() -> PathBuf {
     PathBuf::from("styles/default")
 }
 
+fn find_qml_import_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("KYNEX_QML_IMPORT_DIR") {
+        return PathBuf::from(dir);
+    }
+
+    let local_qml = Path::new("crates/kynex-shell/qml");
+    if local_qml.exists() {
+        return local_qml.to_path_buf();
+    }
+
+    let system_qml = Path::new("/usr/lib/kynex/qml");
+    if system_qml.exists() {
+        return system_qml.to_path_buf();
+    }
+
+    PathBuf::from("crates/kynex-shell/qml")
+}
+
 fn main() {
     tracing_subscriber::fmt::init();
     info!("Starting Kynex Shell (Phase 1)");
 
     let style_dir = find_style_dir();
-    let (manifest, _tokens) = match kynex_style::load_style_pack(&style_dir) {
+    let (manifest, tokens) = match kynex_style::load_style_pack(&style_dir) {
         Ok(pack) => pack,
         Err(e) => {
             error!("Failed to load style pack from {:?}: {e}", style_dir);
@@ -51,14 +69,30 @@ fn main() {
 
     let mut app = QGuiApplication::new();
 
-    // Register C++ LayerSurface into org.kynexos.core
+    // Register C++ LayerSurface and Style singleton into Kynex.Shell and Kynex.Style
     shim::register_types();
 
+    // Feed parsed design tokens into the Style singleton
+    info!(
+        "Applying design tokens (unit: {}, typography: {}px)",
+        tokens.spacing.unit, tokens.typography.base_px
+    );
+    shim::init_tokens(&tokens);
+
     let mut engine = QQmlApplicationEngine::new();
-    if let Some(engine) = engine.as_mut() {
+    if let Some(mut engine) = engine.as_mut() {
+        let qml_import_dir = find_qml_import_dir();
+        if let Ok(canonical_qml) = qml_import_dir.canonicalize() {
+            let import_str = canonical_qml.to_string_lossy();
+            info!("Adding QML import path: {import_str}");
+            engine
+                .as_mut()
+                .add_import_path(&QString::from(import_str.as_ref()));
+        }
+
         let qurl_str = format!("file://{}", shell_qml_path.to_string_lossy());
         info!("Loading style shell from {qurl_str}");
-        engine.load(&QUrl::from(&qurl_str));
+        engine.as_mut().load(&QUrl::from(&qurl_str));
     }
 
     if let Some(app) = app.as_mut() {

@@ -27,6 +27,13 @@ pub enum StyleError {
         found_bytes: u64,
     },
 
+    /// File is not a regular file (e.g. FIFO, device, socket).
+    #[error("File {path} is not a regular file")]
+    NotARegularFile {
+        /// The file path.
+        path: PathBuf,
+    },
+
     /// TOML deserialization error.
     #[error("TOML decode error in {path}: {source}")]
     TomlDecode {

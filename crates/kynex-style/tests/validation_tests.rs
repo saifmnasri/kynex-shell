@@ -261,3 +261,43 @@ fn test_symlink_escaping_pack_rejected() {
         other => panic!("expected UnsafePath, got: {other:?}"),
     }
 }
+
+#[test]
+fn test_fifo_rejected_without_hanging() {
+    let dir = tempdir().expect("tempdir");
+    let fifo_path = dir.path().join("fifo.pipe");
+
+    // Create a FIFO via mkfifo command
+    let status = std::process::Command::new("mkfifo")
+        .arg(&fifo_path)
+        .status()
+        .expect("execute mkfifo");
+    assert!(status.success(), "mkfifo should succeed");
+
+    let err = read_file_with_limit(&fifo_path, MAX_STYLE_FILE_SIZE)
+        .expect_err("should reject FIFO before opening");
+    match err {
+        StyleError::NotARegularFile { path } => {
+            assert_eq!(path, fifo_path);
+        }
+        other => panic!("expected NotARegularFile, got: {other:?}"),
+    }
+}
+
+#[test]
+fn test_symlink_to_dev_zero_rejected_without_hanging() {
+    let dir = tempdir().expect("tempdir");
+    let symlink_path = dir.path().join("zero.toml");
+
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("/dev/zero", &symlink_path).expect("create symlink to /dev/zero");
+
+    let err = read_file_with_limit(&symlink_path, MAX_STYLE_FILE_SIZE)
+        .expect_err("should reject character device /dev/zero");
+    match err {
+        StyleError::NotARegularFile { path } => {
+            assert_eq!(path, symlink_path);
+        }
+        other => panic!("expected NotARegularFile, got: {other:?}"),
+    }
+}
