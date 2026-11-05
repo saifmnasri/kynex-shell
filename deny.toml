@@ -9,8 +9,8 @@ ignore = []   # every ignore needs a comment with reason + expiry
 
 [licenses]
 version = 2
-# Third-party dependencies: prefer MIT/BSD/Apache-style.
-# Anything else needs a justified exception in docs/LICENSING.md.
+# Third-party dependencies: prefer MIT/BSD/Apache-style and must be GPL-3.0-compatible.
+# All licenses not in the allow list below (including GPL-2.0-only) are strictly denied.
 allow = [
   "MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception",
   "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD",
