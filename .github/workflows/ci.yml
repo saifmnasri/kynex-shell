@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Configure safe directory
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
+        run: git config --global --add safe.directory '*'
 
       - name: Bootstrap system packages
         run: |
