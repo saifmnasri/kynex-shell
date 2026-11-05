@@ -1,5 +1,11 @@
 //! D-Bus interface definitions and IPC protocols shared by the Kynex daemon and clients.
 
+pub mod daemon;
+pub mod service;
+
+pub use daemon::{Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH};
+pub use service::{BoxFuture, Service, ServiceHealth};
+
 use kynex_common::NAMESPACE;
 
 /// The base object path for `KynexOS` D-Bus objects.
