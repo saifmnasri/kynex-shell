@@ -18,6 +18,10 @@ LayerSurface {
     keyboardInteractivity: LayerSurface.KeyboardInteractivityNone
     scope: "panel"
 
+    Component.onCompleted: {
+        console.log("Kynex Shell panel initialized successfully");
+    }
+
     Clock {
         id: clock
     }

@@ -1,11 +1,13 @@
 #include "shim.h"
 #include "layersurface.h"
 #include "style.h"
+#include "kynex-shell/src/clock.cxxqt.h"
 #include <QtQml>
 
 void kynex_register_core_types()
 {
     qmlRegisterType<LayerSurface>("Kynex.Shell", 1, 0, "LayerSurface");
+    qmlRegisterType<Clock>("Kynex.Shell", 1, 0, "Clock");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
 }
 

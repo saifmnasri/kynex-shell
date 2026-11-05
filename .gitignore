@@ -15,7 +15,8 @@ CMakeCache.txt
 *.dylib
 
 # Dev / logs / temporary files
-/dev/
+/dev/*
+!/dev/run-nested.sh
 *.log
 *.tmp
 *.swp
