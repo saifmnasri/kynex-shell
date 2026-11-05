@@ -7,6 +7,7 @@ text = "#eceff4"
 text_muted = "#9aa3b2"
 accent = "#6aa6ff"
 danger = "#ff6b6b"
+warning = "#e5a50a"
 success = "#4cd1a0"
 
 [color.light]
@@ -16,10 +17,15 @@ text = "#14161c"
 text_muted = "#5b6475"
 accent = "#2f6fe0"
 danger = "#d63c3c"
+warning = "#c07d00"
 success = "#1f9d73"
 
 [spacing]
 unit = 4
+small = 8
+medium = 12
+large = 16
+panel = 48
 
 [radius]
 small = 6

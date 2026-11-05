@@ -1,4 +1,4 @@
-//! D-Bus object implementation for `org.kynexos.Daemon1`.
+//! D-Bus object implementation for `org.kynexos.Daemon.Core1`.
 
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -26,7 +26,7 @@ impl DaemonServer {
 }
 
 #[allow(clippy::unused_async, clippy::unused_async_trait_impl)]
-#[zbus::interface(name = "org.kynexos.Daemon1")]
+#[zbus::interface(name = "org.kynexos.Daemon.Core1")]
 impl DaemonServer {
     /// Responds with "pong" to verify IPC connectivity.
     pub async fn ping(&self) -> &str {
