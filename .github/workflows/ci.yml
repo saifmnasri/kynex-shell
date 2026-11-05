@@ -24,9 +24,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Configure safe directory
-        run: git config --global --add safe.directory '*'
-
       - name: Bootstrap system packages
         run: |
           if command -v sudo >/dev/null 2>&1; then
