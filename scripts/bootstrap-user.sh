@@ -24,9 +24,14 @@ TOOLS=(
 )
 
 if ! command -v cargo-binstall >/dev/null 2>&1; then
-  cargo install cargo-binstall --locked
+  echo "Installing cargo-binstall via release installer..."
+  curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash || cargo install cargo-binstall --locked
 fi
 for t in "${TOOLS[@]}"; do
+  bin_name="${t#cargo-}"
+  if command -v "$t" >/dev/null 2>&1 || command -v "$bin_name" >/dev/null 2>&1; then
+    continue
+  fi
   if ! cargo binstall -y --locked "$t"; then
     echo "binstall failed for $t, building from source..."
     cargo install --locked "$t" || echo "WARNING: could not install $t"
