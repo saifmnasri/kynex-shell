@@ -3,6 +3,10 @@
 /// CXX bridge declarations for the C++ shim.
 #[cxx::bridge]
 pub mod ffi {
+    // SAFETY: Declares the C++ FFI function `kynex_register_core_types` implemented
+    // in `cpp/shim.cpp`. It interacts solely with the Qt QML type registration system
+    // (`qmlRegisterType`), does not dereference raw pointers, and has no side effects
+    // violating Rust safety invariants.
     unsafe extern "C++" {
         include!("cpp/shim.h");
         /// Registers `LayerSurface` in Qt QML.
