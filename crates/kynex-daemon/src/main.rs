@@ -4,9 +4,10 @@ use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use kynex_daemon::services::network::{run_network_service, NetworkServer};
 use kynex_daemon::services::power::{run_power_service, PowerServer};
 use kynex_daemon::DaemonServer;
-use kynex_ipc::{DAEMON_DESTINATION, DAEMON_PATH, POWER_PATH};
+use kynex_ipc::{DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH};
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
 use zbus::object_server::SignalEmitter;
@@ -19,12 +20,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let running = Arc::new(AtomicBool::new(true));
     let server = DaemonServer::new(Arc::clone(&running));
     let power_server = PowerServer::new();
+    let network_server = NetworkServer::new();
 
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
         .serve_at(DAEMON_PATH, server)
         .serve_at(POWER_PATH, power_server.clone())
+        .serve_at(NETWORK_PATH, network_server.clone())
         .build()
         .await?;
 
@@ -35,6 +38,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(em) => Some(em),
         Err(err) => {
             warn!("Failed to create SignalEmitter for Power1: {err}");
+            None
+        }
+    };
+
+    // Create emitter for network property change signals on session bus
+    let network_emitter = match SignalEmitter::new(&session_conn, NETWORK_PATH) {
+        Ok(em) => Some(em),
+        Err(err) => {
+            warn!("Failed to create SignalEmitter for Network1: {err}");
             None
         }
     };
@@ -60,6 +72,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let p_server = power_server.clone();
         tokio::spawn(async move {
             run_power_service(uconn, p_server, emitter, None).await;
+        });
+    }
+
+    // Determine NetworkManager connection:
+    // If KYNEX_NM_BUS == "session", use session bus (for dev/nested demo/tests).
+    // Otherwise, connect to system bus.
+    let nm_conn = if std::env::var("KYNEX_NM_BUS").as_deref() == Ok("session") {
+        info!("KYNEX_NM_BUS=session: using session bus for NetworkManager");
+        Some(session_conn.clone())
+    } else {
+        match zbus::connection::Builder::system().build().await {
+            Ok(conn) => Some(conn),
+            Err(err) => {
+                warn!("Failed to connect to system bus for NetworkManager: {err}. Network status will be unavailable (present=false).");
+                None
+            }
+        }
+    };
+
+    // Spawn network monitoring background task if NetworkManager bus connection is available
+    if let Some(nconn) = nm_conn {
+        let n_server = network_server.clone();
+        tokio::spawn(async move {
+            run_network_service(nconn, n_server, network_emitter, None, None).await;
         });
     }
 

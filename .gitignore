@@ -18,6 +18,7 @@ CMakeCache.txt
 /dev/*
 !/dev/run-nested.sh
 !/dev/fake-upower.py
+!/dev/fake-networkmanager.py
 *.log
 *.tmp
 *.swp

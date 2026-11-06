@@ -79,4 +79,23 @@ Module {
             name: "init"
         }
     }
+    Component {
+        file: "src/network.rs"
+        name: "NetworkModel"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Shell/NetworkModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged"; isFinal: true }
+        Property { name: "connected"; type: "bool"; read: "connected"; notify: "connectedChanged"; isFinal: true }
+        Property { name: "kind"; type: "int"; read: "kind"; notify: "kindChanged"; isFinal: true }
+        Property { name: "wifi"; type: "bool"; read: "wifi"; notify: "wifiChanged"; isFinal: true }
+        Property { name: "ethernet"; type: "bool"; read: "ethernet"; notify: "ethernetChanged"; isFinal: true }
+        Property { name: "strength"; type: "int"; read: "strength"; notify: "strengthChanged"; isFinal: true }
+        Property { name: "ssid"; type: "QString"; read: "ssid"; notify: "ssidChanged"; isFinal: true }
+        Property { name: "weak"; type: "bool"; read: "weak"; notify: "weakChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+    }
 }

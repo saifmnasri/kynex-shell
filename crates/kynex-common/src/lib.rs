@@ -14,6 +14,9 @@ pub const DEFAULT_STYLE_ID: &str = "default";
 /// The default percentage threshold below which battery level is considered low (warning).
 pub const BATTERY_LOW_PERCENTAGE: f64 = 20.0;
 
+/// The default percentage threshold below which Wi-Fi signal strength is considered weak.
+pub const NETWORK_WEAK_SIGNAL_PERCENTAGE: u32 = 25;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -24,5 +27,13 @@ mod tests {
             assert!(BATTERY_LOW_PERCENTAGE > 0.0 && BATTERY_LOW_PERCENTAGE < 100.0);
         }
         assert!((BATTERY_LOW_PERCENTAGE - 20.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_network_weak_signal_threshold() {
+        const {
+            assert!(NETWORK_WEAK_SIGNAL_PERCENTAGE > 0 && NETWORK_WEAK_SIGNAL_PERCENTAGE < 100);
+        }
+        assert_eq!(NETWORK_WEAK_SIGNAL_PERCENTAGE, 25);
     }
 }

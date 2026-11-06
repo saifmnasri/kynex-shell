@@ -32,6 +32,11 @@ LayerSurface {
         Component.onCompleted: powerModel.init()
     }
 
+    NetworkModel {
+        id: networkModel
+        Component.onCompleted: networkModel.init()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.surfaceRaised
@@ -59,28 +64,59 @@ LayerSurface {
         }
 
         Row {
-            id: batteryIndicator
-            visible: powerModel.present
+            id: statusArea
             anchors.right: parent.right
             anchors.rightMargin: Style.spacing.large
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.spacing.small
+            spacing: Style.spacing.medium
 
-            Text {
-                text: powerModel.charging ? "⚡" : "🔋"
-                color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
-                font.family: Style.typography.family
-                font.pixelSize: Style.typography.basePx
+            Row {
+                id: networkIndicator
+                visible: networkModel.present
+                spacing: Style.spacing.small
                 anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    text: networkModel.connected ? (networkModel.wifi ? "📶" : (networkModel.ethernet ? "🌐" : "🔗")) : "🚫"
+                    color: networkModel.connected ? (networkModel.weak ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
+                    font.family: Style.typography.family
+                    font.pixelSize: Style.typography.basePx
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    visible: networkModel.connected
+                    text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
+                    color: networkModel.weak ? Style.colors.warning : Style.colors.text
+                    font.family: Style.typography.family
+                    font.pixelSize: Style.typography.basePx
+                    font.bold: true
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
-            Text {
-                text: Math.round(powerModel.percentage) + "%"
-                color: powerModel.low ? Style.colors.warning : Style.colors.text
-                font.family: Style.typography.family
-                font.pixelSize: Style.typography.basePx
-                font.bold: true
+            Row {
+                id: batteryIndicator
+                visible: powerModel.present
+                spacing: Style.spacing.small
                 anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    text: powerModel.charging ? "⚡" : "🔋"
+                    color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
+                    font.family: Style.typography.family
+                    font.pixelSize: Style.typography.basePx
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: Math.round(powerModel.percentage) + "%"
+                    color: powerModel.low ? Style.colors.warning : Style.colors.text
+                    font.family: Style.typography.family
+                    font.pixelSize: Style.typography.basePx
+                    font.bold: true
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
         }
     }
