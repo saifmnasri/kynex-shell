@@ -50,7 +50,12 @@ fn main() {
     tracing_subscriber::fmt::init();
     info!("Starting Kynex Shell (Phase 1)");
 
-    let rt = tokio::runtime::Runtime::new().ok();
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .max_blocking_threads(1)
+        .enable_all()
+        .build()
+        .ok();
     let _guard = rt.as_ref().map(tokio::runtime::Runtime::enter);
 
     let style_dir = find_style_dir();

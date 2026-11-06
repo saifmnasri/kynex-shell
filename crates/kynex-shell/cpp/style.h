@@ -6,14 +6,14 @@
 
 class StyleColors : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QColor surface READ surface NOTIFY changed)
-    Q_PROPERTY(QColor surfaceRaised READ surfaceRaised NOTIFY changed)
-    Q_PROPERTY(QColor text READ text NOTIFY changed)
-    Q_PROPERTY(QColor textMuted READ textMuted NOTIFY changed)
-    Q_PROPERTY(QColor accent READ accent NOTIFY changed)
-    Q_PROPERTY(QColor danger READ danger NOTIFY changed)
-    Q_PROPERTY(QColor warning READ warning NOTIFY changed)
-    Q_PROPERTY(QColor success READ success NOTIFY changed)
+    Q_PROPERTY(QColor surface READ surface NOTIFY changed FINAL)
+    Q_PROPERTY(QColor surfaceRaised READ surfaceRaised NOTIFY changed FINAL)
+    Q_PROPERTY(QColor text READ text NOTIFY changed FINAL)
+    Q_PROPERTY(QColor textMuted READ textMuted NOTIFY changed FINAL)
+    Q_PROPERTY(QColor accent READ accent NOTIFY changed FINAL)
+    Q_PROPERTY(QColor danger READ danger NOTIFY changed FINAL)
+    Q_PROPERTY(QColor warning READ warning NOTIFY changed FINAL)
+    Q_PROPERTY(QColor success READ success NOTIFY changed FINAL)
 
 public:
     explicit StyleColors(QObject *parent = nullptr);
@@ -48,11 +48,11 @@ private:
 
 class StyleSpacing : public QObject {
     Q_OBJECT
-    Q_PROPERTY(int unit READ unit NOTIFY changed)
-    Q_PROPERTY(int small READ small NOTIFY changed)
-    Q_PROPERTY(int medium READ medium NOTIFY changed)
-    Q_PROPERTY(int large READ large NOTIFY changed)
-    Q_PROPERTY(int panel READ panel NOTIFY changed)
+    Q_PROPERTY(int unit READ unit NOTIFY changed FINAL)
+    Q_PROPERTY(int small READ small NOTIFY changed FINAL)
+    Q_PROPERTY(int medium READ medium NOTIFY changed FINAL)
+    Q_PROPERTY(int large READ large NOTIFY changed FINAL)
+    Q_PROPERTY(int panel READ panel NOTIFY changed FINAL)
 
 public:
     explicit StyleSpacing(QObject *parent = nullptr);
@@ -78,9 +78,9 @@ private:
 
 class StyleRadius : public QObject {
     Q_OBJECT
-    Q_PROPERTY(int small READ small NOTIFY changed)
-    Q_PROPERTY(int medium READ medium NOTIFY changed)
-    Q_PROPERTY(int large READ large NOTIFY changed)
+    Q_PROPERTY(int small READ small NOTIFY changed FINAL)
+    Q_PROPERTY(int medium READ medium NOTIFY changed FINAL)
+    Q_PROPERTY(int large READ large NOTIFY changed FINAL)
 
 public:
     explicit StyleRadius(QObject *parent = nullptr);
@@ -102,9 +102,9 @@ private:
 
 class StyleMotion : public QObject {
     Q_OBJECT
-    Q_PROPERTY(int fastMs READ fastMs NOTIFY changed)
-    Q_PROPERTY(int normalMs READ normalMs NOTIFY changed)
-    Q_PROPERTY(int slowMs READ slowMs NOTIFY changed)
+    Q_PROPERTY(int fastMs READ fastMs NOTIFY changed FINAL)
+    Q_PROPERTY(int normalMs READ normalMs NOTIFY changed FINAL)
+    Q_PROPERTY(int slowMs READ slowMs NOTIFY changed FINAL)
 
 public:
     explicit StyleMotion(QObject *parent = nullptr);
@@ -126,9 +126,9 @@ private:
 
 class StyleTypography : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QString family READ family NOTIFY changed)
-    Q_PROPERTY(QString fallback READ fallback NOTIFY changed)
-    Q_PROPERTY(int basePx READ basePx NOTIFY changed)
+    Q_PROPERTY(QString family READ family NOTIFY changed FINAL)
+    Q_PROPERTY(QString fallback READ fallback NOTIFY changed FINAL)
+    Q_PROPERTY(int basePx READ basePx NOTIFY changed FINAL)
 
 public:
     explicit StyleTypography(QObject *parent = nullptr);
@@ -150,11 +150,11 @@ private:
 
 class Style : public QObject {
     Q_OBJECT
-    Q_PROPERTY(StyleColors* colors READ colors CONSTANT)
-    Q_PROPERTY(StyleSpacing* spacing READ spacing CONSTANT)
-    Q_PROPERTY(StyleRadius* radius READ radius CONSTANT)
-    Q_PROPERTY(StyleMotion* motion READ motion CONSTANT)
-    Q_PROPERTY(StyleTypography* typography READ typography CONSTANT)
+    Q_PROPERTY(StyleColors* colors READ colors CONSTANT FINAL)
+    Q_PROPERTY(StyleSpacing* spacing READ spacing CONSTANT FINAL)
+    Q_PROPERTY(StyleRadius* radius READ radius CONSTANT FINAL)
+    Q_PROPERTY(StyleMotion* motion READ motion CONSTANT FINAL)
+    Q_PROPERTY(StyleTypography* typography READ typography CONSTANT FINAL)
 
 public:
     static Style *instance();

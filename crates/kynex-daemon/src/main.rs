@@ -11,7 +11,7 @@ use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
 use zbus::object_server::SignalEmitter;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::init();
     info!("Starting kynex-daemon v{}", env!("CARGO_PKG_VERSION"));
