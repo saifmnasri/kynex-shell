@@ -26,7 +26,7 @@ PACKAGES=(
   dbus dbus-user-session libdbus-1-dev d-spy upower network-manager bluez udisks2 polkitd
   pipewire wireplumber libpipewire-0.3-dev
   # tools for tests, profiling, benchmarks
-  hyperfine sysstat smem valgrind heaptrack desktop-file-utils xdg-utils
+  hyperfine sysstat smem valgrind heaptrack desktop-file-utils xdg-utils python3-pil
   # vm niceties
   openssh-server spice-vdagent
 )

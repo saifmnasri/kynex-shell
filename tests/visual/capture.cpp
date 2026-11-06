@@ -6,6 +6,7 @@
 #include <QUrl>
 #include <QString>
 #include <QDir>
+#include <cmath>
 #include <iostream>
 #include "../../crates/kynex-shell/cpp/style.h"
 
@@ -36,7 +37,52 @@ static void setLightTokens() {
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <variant> <output_png>" << std::endl;
+        std::cerr << "   or: " << argv[0] << " compare <golden_png> <rendered_png> [tolerance]" << std::endl;
         return 1;
+    }
+
+    if (std::string(argv[1]) == "compare") {
+        if (argc < 4) {
+            std::cerr << "Usage: " << argv[0] << " compare <golden_png> <rendered_png> [tolerance]" << std::endl;
+            return 1;
+        }
+        std::string goldenPath = argv[2];
+        std::string renderedPath = argv[3];
+        double tolerance = argc > 4 ? std::stod(argv[4]) : 1.0;
+
+        QImage golden(QString::fromStdString(goldenPath));
+        QImage rendered(QString::fromStdString(renderedPath));
+        if (golden.isNull() || rendered.isNull()) {
+            std::cerr << "ERROR: Failed to load comparison images." << std::endl;
+            return 1;
+        }
+        if (golden.size() != rendered.size()) {
+            std::cerr << "ERROR: Size mismatch: " << golden.width() << "x" << golden.height()
+                      << " vs " << rendered.width() << "x" << rendered.height() << std::endl;
+            return 1;
+        }
+
+        QImage gRgba = golden.convertToFormat(QImage::Format_RGBA8888);
+        QImage rRgba = rendered.convertToFormat(QImage::Format_RGBA8888);
+
+        quint64 sumSq = 0;
+        const uchar *p1 = gRgba.constBits();
+        const uchar *p2 = rRgba.constBits();
+        qsizetype totalBytes = gRgba.sizeInBytes();
+
+        for (qsizetype i = 0; i < totalBytes; ++i) {
+            int diff = std::abs((int)p1[i] - (int)p2[i]);
+            sumSq += diff * diff;
+        }
+
+        double rms = std::sqrt((double)sumSq / (double)totalBytes);
+        std::cout << "RMS delta: " << rms << " (tolerance: " << tolerance << ")" << std::endl;
+
+        if (rms > tolerance) {
+            std::cerr << "FAIL: RMS delta " << rms << " exceeds tolerance " << tolerance << std::endl;
+            return 1;
+        }
+        return 0;
     }
 
     std::string variant = argv[1];

@@ -59,33 +59,14 @@ for variant in "${VARIANTS[@]}"; do
         render_file="$TEMP_DIR/${variant}.png"
         QT_SCALE_FACTOR="$scale" "$CAPTURE" "$variant" "$render_file" >/dev/null
 
-        # Compare using python Pillow
-        diff_rms=$(python3 -c "
-import sys, math
-from PIL import Image, ImageChops
-
-im1 = Image.open('$golden_file').convert('RGBA')
-im2 = Image.open('$render_file').convert('RGBA')
-
-if im1.size != im2.size:
-    sys.exit(f'SIZE_MISMATCH: {im1.size} vs {im2.size}')
-
-diff = ImageChops.difference(im1, im2)
-sq = sum(value * ((idx % 256) ** 2) for idx, value in enumerate(diff.histogram()))
-rms = math.sqrt(sq / float(im1.size[0] * im1.size[1] * 4))
-print(f'{rms:.4f}')
-")
-
-        is_exceeded=$(python3 -c "print(1 if float('$diff_rms') > float('$RMS_TOLERANCE') else 0)")
-
-        if [[ "$is_exceeded" == "1" ]]; then
-            echo "FAIL: $variant RMS difference $diff_rms exceeds tolerance $RMS_TOLERANCE!" >&2
+        # Compare using native QImage RMS computation
+        if ! "$CAPTURE" compare "$golden_file" "$render_file" "$RMS_TOLERANCE" >/dev/null 2>&1; then
+            echo "FAIL: $variant exceeds RMS tolerance $RMS_TOLERANCE!" >&2
             exit 1
         else
-            echo "PASS: $variant (RMS delta: $diff_rms <= $RMS_TOLERANCE)"
+            echo "PASS: $variant (RMS delta <= $RMS_TOLERANCE)"
         fi
     fi
 done
 
 echo "Visual regression suite passed."
-
