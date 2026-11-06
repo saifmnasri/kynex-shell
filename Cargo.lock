@@ -686,6 +686,7 @@ dependencies = [
 name = "kynex-daemon"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "kynex-common",
  "kynex-ipc",
  "tokio",
@@ -712,11 +713,15 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+ "futures-util",
  "kynex-common",
+ "kynex-ipc",
  "kynex-style",
  "pkg-config",
+ "tokio",
  "tracing",
  "tracing-subscriber",
+ "zbus",
 ]
 
 [[package]]

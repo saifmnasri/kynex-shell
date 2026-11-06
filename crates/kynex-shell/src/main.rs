@@ -3,6 +3,7 @@
 //! Hosts the Wayland layer-shell presentation layer driven by swappable style packs.
 
 pub mod clock;
+pub mod power;
 pub mod shim;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
@@ -48,6 +49,9 @@ fn find_qml_import_dir() -> PathBuf {
 fn main() {
     tracing_subscriber::fmt::init();
     info!("Starting Kynex Shell (Phase 1)");
+
+    let rt = tokio::runtime::Runtime::new().ok();
+    let _guard = rt.as_ref().map(tokio::runtime::Runtime::enter);
 
     let style_dir = find_style_dir();
     let (manifest, tokens) = match kynex_style::load_style_pack(&style_dir) {

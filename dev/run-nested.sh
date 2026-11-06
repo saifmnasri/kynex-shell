@@ -21,8 +21,18 @@ cat << EOF > "$WRAPPER"
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Export session bus address for dev inspection tools
+echo "\$DBUS_SESSION_BUS_ADDRESS" > "$TMP_DIR/dbus-session-bus-address"
+
+# Start dev fake UPower service if enabled (default 1)
+FAKE_PID=""
+if [[ "\${KYNEX_FAKE_UPOWER:-1}" == "1" ]]; then
+  "$ROOT_DIR/dev/fake-upower.py" >/dev/null 2>&1 &
+  FAKE_PID=\$!
+fi
+
 # Start daemon in background
-"$ROOT_DIR/target/debug/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
+KYNEX_UPOWER_BUS=session "$ROOT_DIR/target/debug/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
 DAEMON_PID=\$!
 
 # Start shell in foreground
@@ -30,8 +40,12 @@ DAEMON_PID=\$!
 SHELL_PID=\$!
 
 cleanup() {
+  rm -f "$TMP_DIR/dbus-session-bus-address"
   kill "\$SHELL_PID" 2>/dev/null || true
   kill "\$DAEMON_PID" 2>/dev/null || true
+  if [[ -n "\$FAKE_PID" ]]; then
+    kill "\$FAKE_PID" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT TERM INT
 
@@ -56,6 +70,7 @@ mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
 
 export QT_QPA_PLATFORM=wayland
 export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
+export RUST_LOG="${RUST_LOG:-info}"
 
 exec dbus-run-session bash -c "
   exec kwin_wayland --width 1280 --height 720 \

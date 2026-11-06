@@ -61,4 +61,18 @@ Module {
             name: "update"
         }
     }
+    Component {
+        file: "src/power.rs"
+        name: "PowerModel"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Shell/PowerModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "percentage"; type: "double"; read: "percentage"; notify: "percentageChanged" }
+        Property { name: "charging"; type: "bool"; read: "charging"; notify: "chargingChanged" }
+        Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged" }
+        Method {
+            name: "init"
+        }
+    }
 }
