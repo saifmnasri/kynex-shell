@@ -1,0 +1,70 @@
+# Machine-readable performance budgets for Kynex Shell.
+# Methodology and baseline definitions: docs/PERFORMANCE.md
+
+[session_idle_pss]
+name = "Complete session idle memory (PSS)"
+target = "<= 60% of Plasma and GNOME"
+gnome_baseline_mb = 154.8
+ratio_ceiling = 0.60
+unit = "MB"
+
+[idle_cpu]
+name = "Idle CPU (60 s average)"
+target = "< 0.5% of one core, no wakeups without events"
+max_cpu_pct = 0.50
+unit = "%"
+
+[first_frame_time]
+name = "Time from compositor ready to first shell frame"
+target = "< 1.0 s"
+max_ms = 1000.0
+unit = "ms"
+
+[launcher_open_latency]
+name = "Launcher: key press -> first visible frame"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 4"
+
+[search_keystroke_latency]
+name = "Search results update per keystroke"
+target = "< 16 ms for 5,000 apps/files indexed"
+max_ms = 16.0
+unit = "ms"
+phase = "Phase 4"
+
+[taskbar_update_latency]
+name = "Taskbar update after window open/close"
+target = "< 50 ms"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 3"
+
+[ui_frame_time]
+name = "UI frame time in our windows"
+target = "p99 < 8.3 ms at 120 Hz (< 16.6 ms at 60 Hz)"
+max_ms_120hz = 8.3
+unit = "ms"
+hardware_gpu_required = true
+
+[notification_latency]
+name = "Notification popup: D-Bus call -> visible"
+target = "< 50 ms"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[daemon_resident_memory]
+name = "Daemon resident memory"
+target = "< 10 MB PSS (< 40 MB RSS)"
+max_pss_mb = 10.0
+max_rss_mb = 40.0
+unit = "MB"
+
+[binary_size]
+name = "Binary/install size of shell"
+target = "Track per release, no unexplained growth > 10%"
+unit = "MB"
+max_growth_pct = 10.0
+

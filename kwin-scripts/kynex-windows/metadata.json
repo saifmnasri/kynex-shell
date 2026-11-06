@@ -1,0 +1,22 @@
+{
+    "KPlugin": {
+        "Name": "Kynex Windows",
+        "Description": "Window tracking feeder for Kynex Shell",
+        "Id": "kynex-windows",
+        "Version": "1.0",
+        "Authors": [
+            {
+                "Name": "Saifeddine Mnasri",
+                "Email": "saif.mnasri@gmail.com"
+            }
+        ],
+        "License": "GPL-3.0-or-later",
+        "ServiceTypes": [
+            "KWin/Script"
+        ]
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KWin-Script-Coalesce": true
+}
+

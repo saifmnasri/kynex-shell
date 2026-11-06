@@ -4,6 +4,7 @@ pub mod daemon;
 pub mod network;
 pub mod power;
 pub mod service;
+pub mod windows;
 
 pub use daemon::{
     Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
@@ -11,6 +12,10 @@ pub use daemon::{
 pub use network::{Network1Proxy, NetworkKind, NetworkState, NETWORK_INTERFACE, NETWORK_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};
+pub use windows::{
+    WindowItem, Windows1Proxy, WindowsFeed1Proxy, WINDOWS_FEED_INTERFACE, WINDOWS_INTERFACE,
+    WINDOWS_PATH,
+};
 
 use kynex_common::NAMESPACE;
 

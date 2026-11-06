@@ -9,6 +9,8 @@ FocusScope {
 
     readonly property bool hovered: mouseArea.containsMouse
     readonly property bool down: mouseArea.pressed
+    readonly property color borderColor: handle.border.color
+    readonly property int borderWidth: handle.border.width
 
     signal moved(real value)
 

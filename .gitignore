@@ -23,6 +23,7 @@ tests/visual/capture
 !/dev/run-nested.sh
 !/dev/fake-upower.py
 !/dev/fake-networkmanager.py
+!/dev/test-windows.cpp
 *.log
 *.tmp
 *.swp

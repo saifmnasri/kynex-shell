@@ -11,6 +11,8 @@ FocusScope {
 
     readonly property bool hovered: mouseArea.containsMouse
     readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
+    readonly property color borderColor: bg.border.color
+    readonly property int borderWidth: bg.border.width
 
     signal clicked()
     signal pressed()
@@ -74,6 +76,8 @@ FocusScope {
             id: label
             visible: text !== ""
             text: root.text
+            elide: Text.ElideRight
+            width: root.width > (Style.spacing.medium + Style.spacing.medium) ? Math.min(implicitWidth, root.width - Style.spacing.medium - Style.spacing.medium - (iconImage.visible ? iconImage.width + Style.spacing.small : 0)) : implicitWidth
             font.family: Style.typography.family
             font.pixelSize: Style.typography.basePx
             color: root.primary ? Style.colors.surface : Style.colors.text
