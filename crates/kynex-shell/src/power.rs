@@ -22,6 +22,8 @@ pub struct PowerState {
     pub charging: bool,
     /// Whether a battery device is detected and present.
     pub present: bool,
+    /// Whether the battery level is low (below threshold).
+    pub low: bool,
 }
 
 impl PowerState {
@@ -38,11 +40,13 @@ impl PowerState {
             };
 
         let charging = BatteryState::from_u32(raw_state).is_charging();
+        let low = present && percentage < kynex_common::BATTERY_LOW_PERCENTAGE;
 
         Self {
             percentage,
             charging,
             present,
+            low,
         }
     }
 }
@@ -57,6 +61,7 @@ pub mod qobject {
         #[qproperty(f64, percentage)]
         #[qproperty(bool, charging)]
         #[qproperty(bool, present)]
+        #[qproperty(bool, low)]
         type PowerModel = super::PowerModelRust;
 
         /// Starts the background D-Bus listener connecting to `org.kynexos.Daemon`.
@@ -73,6 +78,7 @@ pub struct PowerModelRust {
     percentage: f64,
     charging: bool,
     present: bool,
+    low: bool,
 }
 
 impl qobject::PowerModel {
@@ -99,6 +105,7 @@ fn dispatch_state(qt_thread: &cxx_qt::CxxQtThread<qobject::PowerModel>, state: P
         qobj.as_mut().set_percentage(state.percentage);
         qobj.as_mut().set_charging(state.charging);
         qobj.as_mut().set_present(state.present);
+        qobj.as_mut().set_low(state.low);
     });
 }
 
@@ -248,19 +255,29 @@ mod tests {
         assert!(state.present);
         assert_eq!(state.percentage, 75.0);
         assert!(state.charging);
+        assert!(!state.low);
 
         // Lower-bound clamping
         let state_low = PowerState::from_raw(true, -10.0, 2);
         assert_eq!(state_low.percentage, 0.0);
         assert!(!state_low.charging);
+        assert!(state_low.low);
 
         // Upper-bound clamping
         let state_high = PowerState::from_raw(true, 150.0, 2);
         assert_eq!(state_high.percentage, 100.0);
+        assert!(!state_high.low);
+
+        // Low threshold boundary checks
+        let state_boundary_low = PowerState::from_raw(true, 19.9, 2);
+        assert!(state_boundary_low.low);
+        let state_boundary_ok = PowerState::from_raw(true, 20.0, 2);
+        assert!(!state_boundary_ok.low);
 
         // NaN handling
         let state_nan = PowerState::from_raw(true, f64::NAN, 0);
         assert_eq!(state_nan.percentage, 0.0);
+        assert!(state_nan.low);
 
         // Infinite handling
         let state_inf = PowerState::from_raw(true, f64::INFINITY, 0);
@@ -290,5 +307,6 @@ mod tests {
         assert!(!state.present);
         assert_eq!(state.percentage, 0.0);
         assert!(!state.charging);
+        assert!(!state.low);
     }
 }

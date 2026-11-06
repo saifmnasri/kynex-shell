@@ -13,8 +13,16 @@ KWIN_LOG="$LOG_DIR/kwin_${TIMESTAMP}.log"
 SHELL_LOG="$LOG_DIR/shell_${TIMESTAMP}.log"
 DAEMON_LOG="$LOG_DIR/daemon_${TIMESTAMP}.log"
 
-echo "Building Kynex workspace..."
-cargo build --workspace
+BUILD_PROFILE="${KYNEX_BUILD_PROFILE:-debug}"
+CARGO_ARGS=("--workspace")
+if [[ "$BUILD_PROFILE" == "release" ]]; then
+  CARGO_ARGS+=("--release" "--locked")
+fi
+
+echo "Building Kynex workspace ($BUILD_PROFILE)..."
+cargo build "${CARGO_ARGS[@]}"
+
+BIN_DIR="$ROOT_DIR/target/$BUILD_PROFILE"
 
 WRAPPER="$TMP_DIR/session.sh"
 cat << EOF > "$WRAPPER"
@@ -32,11 +40,11 @@ if [[ "\${KYNEX_FAKE_UPOWER:-1}" == "1" ]]; then
 fi
 
 # Start daemon in background
-KYNEX_UPOWER_BUS=session "$ROOT_DIR/target/debug/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
+KYNEX_UPOWER_BUS=session "$BIN_DIR/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
 DAEMON_PID=\$!
 
 # Start shell in foreground
-"$ROOT_DIR/target/debug/kynex-shell" 2>&1 | tee "$SHELL_LOG" &
+"$BIN_DIR/kynex-shell" 2>&1 | tee "$SHELL_LOG" &
 SHELL_PID=\$!
 
 cleanup() {

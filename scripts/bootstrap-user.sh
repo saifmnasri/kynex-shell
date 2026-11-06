@@ -38,6 +38,10 @@ for t in "${TOOLS[@]}"; do
   fi
 done
 
+if command -v git >/dev/null 2>&1; then
+  git config --global --add safe.directory '*' 2>/dev/null || true
+fi
+
 if git rev-parse --git-dir >/dev/null 2>&1; then
   git config core.hooksPath .githooks
   chmod +x .githooks/* scripts/*.sh scripts/bench/* dev/*.sh 2>/dev/null || true

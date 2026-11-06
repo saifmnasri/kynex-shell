@@ -39,7 +39,7 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1", features = ["full"] }
-zbus = "6"
+zbus = { version = "6", default-features = false, features = ["tokio", "proxy", "service", "tracing"] }
 
 kynex-common = { path = "crates/kynex-common", version = "0.1.0" }
 kynex-ipc = { path = "crates/kynex-ipc", version = "0.1.0" }

@@ -7,33 +7,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 check_qml_tokens() {
   local target_dir="$1"
-  local violations=0
-  while IFS= read -r file; do
-    # 1. Reject org.kde.* imports
-    if grep -En '^[[:space:]]*import[[:space:]]+org\.kde\b' "$file" >/dev/null 2>&1; then
-      violations=$((violations + 1))
-    fi
-    # 2. Reject hex color literals
-    if grep -En '#[0-9a-fA-F]{3,8}\b' "$file" | grep -v '^[[:space:]]*//' >/dev/null 2>&1; then
-      violations=$((violations + 1))
-    fi
-    # 3. Reject named color string literals (e.g. "red", 'blue')
-    if grep -En '(color|border\.color)[[:space:]]*:[[:space:]]*["'\''][a-zA-Z]+["'\'']' "$file" | grep -v '^[[:space:]]*//' >/dev/null 2>&1; then
-      violations=$((violations + 1))
-    fi
-    # 4. Reject functional color constructors (Qt.rgba, rgb, etc.)
-    if grep -En '\b(Qt\.(rgba?|hsla?|color)|rgba?|hsla?)[[:space:]]*\(' "$file" | grep -v '^[[:space:]]*//' >/dev/null 2>&1; then
-      violations=$((violations + 1))
-    fi
-    # 5. Reject bare numbers and numbers inside JS expressions for styling/geometry
-    while IFS= read -r line; do
-      clean_line="${line%%//*}"
-      if echo "$clean_line" | grep -Eq '\b(font\.)?(pixelSize|width|height|spacing|radius|margins?|leftMargin|rightMargin|topMargin|bottomMargin|exclusiveZone)[[:space:]]*:[^;}]*(\b([2-9]|[1-9][0-9]+)\b|[0-9]+\.[0-9]+)'; then
-        violations=$((violations + 1))
-      fi
-    done < "$file"
-  done < <(find "$target_dir" -name '*.qml' 2>/dev/null)
-  return "$violations"
+  ./scripts/check-style-tokens.py "$target_dir" >/dev/null 2>&1
 }
 
 # Test 1: Valid QML with token bindings and allowed constants (0 and 1) must pass
@@ -234,5 +208,70 @@ if ! check_qml_tokens "$TMP_DIR/allowed_constants"; then
   exit 1
 fi
 
-echo "All style token linter attack tests passed (14/14 cases verified)!"
+# Test 15: Attack test - comparison 'percentage < 20' must fail
+mkdir -p "$TMP_DIR/attack_percentage_20"
+cat << 'EOF' > "$TMP_DIR/attack_percentage_20/Test.qml"
+import QtQuick
+Text {
+    color: (percentage < 20) ? "orange" : "green"
+}
+EOF
+if check_qml_tokens "$TMP_DIR/attack_percentage_20"; then
+  echo "FAIL: Attack test 'percentage < 20' was not rejected" >&2
+  exit 1
+fi
+
+# Test 16: Attack test - comparison 'x > 5' must fail
+mkdir -p "$TMP_DIR/attack_x_gt_5"
+cat << 'EOF' > "$TMP_DIR/attack_x_gt_5/Test.qml"
+import QtQuick
+Item {
+    visible: x > 5
+}
+EOF
+if check_qml_tokens "$TMP_DIR/attack_x_gt_5"; then
+  echo "FAIL: Attack test 'x > 5' was not rejected" >&2
+  exit 1
+fi
+
+# Test 17: Attack test - bare float literal 'opacity: 0.5' must fail
+mkdir -p "$TMP_DIR/attack_opacity_05"
+cat << 'EOF' > "$TMP_DIR/attack_opacity_05/Test.qml"
+import QtQuick
+Rectangle {
+    opacity: 0.5
+}
+EOF
+if check_qml_tokens "$TMP_DIR/attack_opacity_05"; then
+  echo "FAIL: Attack test 'opacity: 0.5' was not rejected" >&2
+  exit 1
+fi
+
+# Test 18: Attack test - JS function call 'Math.max(3, a)' must fail
+mkdir -p "$TMP_DIR/attack_math_max"
+cat << 'EOF' > "$TMP_DIR/attack_math_max/Test.qml"
+import QtQuick
+Item {
+    scale: Math.max(3, a)
+}
+EOF
+if check_qml_tokens "$TMP_DIR/attack_math_max"; then
+  echo "FAIL: Attack test 'Math.max(3, a)' was not rejected" >&2
+  exit 1
+fi
+
+# Test 19: Attack test - property declaration 'property int n: 7' must fail
+mkdir -p "$TMP_DIR/attack_property_int_7"
+cat << 'EOF' > "$TMP_DIR/attack_property_int_7/Test.qml"
+import QtQuick
+Item {
+    property int n: 7
+}
+EOF
+if check_qml_tokens "$TMP_DIR/attack_property_int_7"; then
+  echo "FAIL: Attack test 'property int n: 7' was not rejected" >&2
+  exit 1
+fi
+
+echo "All style token linter attack tests passed (19/19 cases verified)!"
 exit 0

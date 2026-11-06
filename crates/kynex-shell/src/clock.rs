@@ -1,6 +1,7 @@
 //! The live clock `QObject` exposed to QML.
 
 use core::pin::Pin;
+use cxx_qt::Threading;
 use cxx_qt_lib::QString;
 
 /// CXX-Qt bridge module for the Clock `QObject`.
@@ -26,7 +27,13 @@ pub mod qobject {
         /// Updates the clock time and date to current system time.
         #[qinvokable]
         fn update(self: Pin<&mut Self>);
+
+        /// Starts the background interval ticking every second to update the clock.
+        #[qinvokable]
+        fn init(self: Pin<&mut Self>);
     }
+
+    impl cxx_qt::Threading for Clock {}
 }
 
 /// The Rust backing data for the Clock `QObject`.
@@ -53,6 +60,27 @@ impl qobject::Clock {
         let date_qstring = QString::from(&date);
         self.as_mut().set_time(time_qstring);
         self.as_mut().set_date(date_qstring);
+    }
+
+    /// Starts the background ticker updating clock time and date every second.
+    pub fn init(self: Pin<&mut Self>) {
+        let qt_thread = self.qt_thread();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+            // First tick completes immediately; skip it to match clock state
+            interval.tick().await;
+            loop {
+                interval.tick().await;
+                let (time, date) = current_time_and_date();
+                let res = qt_thread.queue(move |mut qobj| {
+                    qobj.as_mut().set_time(QString::from(&time));
+                    qobj.as_mut().set_date(QString::from(&date));
+                });
+                if res.is_err() {
+                    break;
+                }
+            }
+        });
     }
 }
 

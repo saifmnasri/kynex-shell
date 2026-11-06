@@ -20,14 +20,48 @@ def read_cpu(pid):
 
 def read_mem(pid):
     pss = rss = 0
-    with open(f"/proc/{pid}/smaps_rollup") as f:
-        for line in f:
-            if line.startswith("Pss:"): pss = int(line.split()[1])
-            elif line.startswith("Rss:"): rss = int(line.split()[1])
+    try:
+        with open(f"/proc/{pid}/smaps_rollup") as f:
+            for line in f:
+                if line.startswith("Pss:"): pss = int(line.split()[1])
+                elif line.startswith("Rss:"): rss = int(line.split()[1])
+    except PermissionError:
+        try:
+            with open(f"/proc/{pid}/status") as f:
+                vm_rss = anon = file = 0
+                for line in f:
+                    if line.startswith("VmRSS:"): vm_rss = int(line.split()[1])
+                    elif line.startswith("RssAnon:"): anon = int(line.split()[1])
+                    elif line.startswith("RssFile:"): file = int(line.split()[1])
+                rss = vm_rss
+                pss = (anon + file // 2) if (anon or file) else rss
+        except OSError:
+            pass
     return pss, rss
 
 def threads(pid):
     return len(os.listdir(f"/proc/{pid}/task"))
+
+def get_git_sha():
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--short=8", "HEAD"], text=True).strip()
+    except Exception:
+        return "unknown"
+
+def detect_build_profile(procs):
+    for name in procs:
+        for pid in pids(name):
+            try:
+                exe = os.readlink(f"/proc/{pid}/exe")
+                if "/release/" in exe:
+                    return "release"
+                elif "/debug/" in exe:
+                    return "debug"
+            except OSError:
+                pass
+    if os.path.exists("target/release/kynex-shell"):
+        return "release"
+    return "debug"
 
 def main():
     ap = argparse.ArgumentParser()
@@ -35,6 +69,7 @@ def main():
     ap.add_argument("--procs", nargs="+", required=True)
     ap.add_argument("--duration", type=int, default=120)
     ap.add_argument("--interval", type=float, default=5.0)
+    ap.add_argument("--build-profile", choices=["release", "debug"], help="Build profile (default: auto-detected)")
     a = ap.parse_args()
 
     samples = {p: [] for p in a.procs}
@@ -54,7 +89,18 @@ def main():
                 except OSError: pass
             samples[name].append((tot_pss, tot_rss, tot_threads))
     elapsed = time.time() - t0
-    result = {"label": a.label, "date": datetime.datetime.now().isoformat(), "duration_s": round(elapsed, 1), "procs": {}}
+    git_sha = get_git_sha()
+    build_profile = a.build_profile or detect_build_profile(a.procs)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    result = {
+        "label": a.label,
+        "date": datetime.datetime.now().isoformat(),
+        "timestamp": timestamp,
+        "git_sha": git_sha,
+        "build_profile": build_profile,
+        "duration_s": round(elapsed, 1),
+        "procs": {},
+    }
     print(f"\n{'process':<16}{'PSS MB (avg)':>14}{'PSS MB (max)':>14}{'RSS MB (avg)':>14}{'threads':>9}{'CPU % (avg)':>13}")
     for name in a.procs:
         s = samples[name]
@@ -71,7 +117,8 @@ def main():
         result["procs"][name] = row
         print(f"{name:<16}{row['pss_mb_avg']:>14}{row['pss_mb_max']:>14}{row['rss_mb_avg']:>14}{row['threads']:>9}{row['cpu_pct_avg']:>13}")
     os.makedirs("dev/bench", exist_ok=True)
-    path = f"dev/bench/{datetime.date.today()}-{a.label}.json"
+    filename = f"{a.label}-{timestamp}-{git_sha}.json"
+    path = f"dev/bench/{filename}"
     with open(path, "w") as f: json.dump(result, f, indent=2)
     print(f"\nSaved {path}")
 

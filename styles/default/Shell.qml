@@ -9,7 +9,7 @@ LayerSurface {
     height: Style.spacing.panel
 
     layer: LayerSurface.LayerTop
-    anchors: LayerSurface.AnchorBottom | LayerSurface.AnchorLeft | LayerSurface.AnchorRight
+    anchors: LayerSurface.AnchorBottom + LayerSurface.AnchorLeft + LayerSurface.AnchorRight
     exclusiveZone: Style.spacing.panel
     leftMargin: 0
     rightMargin: 0
@@ -24,18 +24,12 @@ LayerSurface {
 
     Clock {
         id: clock
+        Component.onCompleted: clock.init()
     }
 
     PowerModel {
         id: powerModel
         Component.onCompleted: powerModel.init()
-    }
-
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: clock.update()
     }
 
     Rectangle {
@@ -74,7 +68,7 @@ LayerSurface {
 
             Text {
                 text: powerModel.charging ? "⚡" : "🔋"
-                color: powerModel.charging ? Style.colors.success : (powerModel.percentage < 20 ? Style.colors.warning : Style.colors.textMuted)
+                color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
                 font.family: Style.typography.family
                 font.pixelSize: Style.typography.basePx
                 anchors.verticalCenter: parent.verticalCenter
@@ -82,7 +76,7 @@ LayerSurface {
 
             Text {
                 text: Math.round(powerModel.percentage) + "%"
-                color: powerModel.percentage < 20 ? Style.colors.warning : Style.colors.text
+                color: powerModel.low ? Style.colors.warning : Style.colors.text
                 font.family: Style.typography.family
                 font.pixelSize: Style.typography.basePx
                 font.bold: true

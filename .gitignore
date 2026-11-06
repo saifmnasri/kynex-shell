@@ -23,6 +23,8 @@ CMakeCache.txt
 *.swp
 *~
 .DS_Store
+__pycache__/
+*.pyc
 
 # Internal documentation and dev tooling
 /docs/

@@ -26,7 +26,7 @@ PACKAGES=(
   dbus dbus-user-session libdbus-1-dev d-spy upower network-manager bluez udisks2 polkitd
   pipewire wireplumber libpipewire-0.3-dev
   # tools for tests, profiling, benchmarks
-  hyperfine sysstat smem valgrind heaptrack linux-tools-generic desktop-file-utils xdg-utils
+  hyperfine sysstat smem valgrind heaptrack desktop-file-utils xdg-utils
   # vm niceties
   openssh-server spice-vdagent
 )
@@ -68,7 +68,15 @@ done
 if ((${#INSTALL[@]})); then
   echo "Installing ${#INSTALL[@]} packages..."
   wait_for_dpkg_lock
-  apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "${INSTALL[@]}"
+  if ! apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "${INSTALL[@]}"; then
+    echo "Batch installation encountered an issue; installing packages individually..."
+    for p in "${INSTALL[@]}"; do
+      wait_for_dpkg_lock
+      apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false install -y --no-install-recommends "$p" || {
+        echo "WARNING: Skipping package $p which failed to install" >&2
+      }
+    done
+  fi
 else
   echo "All required system packages are already installed."
 fi

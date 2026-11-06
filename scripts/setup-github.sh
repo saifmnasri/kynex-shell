@@ -35,9 +35,19 @@ gh api -X PUT "repos/$slug/branches/main/protection" --input - <<'JSON'
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["verify", "secret-scan"]
+    "contexts": ["verify", "secret-scan"],
+    "checks": [
+      {
+        "context": "verify",
+        "app_id": 15368
+      },
+      {
+        "context": "secret-scan",
+        "app_id": 15368
+      }
+    ]
   },
-  "enforce_admins": false,
+  "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": false,
     "require_code_owner_reviews": false,
@@ -49,7 +59,7 @@ gh api -X PUT "repos/$slug/branches/main/protection" --input - <<'JSON'
   "allow_deletions": false
 }
 JSON
-echo "  Branch protection configured on main: PR required (0 approvals), strict status checks (verify, secret-scan), linear history, no force push, no deletion."
+echo "  Branch protection configured on main: PR required (0 approvals), strict status checks (verify [15368], secret-scan [15368]), enforce_admins true, linear history, no force push, no deletion."
 
 echo "Requiring signed commits on main..."
 gh api -X POST "repos/$slug/branches/main/protection/required_signatures" \

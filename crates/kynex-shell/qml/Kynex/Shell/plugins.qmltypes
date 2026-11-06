@@ -55,10 +55,13 @@ Module {
         prototype: "QObject"
         exports: ["Kynex.Shell/Clock 1.0"]
         exportMetaObjectRevisions: [256]
-        Property { name: "time"; type: "QString"; read: "time"; notify: "timeChanged" }
-        Property { name: "date"; type: "QString"; read: "date"; notify: "dateChanged" }
+        Property { name: "time"; type: "QString"; read: "time"; notify: "timeChanged"; isFinal: true }
+        Property { name: "date"; type: "QString"; read: "date"; notify: "dateChanged"; isFinal: true }
         Method {
             name: "update"
+        }
+        Method {
+            name: "init"
         }
     }
     Component {
@@ -68,9 +71,10 @@ Module {
         prototype: "QObject"
         exports: ["Kynex.Shell/PowerModel 1.0"]
         exportMetaObjectRevisions: [256]
-        Property { name: "percentage"; type: "double"; read: "percentage"; notify: "percentageChanged" }
-        Property { name: "charging"; type: "bool"; read: "charging"; notify: "chargingChanged" }
-        Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged" }
+        Property { name: "percentage"; type: "double"; read: "percentage"; notify: "percentageChanged"; isFinal: true }
+        Property { name: "charging"; type: "bool"; read: "charging"; notify: "chargingChanged"; isFinal: true }
+        Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged"; isFinal: true }
+        Property { name: "low"; type: "bool"; read: "low"; notify: "lowChanged"; isFinal: true }
         Method {
             name: "init"
         }
