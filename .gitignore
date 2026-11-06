@@ -17,6 +17,7 @@ CMakeCache.txt
 # Dev / logs / temporary files
 /dev/*
 !/dev/run-nested.sh
+!/dev/fake-upower.py
 *.log
 *.tmp
 *.swp

@@ -2,12 +2,14 @@
 #include "layersurface.h"
 #include "style.h"
 #include "kynex-shell/src/clock.cxxqt.h"
+#include "kynex-shell/src/power.cxxqt.h"
 #include <QtQml>
 
 void kynex_register_core_types()
 {
     qmlRegisterType<LayerSurface>("Kynex.Shell", 1, 0, "LayerSurface");
     qmlRegisterType<Clock>("Kynex.Shell", 1, 0, "Clock");
+    qmlRegisterType<PowerModel>("Kynex.Shell", 1, 0, "PowerModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
 }
 

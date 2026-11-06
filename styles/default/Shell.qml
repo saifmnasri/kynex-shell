@@ -26,6 +26,11 @@ LayerSurface {
         id: clock
     }
 
+    PowerModel {
+        id: powerModel
+        Component.onCompleted: powerModel.init()
+    }
+
     Timer {
         interval: 1000
         running: true
@@ -54,6 +59,32 @@ LayerSurface {
                 color: Style.colors.text
                 font.family: Style.typography.family
                 font.pixelSize: Style.typography.basePx + 1
+                font.bold: true
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Row {
+            id: batteryIndicator
+            visible: powerModel.present
+            anchors.right: parent.right
+            anchors.rightMargin: Style.spacing.large
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.spacing.small
+
+            Text {
+                text: powerModel.charging ? "⚡" : "🔋"
+                color: powerModel.charging ? Style.colors.success : (powerModel.percentage < 20 ? Style.colors.warning : Style.colors.textMuted)
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+                text: Math.round(powerModel.percentage) + "%"
+                color: powerModel.percentage < 20 ? Style.colors.warning : Style.colors.text
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
