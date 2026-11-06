@@ -18,7 +18,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use tempfile::tempdir;
 
-use kynex_daemon::services::apps::{AppsServer, AppsSharedState};
+use futures_util::StreamExt;
+use kynex_daemon::services::apps::{
+    build_clean_environment, setup_apps_watcher, spawn_detached, AppsServer, AppsSharedState,
+};
 use kynex_ipc::apps::{Apps1Proxy, APPS_PATH};
 use kynex_ipc::DAEMON_DESTINATION;
 use tokio::io::AsyncBufReadExt;
@@ -218,4 +221,255 @@ Terminal=true
     assert!(rate_limited, "Rate limiting must trigger after 5 calls/s");
 
     drop(conn);
+}
+
+#[tokio::test]
+async fn test_apps_watcher_service_level_integration() {
+    let bus = TestBus::new().await.expect("Spawn test dbus");
+    let tmp = tempdir().unwrap();
+    let app_dir = tmp.path().join("applications");
+    fs::create_dir_all(&app_dir).unwrap();
+
+    let shared = Arc::new(AppsSharedState::new(vec![app_dir.clone()], "Kynex"));
+    shared.reload().await;
+    let server = AppsServer::new(Arc::clone(&shared));
+
+    let conn = zbus::connection::Builder::address(bus.address())
+        .name(DAEMON_DESTINATION)
+        .serve_at(APPS_PATH, server)
+        .build()
+        .await
+        .expect("Connection build");
+
+    let emitter = zbus::object_server::SignalEmitter::new(&conn, APPS_PATH).expect("Emitter build");
+    let _watcher = setup_apps_watcher(Arc::clone(&shared), emitter);
+
+    let client_conn = zbus::connection::Builder::address(bus.address())
+        .build()
+        .await
+        .expect("Client build");
+
+    let proxy = Apps1Proxy::builder(&client_conn)
+        .destination(DAEMON_DESTINATION)
+        .path(APPS_PATH)
+        .build()
+        .await
+        .expect("Proxy build");
+
+    let mut changed_stream = proxy
+        .receive_changed()
+        .await
+        .expect("receive_changed stream");
+
+    // 1. Create a .desktop file -> GetApps() reflects, Changed() emitted
+    let live_file = app_dir.join("live-app.desktop");
+    fs::write(
+        &live_file,
+        "[Desktop Entry]\nType=Application\nName=Live App 1\nExec=true\n",
+    )
+    .unwrap();
+
+    let sig = tokio::time::timeout(Duration::from_millis(2000), changed_stream.next()).await;
+    assert!(sig.is_ok(), "Must receive Changed signal on file creation");
+    let apps = proxy.get_apps().await.unwrap();
+    assert!(
+        apps.iter()
+            .any(|a| a.id == "live-app.desktop" && a.name == "Live App 1"),
+        "GetApps() must reflect created .desktop file"
+    );
+
+    // 2. Modify the .desktop file -> GetApps() reflects, Changed() emitted
+    fs::write(
+        &live_file,
+        "[Desktop Entry]\nType=Application\nName=Live App Modified\nExec=true\n",
+    )
+    .unwrap();
+
+    let sig = tokio::time::timeout(Duration::from_millis(2000), changed_stream.next()).await;
+    assert!(
+        sig.is_ok(),
+        "Must receive Changed signal on file modification"
+    );
+    let apps = proxy.get_apps().await.unwrap();
+    assert!(
+        apps.iter()
+            .any(|a| a.id == "live-app.desktop" && a.name == "Live App Modified"),
+        "GetApps() must reflect modified .desktop file"
+    );
+
+    // 3. Rename (atomic save: write .tmp then rename) -> GetApps() reflects, Changed() emitted
+    let tmp_file = app_dir.join("live-app.desktop.tmp");
+    fs::write(
+        &tmp_file,
+        "[Desktop Entry]\nType=Application\nName=Live App Atomic\nExec=true\n",
+    )
+    .unwrap();
+    fs::rename(&tmp_file, &live_file).unwrap();
+
+    let sig = tokio::time::timeout(Duration::from_millis(2000), changed_stream.next()).await;
+    assert!(sig.is_ok(), "Must receive Changed signal on atomic rename");
+    let apps = proxy.get_apps().await.unwrap();
+    assert!(
+        apps.iter()
+            .any(|a| a.id == "live-app.desktop" && a.name == "Live App Atomic"),
+        "GetApps() must reflect atomic save rename"
+    );
+
+    // 4. Delete the .desktop file -> GetApps() reflects, Changed() emitted
+    fs::remove_file(&live_file).unwrap();
+
+    let sig = tokio::time::timeout(Duration::from_millis(2000), changed_stream.next()).await;
+    assert!(sig.is_ok(), "Must receive Changed signal on file deletion");
+    let apps = proxy.get_apps().await.unwrap();
+    assert!(
+        !apps.iter().any(|a| a.id == "live-app.desktop"),
+        "GetApps() must reflect deleted .desktop file"
+    );
+
+    // 5. Burst of 1,000 file operations -> exactly ONE Changed() signal observed per burst
+    for i in 0..1000 {
+        let name = format!("burst-{}.desktop", i % 25);
+        let content = format!("[Desktop Entry]\nType=Application\nName=Burst {i}\nExec=true\n");
+        fs::write(app_dir.join(&name), content).unwrap();
+    }
+
+    let burst_sig = tokio::time::timeout(Duration::from_millis(3000), changed_stream.next()).await;
+    assert!(burst_sig.is_ok(), "Must receive Changed signal for burst");
+
+    // Wait 500ms (well past the 200ms debounce quiet period) to assert NO additional signals arrive
+    let extra_sig = tokio::time::timeout(Duration::from_millis(500), changed_stream.next()).await;
+    assert!(
+        extra_sig.is_err(),
+        "Exactly ONE Changed signal must be observed per burst (no extraneous signals)"
+    );
+}
+
+#[tokio::test]
+async fn test_child_process_zombie_reaping_regression() {
+    let tmp = tempdir().unwrap();
+    let app_dir = tmp.path().join("applications");
+    fs::create_dir_all(&app_dir).unwrap();
+
+    let shared = Arc::new(AppsSharedState::new(vec![app_dir], "Kynex"));
+    let env_allowlist = build_clean_environment();
+
+    let script = tmp.path().join("quick_exit.sh");
+    fs::write(&script, "#!/bin/sh\nexit 0\n").unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+
+    let argv = vec![script.to_string_lossy().to_string()];
+    for _ in 0..50 {
+        spawn_detached(&argv, &env_allowlist, shared.waiter_semaphore()).expect("spawn child");
+    }
+
+    // Wait 1 second for all 50 children to exit and be reaped
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    // Verify zero zombie children of the current process exist
+    let my_pid = std::process::id();
+    let output = std::process::Command::new("bash")
+        .arg("-c")
+        .arg("ps -eo stat,pid,ppid,cmd | grep ' Z'")
+        .output()
+        .expect("ps");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let my_zombies: Vec<&str> = stdout
+        .lines()
+        .filter(|l| {
+            let mut parts = l.split_whitespace();
+            let stat = parts.next().unwrap_or("");
+            let _pid = parts.next().unwrap_or("");
+            let ppid = parts.next().unwrap_or("");
+            stat.starts_with('Z') && ppid == my_pid.to_string()
+        })
+        .collect();
+
+    assert!(
+        my_zombies.is_empty(),
+        "Expected zero zombie children after 1 s, found: {my_zombies:?}"
+    );
+}
+
+#[tokio::test]
+async fn test_daemon_wide_launch_rate_limiter() {
+    let bus = TestBus::new().await.expect("Spawn test dbus");
+    let tmp = tempdir().unwrap();
+    let app_dir = tmp.path().join("applications");
+    fs::create_dir_all(&app_dir).unwrap();
+
+    let script = tmp.path().join("dummy.sh");
+    fs::write(&script, "#!/bin/sh\nexit 0\n").unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+
+    let desktop = format!(
+        "[Desktop Entry]\nType=Application\nName=Dummy\nExec={}\n",
+        script.display()
+    );
+    fs::write(app_dir.join("dummy.desktop"), desktop).unwrap();
+
+    let shared = Arc::new(AppsSharedState::new(vec![app_dir], "Kynex"));
+    shared.reload().await;
+    let server = AppsServer::new(Arc::clone(&shared));
+
+    let _srv_conn = zbus::connection::Builder::address(bus.address())
+        .name(DAEMON_DESTINATION)
+        .serve_at(APPS_PATH, server)
+        .build()
+        .await
+        .expect("Server conn");
+
+    // Create 10 distinct D-Bus connections
+    let mut proxies = Vec::new();
+    for _ in 0..10 {
+        let conn = zbus::connection::Builder::address(bus.address())
+            .build()
+            .await
+            .expect("Client conn");
+        let proxy = Apps1Proxy::builder(&conn)
+            .destination(DAEMON_DESTINATION)
+            .path(APPS_PATH)
+            .build()
+            .await
+            .expect("Proxy build");
+        proxies.push(proxy);
+    }
+
+    // Launch all 10 within 20 ms
+    let start = std::time::Instant::now();
+    let futures: Vec<_> = proxies.iter().map(|p| p.launch("dummy.desktop")).collect();
+    let results = futures_util::future::join_all(futures).await;
+    let duration = start.elapsed();
+    assert!(
+        duration < Duration::from_millis(500),
+        "Launches took too long: {duration:?}"
+    );
+
+    let mut successes = 0;
+    let mut rate_limited = 0;
+    for res in results {
+        match res {
+            Ok(()) => successes += 1,
+            Err(zbus::Error::FDO(fdo_err)) => match *fdo_err {
+                zbus::fdo::Error::LimitsExceeded(_) => rate_limited += 1,
+                other => panic!("Unexpected FDO error: {other:?}"),
+            },
+            Err(zbus::Error::MethodError(name, msg, _)) => {
+                if name.as_str() == "org.freedesktop.DBus.Error.LimitsExceeded"
+                    || msg.as_deref().unwrap_or("").contains("rate limit exceeded")
+                {
+                    rate_limited += 1;
+                } else {
+                    panic!("Unexpected error: {name} - {msg:?}");
+                }
+            }
+            Err(e) => panic!("Unexpected error type: {e:?}"),
+        }
+    }
+
+    assert_eq!(successes, 5, "Exactly 5 launches must succeed daemon-wide");
+    assert_eq!(
+        rate_limited, 5,
+        "Exactly 5 launches must be rate-limited with LimitsExceeded"
+    );
 }

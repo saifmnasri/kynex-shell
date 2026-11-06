@@ -27,13 +27,18 @@ fn test_decode_escapes() {
     );
     assert_eq!(decode_escapes(r"Semi\;Colon"), "Semi;Colon");
     assert_eq!(decode_escapes(r"Carriage\rReturn"), "Carriage\rReturn");
+    assert_eq!(decode_escapes(r"Unknown\qEscape"), "UnknownqEscape");
+    assert_eq!(decode_escapes("Trailing\\"), "Trailing\\");
 }
 
 #[test]
 fn test_parse_string_list() {
-    let raw = r"First;Second\;WithSemi;Third;";
+    let raw = r"First;Second\;WithSemi;Third;Back\\slash;";
     let list = parse_string_list(raw);
-    assert_eq!(list, vec!["First", "Second;WithSemi", "Third"]);
+    assert_eq!(
+        list,
+        vec!["First", "Second;WithSemi", "Third", "Back\\slash"]
+    );
 }
 
 #[test]

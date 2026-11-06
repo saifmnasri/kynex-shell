@@ -3,25 +3,28 @@
 //! Provides zero-polling, securely sandboxed application launching, prefix/word-start
 //! ranked search, and debounced inotify watching over `$XDG_DATA_DIRS/applications`.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Instant;
 
 use kynex_apps_index::{parse_exec, AppsIndex, AppsWatcher, DesktopEntry, ExecContext};
 use kynex_ipc::apps::AppItem;
-use tokio::sync::{Mutex, RwLock};
-use tracing::{info, warn};
+use tokio::process::Command as TokioCommand;
+use tokio::sync::{Mutex, RwLock, Semaphore};
+use tracing::{debug, info, warn};
 use zbus::fdo::DBusProxy;
 use zbus::message::Header;
 use zbus::object_server::SignalEmitter;
 use zbus::{interface, Connection};
 
-/// Default maximum allowed launches per second from any single client.
+/// Default maximum allowed launches per second daemon-wide.
 pub const LAUNCH_RATE_LIMIT_PER_SEC: u32 = 5;
 
-/// Rate limiting bucket for a single sender bus name.
+/// Maximum concurrent asynchronous child waiter tasks.
+const MAX_CONCURRENT_WAITERS: usize = 64;
+
+/// Rate limiting bucket for launch rate throttling.
 #[derive(Debug)]
 struct RateLimitBucket {
     window_start: Instant,
@@ -51,15 +54,17 @@ impl RateLimitBucket {
     }
 }
 
-/// Shared internal state holding application index and launch rate limiters.
+/// Shared internal state holding application index, daemon-wide rate limiter, and process waiters.
 #[derive(Debug)]
 pub struct AppsSharedState {
     /// In-memory application index.
     pub index: RwLock<AppsIndex>,
     /// Search application directories.
     pub dirs: Vec<PathBuf>,
-    /// Rate limiters mapped by sender bus name.
-    rate_limiters: Mutex<HashMap<String, RateLimitBucket>>,
+    /// Daemon-wide launch rate limiter (all callers share session UID).
+    launch_limiter: Mutex<RateLimitBucket>,
+    /// Semaphore bounding concurrent child process waiter tasks.
+    waiter_semaphore: Arc<Semaphore>,
     /// Active desktop environment.
     pub current_desktop: String,
 }
@@ -74,7 +79,8 @@ impl AppsSharedState {
         Self {
             index: RwLock::new(index),
             dirs,
-            rate_limiters: Mutex::new(HashMap::new()),
+            launch_limiter: Mutex::new(RateLimitBucket::new(Instant::now())),
+            waiter_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_WAITERS)),
             current_desktop: desktop,
         }
     }
@@ -87,7 +93,13 @@ impl AppsSharedState {
         }
     }
 
-    /// Verifies caller UID matches daemon session UID and enforces launch rate limiting.
+    /// Returns the semaphore governing concurrent process waiters.
+    #[must_use]
+    pub fn waiter_semaphore(&self) -> Arc<Semaphore> {
+        Arc::clone(&self.waiter_semaphore)
+    }
+
+    /// Verifies caller UID matches daemon session UID and enforces daemon-wide launch rate limiting.
     ///
     /// # Errors
     ///
@@ -103,15 +115,11 @@ impl AppsSharedState {
         }
 
         let now = Instant::now();
-        let mut buckets = self.rate_limiters.lock().await;
-        let bucket = buckets
-            .entry(sender.to_string())
-            .or_insert_with(|| RateLimitBucket::new(now));
-
-        if !bucket.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
-            warn!("Launch rate limit exceeded for sender '{sender}' (> {LAUNCH_RATE_LIMIT_PER_SEC} calls/s)");
+        let mut limiter = self.launch_limiter.lock().await;
+        if !limiter.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
+            warn!("Daemon-wide launch rate limit exceeded (> {LAUNCH_RATE_LIMIT_PER_SEC} calls/s) by caller '{sender}'");
             return Err(zbus::fdo::Error::LimitsExceeded(format!(
-                "Launch rate limit exceeded (max {LAUNCH_RATE_LIMIT_PER_SEC} calls/s)"
+                "Launch rate limit exceeded (max {LAUNCH_RATE_LIMIT_PER_SEC} calls/s daemon-wide)"
             )));
         }
 
@@ -248,8 +256,12 @@ impl AppsServer {
         info!("Apps1: launching application ID '{id}'");
 
         let env_allowlist = build_clean_environment();
-        spawn_detached(&argv, &env_allowlist)
-            .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
+        spawn_detached(
+            &argv,
+            &env_allowlist,
+            Arc::clone(&self.shared.waiter_semaphore),
+        )
+        .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
 
         Ok(())
     }
@@ -277,19 +289,29 @@ pub fn build_clean_environment() -> Vec<(String, String)> {
     clean_env
 }
 
-/// Spawns an application completely detached from the daemon with a clean environment.
+/// Spawns an application detached with a clean environment and reaps exit status without zombies.
 ///
 /// Desktop Entry Specification Section "The Exec key": Never passes through a shell.
 /// Uses `process_group(0)` to detach process group, null stdin/stdout/stderr to prevent fd leaks,
 /// and `env_clear()` with allowlist to prevent environment leakage.
-/// When the daemon restarts, detached processes are reparented to PID 1 / user manager
-/// and automatically reaped upon exit, preventing zombies.
-fn spawn_detached(argv: &[String], env_vars: &[(String, String)]) -> Result<(), String> {
+/// Uses an asynchronous tokio waiter task bounded by a semaphore cap (`MAX_CONCURRENT_WAITERS`)
+/// to reap child exit status automatically, preventing zombies while the daemon is running.
+/// If the daemon terminates or restarts, detached processes survive and are reparented
+/// to the session subreaper (systemd user manager / PID 1) for reaping upon exit.
+///
+/// # Errors
+///
+/// Returns an error string if `argv` is empty or if process spawning fails.
+pub fn spawn_detached(
+    argv: &[String],
+    env_vars: &[(String, String)],
+    semaphore: Arc<Semaphore>,
+) -> Result<(), String> {
     if argv.is_empty() {
         return Err("argv is empty".to_string());
     }
 
-    let mut cmd = Command::new(&argv[0]);
+    let mut cmd = TokioCommand::new(&argv[0]);
     if argv.len() > 1 {
         cmd.args(&argv[1..]);
     }
@@ -301,12 +323,25 @@ fn spawn_detached(argv: &[String], env_vars: &[(String, String)]) -> Result<(), 
 
     #[cfg(unix)]
     {
-        use std::os::unix::process::CommandExt;
         cmd.process_group(0);
     }
 
-    cmd.spawn()
+    let mut child = cmd
+        .spawn()
         .map_err(|e| format!("Direct spawn failed: {e}"))?;
+
+    let child_id = child.id();
+    tokio::spawn(async move {
+        let _permit = semaphore.acquire_owned().await;
+        match child.wait().await {
+            Ok(status) => {
+                debug!("Reaped launched child process {:?}: {status}", child_id);
+            }
+            Err(e) => {
+                warn!("Error waiting on child process {:?}: {e}", child_id);
+            }
+        }
+    });
 
     Ok(())
 }
@@ -316,12 +351,13 @@ pub fn setup_apps_watcher(
     shared: Arc<AppsSharedState>,
     emitter: SignalEmitter<'static>,
 ) -> Option<AppsWatcher> {
+    let handle = tokio::runtime::Handle::try_current().ok()?;
     let dirs = shared.dirs.clone();
 
     AppsWatcher::new(&dirs, move || {
         let shared = Arc::clone(&shared);
         let emitter = emitter.clone();
-        tokio::spawn(async move {
+        handle.spawn(async move {
             shared.reload().await;
             let _ = AppsServer::changed(&emitter).await;
         });

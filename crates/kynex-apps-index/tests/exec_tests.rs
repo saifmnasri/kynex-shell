@@ -129,3 +129,50 @@ fn test_hostile_exec_attacks_never_interpreted_by_shell() {
         }
     }
 }
+
+#[test]
+fn test_url_and_file_field_code_expansions() {
+    let files_single = ["/tmp/document.pdf"];
+    let urls_single = ["https://kynex.org"];
+    let ctx_single = ExecContext {
+        files: &files_single,
+        urls: &urls_single,
+        icon: "kynex-icon",
+        name: "Kynex App",
+        file_path: "/usr/share/applications/kynex.desktop",
+    };
+
+    let argv_single = parse_exec("viewer %u %U %f %F", &ctx_single).unwrap();
+    assert_eq!(
+        argv_single,
+        vec![
+            "viewer",
+            "https://kynex.org",
+            "https://kynex.org",
+            "/tmp/document.pdf",
+            "/tmp/document.pdf"
+        ]
+    );
+
+    let files_multi = ["/tmp/doc1.pdf", "/tmp/doc2.pdf"];
+    let urls_multi = ["https://kynex.org/1", "https://kynex.org/2"];
+    let ctx_multi = ExecContext {
+        files: &files_multi,
+        urls: &urls_multi,
+        icon: "",
+        name: "Kynex App",
+        file_path: "/usr/share/applications/kynex.desktop",
+    };
+
+    let argv_multi = parse_exec("viewer %U %F", &ctx_multi).unwrap();
+    assert_eq!(
+        argv_multi,
+        vec![
+            "viewer",
+            "https://kynex.org/1",
+            "https://kynex.org/2",
+            "/tmp/doc1.pdf",
+            "/tmp/doc2.pdf"
+        ]
+    );
+}

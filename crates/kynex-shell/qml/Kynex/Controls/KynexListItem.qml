@@ -17,6 +17,10 @@ FocusScope {
     readonly property bool labelVisible: label.visible
     readonly property bool secondaryLabelVisible: subLabel.visible
     readonly property int cursorShape: mouseArea.cursorShape
+    readonly property color backgroundColor: bg.color
+    readonly property color textColor: label.color
+    readonly property real iconX: iconImage.x
+    readonly property real labelX: textColumn.x
 
     signal clicked()
     signal pressed()
@@ -99,6 +103,7 @@ FocusScope {
         }
 
         Column {
+            id: textColumn
             anchors.verticalCenter: parent.verticalCenter
             spacing: 0
 

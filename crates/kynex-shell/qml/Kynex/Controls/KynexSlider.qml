@@ -12,6 +12,10 @@ FocusScope {
     readonly property color borderColor: handle.border.color
     readonly property int borderWidth: handle.border.width
     readonly property int cursorShape: mouseArea.cursorShape
+    readonly property color trackColor: track.color
+    readonly property color filledTrackColor: filledTrack.color
+    readonly property color handleColor: handle.color
+    readonly property color handleBorderColor: handle.border.color
 
     signal moved(real value)
 

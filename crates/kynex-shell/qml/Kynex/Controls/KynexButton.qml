@@ -15,6 +15,10 @@ FocusScope {
     readonly property int borderWidth: bg.border.width
     readonly property bool labelVisible: label.visible
     readonly property int cursorShape: mouseArea.cursorShape
+    readonly property color backgroundColor: bg.color
+    readonly property color textColor: label.color
+    readonly property real iconX: iconImage.x
+    readonly property real labelX: label.x
 
     signal clicked()
     signal middleClicked()

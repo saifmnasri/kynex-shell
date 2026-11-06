@@ -22,6 +22,14 @@ use zbus::object_server::SignalEmitter;
 #[allow(clippy::too_many_lines)]
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Install panic hook: abort process immediately on any thread panic so systemd restarts it
+    let default_panic_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        tracing::error!("FATAL: kynex-daemon thread panicked: {info}");
+        default_panic_hook(info);
+        std::process::abort();
+    }));
+
     tracing_subscriber::fmt::init();
     info!("Starting kynex-daemon v{}", env!("CARGO_PKG_VERSION"));
 

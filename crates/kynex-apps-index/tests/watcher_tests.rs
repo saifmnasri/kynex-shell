@@ -131,3 +131,33 @@ fn test_watcher_directory_and_nonexistent_handling() {
 
     assert_eq!(trigger_count.load(Ordering::SeqCst), 1);
 }
+
+#[test]
+fn test_watcher_ignores_non_desktop_files_and_clean_drop() {
+    let tmp = tempdir().unwrap();
+    let app_dir = tmp.path().join("applications");
+    fs::create_dir_all(&app_dir).unwrap();
+
+    let trigger_count = Arc::new(AtomicUsize::new(0));
+    let trigger_clone = Arc::clone(&trigger_count);
+
+    let watcher = AppsWatcher::new(&[app_dir.clone()], move || {
+        trigger_clone.fetch_add(1, Ordering::SeqCst);
+    })
+    .expect("Watcher must initialize");
+
+    // Write a .txt file: should NOT trigger callback
+    let txt_file = app_dir.join("notes.txt");
+    fs::write(&txt_file, b"random text").unwrap();
+    sleep(Duration::from_millis(300));
+    assert_eq!(trigger_count.load(Ordering::SeqCst), 0);
+
+    // Write a file with .desktop in name: should trigger callback
+    let tmp_desktop = app_dir.join("app.desktop.tmp_123");
+    fs::write(&tmp_desktop, b"[Desktop Entry]\nName=Tmp\n").unwrap();
+    sleep(Duration::from_millis(350));
+    assert_eq!(trigger_count.load(Ordering::SeqCst), 1);
+
+    // Explicit drop should cleanly terminate the worker thread without panic
+    drop(watcher);
+}

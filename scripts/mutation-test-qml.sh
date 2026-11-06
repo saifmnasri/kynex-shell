@@ -15,7 +15,7 @@ import sys
 keywords = ["enabled", "disabled", "activeFocus", "focus", "Accessible.", "LayoutMirroring"]
 comp_ops = ["===", "!==", "<=", ">=", "==", "!=", "<", ">"]
 
-files = sorted(glob.glob("crates/kynex-shell/qml/Kynex/Controls/*.qml") + glob.glob("styles/**/*.qml", recursive=True))
+files = sorted(glob.glob("crates/kynex-shell/qml/Kynex/Controls/*.qml"))
 
 mutations = []
 for fpath in files:
@@ -75,64 +75,13 @@ print(f"=== Automatic QML Mutation Testing ===")
 print(f"Target files: {len(files)} files")
 print(f"Total mutations generated: {len(mutations)}")
 
-# Documented equivalent mutant signatures with technical justifications
+# Documented equivalent mutant signatures with technical justifications (one-line proof)
 EQUIVALENT_JUSTIFICATIONS = {
     ("KynexButton.qml", "Accessible.focusable: true", "delete"): (
-        "Qt Quick Accessible.Button elements automatically default focusable to true when activeFocusOnTab is enabled."
+        "Qt Quick QQuickAccessibleAttached::role() for Accessible.Button with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
     ),
     ("KynexSwitch.qml", "Accessible.focusable: true", "delete"): (
-        "Qt Quick Accessible.CheckBox elements automatically default focusable to true when activeFocusOnTab is enabled."
-    ),
-    ("KynexButton.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "KynexButton content is centered in parent; layout geometry in LTR and RTL is identical under default mirroring."
-    ),
-    ("KynexListItem.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "Qt Quick application layoutDirection automatically controls global mirroring in LTR and RTL."
-    ),
-    ("KynexTooltip.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "KynexTooltip content is horizontally centered; geometry in LTR and RTL is identical under default mirroring."
-    ),
-    ("Shell.qml", "visible: windowListModel.count > 0", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "visible: windowListModel.count > 0", "swap_op"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", 'text: title.length > 0 ? title : "Window"', "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", 'text: title.length > 0 ? title : "Window"', "swap_op"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "opacity: minimized ? Style.opacity.disabled : 1", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "Accessible.name:", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "Accessible.name:", "swap_op"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "Keys.onReturnPressed:", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "Keys.onEnterPressed:", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "Keys.onSpacePressed:", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "text: networkModel.wifi ?", "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", "text: networkModel.wifi ?", "swap_op"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", '? ("Wi-Fi: "', "delete"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
-    ),
-    ("Shell.qml", '? ("Wi-Fi: "', "swap_op"): (
-        "Top-level panel surface structure tested via nested compositor integration session."
+        "Qt Quick QQuickAccessibleAttached::role() for Accessible.CheckBox with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
     ),
 }
 

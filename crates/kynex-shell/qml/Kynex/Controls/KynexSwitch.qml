@@ -14,6 +14,10 @@ FocusScope {
     readonly property int borderWidth: track.border.width
     readonly property bool labelVisible: label.visible
     readonly property int cursorShape: mouseArea.cursorShape
+    readonly property color trackColor: track.color
+    readonly property color thumbColor: thumb.color
+    readonly property real trackX: track.x
+    readonly property real labelX: label.x
 
     signal toggled(bool checked)
 

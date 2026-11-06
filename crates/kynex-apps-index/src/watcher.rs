@@ -13,12 +13,21 @@ use std::time::Duration;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tracing::{debug, error, info, warn};
 
+/// Internal message passed through the inotify channel to the debounce worker.
+enum WatcherEvent {
+    /// A relevant filesystem change occurred.
+    FsEvent,
+    /// Watcher is stopping.
+    Stop,
+}
+
 /// Callback invoked when application directory changes settle.
 pub type ChangeCallback = Arc<dyn Fn() + Send + Sync + 'static>;
 
 /// Handle managing the background inotify filesystem watcher.
 pub struct AppsWatcher {
-    _watcher: RecommendedWatcher,
+    watcher: Option<RecommendedWatcher>,
+    stop_tx: Option<mpsc::Sender<WatcherEvent>>,
     running: Arc<AtomicBool>,
     thread_handle: Option<JoinHandle<()>>,
 }
@@ -34,7 +43,7 @@ impl AppsWatcher {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        let (tx, rx) = mpsc::channel::<()>();
+        let (tx, rx) = mpsc::channel::<WatcherEvent>();
         let running = Arc::new(AtomicBool::new(true));
 
         let tx_clone = tx.clone();
@@ -42,7 +51,7 @@ impl AppsWatcher {
             move |res: Result<Event, notify::Error>| match res {
                 Ok(event) => {
                     if is_relevant_event(&event) {
-                        let _ = tx_clone.send(());
+                        let _ = tx_clone.send(WatcherEvent::FsEvent);
                     }
                 }
                 Err(err) => {
@@ -76,7 +85,8 @@ impl AppsWatcher {
             })?;
 
         Ok(Self {
-            _watcher: watcher,
+            watcher: Some(watcher),
+            stop_tx: Some(tx),
             running,
             thread_handle: Some(thread_handle),
         })
@@ -86,6 +96,10 @@ impl AppsWatcher {
 impl Drop for AppsWatcher {
     fn drop(&mut self) {
         self.running.store(false, Ordering::Relaxed);
+        if let Some(tx) = self.stop_tx.take() {
+            let _ = tx.send(WatcherEvent::Stop);
+        }
+        drop(self.watcher.take());
         if let Some(handle) = self.thread_handle.take() {
             let _ = handle.join();
         }
@@ -121,21 +135,24 @@ fn is_relevant_event(event: &Event) -> bool {
 /// Runs the 200ms debounce loop on incoming change notifications.
 #[allow(clippy::needless_pass_by_value)]
 fn run_debounce_loop(
-    rx: mpsc::Receiver<()>,
+    rx: mpsc::Receiver<WatcherEvent>,
     running: Arc<AtomicBool>,
     on_changed: Arc<dyn Fn() + Send + Sync>,
 ) {
     const DEBOUNCE_TIME: Duration = Duration::from_millis(200);
 
     while running.load(Ordering::Relaxed) {
-        // Block until first event in burst
-        match rx.recv_timeout(Duration::from_millis(100)) {
-            Ok(()) => {
+        // Block until first event in burst with ZERO polling (futex sleep)
+        match rx.recv() {
+            Ok(WatcherEvent::FsEvent) => {
                 // Drain any additional rapid events until DEBOUNCE_TIME quiet period passes
                 loop {
                     match rx.recv_timeout(DEBOUNCE_TIME) {
-                        Ok(()) => {
+                        Ok(WatcherEvent::FsEvent) => {
                             // Another event arrived during debounce window; restart quiet timer
+                        }
+                        Ok(WatcherEvent::Stop) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                            return;
                         }
                         Err(mpsc::RecvTimeoutError::Timeout) => {
                             // 200ms quiet window elapsed: fire single callback
@@ -143,16 +160,10 @@ fn run_debounce_loop(
                             on_changed();
                             break;
                         }
-                        Err(mpsc::RecvTimeoutError::Disconnected) => {
-                            return;
-                        }
                     }
                 }
             }
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // Keep checking running flag
-            }
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
+            Ok(WatcherEvent::Stop) | Err(mpsc::RecvError) => {
                 break;
             }
         }

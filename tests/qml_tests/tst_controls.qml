@@ -714,5 +714,152 @@ Item {
             compare(listItem.selected, true);
             compare(listItemClickedSpy.count, 0);
         }
+
+        function test_controls_rtl_layout_mirroring(): void {
+            // 1. Assert LTR baseline
+            LayoutHelper.setRtl(false);
+            compare(Qt.locale().textDirection, Qt.LeftToRight);
+
+            // Re-instantiate buttons in LTR to check position ordering
+            let testIcon = Qt.resolvedUrl("test_icon.png");
+            let ltrButton = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexButton { text: 'Test'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let ltrSwitch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSwitch { text: 'Toggle Option'; width: 200 }",
+                root
+            );
+            let ltrItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexListItem { text: 'List Item'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let ltrSlider = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSlider { width: 200 }",
+                root
+            );
+            let ltrTooltip = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
+                root
+            );
+
+            wait(50);
+
+            verify(!ltrButton.LayoutMirroring.enabled, "LTR button LayoutMirroring must be disabled");
+            verify(ltrButton.iconX < ltrButton.labelX, "In LTR, icon must be to the left of label");
+
+            verify(!ltrSwitch.LayoutMirroring.enabled, "LTR switch LayoutMirroring must be disabled");
+            verify(ltrSwitch.trackX < ltrSwitch.labelX, "In LTR, track must be to the left of label");
+
+            verify(!ltrItem.LayoutMirroring.enabled, "LTR list item LayoutMirroring must be disabled");
+            verify(ltrItem.iconX < ltrItem.labelX, "In LTR, icon must be to the left of label");
+
+            verify(!ltrSlider.LayoutMirroring.enabled, "LTR slider LayoutMirroring must be disabled");
+            verify(!ltrTooltip.LayoutMirroring.enabled, "LTR tooltip LayoutMirroring must be disabled");
+
+            ltrButton.destroy();
+            ltrSwitch.destroy();
+            ltrItem.destroy();
+            ltrSlider.destroy();
+            ltrTooltip.destroy();
+
+            // 2. Switch to RTL locale and verify LayoutMirroring enabled and mirrored positions
+            LayoutHelper.setRtl(true);
+            compare(Qt.locale().textDirection, Qt.RightToLeft);
+
+            let rtlButton = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexButton { text: 'Test'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let rtlSwitch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSwitch { text: 'Toggle Option'; width: 200 }",
+                root
+            );
+            let rtlItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexListItem { text: 'List Item'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let rtlSlider = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSlider { width: 200 }",
+                root
+            );
+            let rtlTooltip = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
+                root
+            );
+
+            wait(50);
+
+            verify(rtlButton.LayoutMirroring.enabled, "RTL button LayoutMirroring must be enabled");
+            verify(rtlButton.iconX > rtlButton.labelX, "In RTL, icon must be mirrored to the right of label");
+
+            verify(rtlSwitch.LayoutMirroring.enabled, "RTL switch LayoutMirroring must be enabled");
+            verify(rtlSwitch.trackX > rtlSwitch.labelX, "In RTL, track must be mirrored to the right of label");
+
+            verify(rtlItem.LayoutMirroring.enabled, "RTL list item LayoutMirroring must be enabled");
+            verify(rtlItem.iconX > rtlItem.labelX, "In RTL, icon must be mirrored to the right of label");
+
+            verify(rtlSlider.LayoutMirroring.enabled, "RTL slider LayoutMirroring must be enabled");
+            verify(rtlTooltip.LayoutMirroring.enabled, "RTL tooltip LayoutMirroring must be enabled");
+
+            rtlButton.destroy();
+            rtlSwitch.destroy();
+            rtlItem.destroy();
+            rtlSlider.destroy();
+            rtlTooltip.destroy();
+
+            // Restore LTR
+            LayoutHelper.setRtl(false);
+        }
+
+        function test_controls_token_bindings(): void {
+            // 1. KynexButton: non-primary vs primary token colors
+            button.primary = false;
+            button.focus = false;
+            root.forceActiveFocus(); // unfocus button
+            wait(20);
+            compare(button.backgroundColor, Style.colors.surfaceRaised);
+            compare(button.textColor, Style.colors.text);
+            compare(button.borderColor, Style.colors.surfaceRaised);
+
+            button.primary = true;
+            wait(50);
+            compare(button.backgroundColor, Style.colors.accent);
+            compare(button.textColor, Style.colors.surface);
+            compare(button.borderColor, Style.colors.surfaceRaised);
+            button.primary = false;
+            wait(20);
+
+            // 2. KynexSwitch: indicator token colors
+            toggleSwitch.checked = false;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.surfaceRaised);
+            tryCompare(toggleSwitch, "thumbColor", Style.colors.text);
+
+            toggleSwitch.checked = true;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.accent);
+            tryCompare(toggleSwitch, "thumbColor", Style.colors.surface);
+            toggleSwitch.checked = false;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.surfaceRaised);
+
+            // 3. KynexSlider: track and handle token colors
+            compare(slider.trackColor, Style.colors.surfaceRaised);
+            compare(slider.filledTrackColor, Style.colors.accent);
+            compare(slider.handleColor, Style.colors.surfaceRaised);
+            compare(slider.handleBorderColor, Style.colors.accent);
+
+            // 4. KynexTooltip: token colors
+            compare(tooltip.backgroundColor, Style.colors.surfaceRaised);
+            compare(tooltip.textColor, Style.colors.text);
+
+            // 5. KynexListItem: selection token colors
+            listItem.selected = false;
+            compare(listItem.backgroundColor, Style.colors.surface);
+            compare(listItem.textColor, Style.colors.text);
+
+            listItem.selected = true;
+            compare(listItem.backgroundColor, Style.colors.surfaceRaised);
+            compare(listItem.textColor, Style.colors.text);
+            listItem.selected = false;
+        }
     }
 }
