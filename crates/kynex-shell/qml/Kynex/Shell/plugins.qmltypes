@@ -109,5 +109,21 @@ Module {
         Method {
             name: "init"
         }
+        Method {
+            name: "activate"
+            Parameter { name: "id"; type: "QString" }
+        }
+        Method {
+            name: "minimize"
+            Parameter { name: "id"; type: "QString" }
+        }
+        Method {
+            name: "restore"
+            Parameter { name: "id"; type: "QString" }
+        }
+        Method {
+            name: "close"
+            Parameter { name: "id"; type: "QString" }
+        }
     }
 }
