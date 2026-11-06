@@ -955,6 +955,20 @@ impl WindowsFeedServer {
             .sender()
             .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
 
+        // Early check for no-op before performing D-Bus roundtrips
+        {
+            let state = self.shared.state.read().await;
+            if let Some(w) = state.list().iter().find(|w| w.id == id) {
+                if w.title == title
+                    && w.app_id == app_id
+                    && w.minimized == minimized
+                    && w.active == active
+                {
+                    return Ok(());
+                }
+            }
+        }
+
         let dbus = DBusProxy::new(conn).await?;
         let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;
         let pid = dbus
@@ -1094,6 +1108,15 @@ impl WindowsFeedServer {
         let sender = hdr
             .sender()
             .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
+
+        // Early check for no-op before performing D-Bus roundtrips
+        {
+            let state = self.shared.state.read().await;
+            let current_active = state.active_id().unwrap_or("");
+            if current_active == id {
+                return Ok(());
+            }
+        }
 
         let dbus = DBusProxy::new(conn).await?;
         let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;

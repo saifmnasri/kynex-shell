@@ -10,21 +10,46 @@ FocusScope {
     property bool spaceDown: false
 
     readonly property bool hovered: mouseArea.containsMouse
-    readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
+    readonly property bool down: root.enabled && (mouseArea.pressed || (activeFocus && spaceDown))
     readonly property color borderColor: bg.border.color
     readonly property int borderWidth: bg.border.width
     readonly property bool labelVisible: label.visible
+    readonly property int cursorShape: mouseArea.cursorShape
 
     signal clicked()
     signal middleClicked()
     signal pressed()
     signal released()
 
+    function click(): void {
+        if (root.enabled) {
+            root.clicked();
+        }
+    }
+
+    function middleClick(): void {
+        if (root.enabled) {
+            root.middleClicked();
+        }
+    }
+
+    function press(): void {
+        if (root.enabled) {
+            root.pressed();
+        }
+    }
+
+    function release(): void {
+        if (root.enabled) {
+            root.released();
+        }
+    }
+
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: text
     Accessible.focusable: true
-    Accessible.onPressAction: root.clicked()
+    Accessible.onPressAction: root.click()
 
     LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -91,57 +116,52 @@ FocusScope {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-        enabled: root.enabled
 
         onPressed: (mouse) => {
             root.forceActiveFocus();
             if (mouse.button === Qt.LeftButton) {
-                root.pressed();
+                root.press();
             }
         }
         onReleased: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
-                root.released();
+                root.release();
             }
         }
         onClicked: (mouse) => {
             if (mouse.button === Qt.MiddleButton) {
-                root.middleClicked();
+                root.middleClick();
             } else {
-                root.clicked();
+                root.click();
             }
         }
     }
 
     Keys.onReturnPressed: (event) => {
-        if (root.enabled) {
-            root.clicked();
-            event.accepted = true;
-        }
+        root.click();
+        event.accepted = true;
     }
 
     Keys.onEnterPressed: (event) => {
-        if (root.enabled) {
-            root.clicked();
-            event.accepted = true;
-        }
+        root.click();
+        event.accepted = true;
     }
 
     Keys.onSpacePressed: (event) => {
-        if (root.enabled && !event.isAutoRepeat) {
+        if (!event.isAutoRepeat) {
             root.spaceDown = true;
-            root.pressed();
+            root.press();
             event.accepted = true;
         }
     }
 
     Keys.onReleased: (event) => {
-        if (root.enabled && event.key === Qt.Key_Space && root.spaceDown) {
+        if (event.key === Qt.Key_Space && root.spaceDown) {
             root.spaceDown = false;
-            root.released();
-            root.clicked();
+            root.release();
+            root.click();
             event.accepted = true;
         }
     }

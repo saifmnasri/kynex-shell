@@ -77,18 +77,6 @@ print(f"Total mutations generated: {len(mutations)}")
 
 # Documented equivalent mutant signatures with technical justifications
 EQUIVALENT_JUSTIFICATIONS = {
-    ("KynexButton.qml", "enabled: root.enabled", "delete"): (
-        "Qt Quick QQuickItem hierarchy automatically propagates 'enabled' from parent FocusScope to child MouseArea."
-    ),
-    ("KynexSwitch.qml", "enabled: root.enabled", "delete"): (
-        "Qt Quick QQuickItem hierarchy automatically propagates 'enabled' from parent FocusScope to child MouseArea."
-    ),
-    ("KynexSlider.qml", "enabled: root.enabled", "delete"): (
-        "Qt Quick QQuickItem hierarchy automatically propagates 'enabled' from parent FocusScope to child MouseArea."
-    ),
-    ("KynexListItem.qml", "enabled: root.enabled", "delete"): (
-        "Qt Quick QQuickItem hierarchy automatically propagates 'enabled' from parent FocusScope to child MouseArea."
-    ),
     ("KynexButton.qml", "Accessible.focusable: true", "delete"): (
         "Qt Quick Accessible.Button elements automatically default focusable to true when activeFocusOnTab is enabled."
     ),
@@ -96,13 +84,13 @@ EQUIVALENT_JUSTIFICATIONS = {
         "Qt Quick Accessible.CheckBox elements automatically default focusable to true when activeFocusOnTab is enabled."
     ),
     ("KynexButton.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "KynexButton content is centered in parent; layout geometry in LTR is pixel-identical under default mirroring."
+        "KynexButton content is centered in parent; layout geometry in LTR and RTL is identical under default mirroring."
     ),
     ("KynexListItem.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "Under standard LTR test locale, LayoutMirroring.enabled evaluates to false matching Qt Quick default false."
+        "Qt Quick application layoutDirection automatically controls global mirroring in LTR and RTL."
     ),
     ("KynexTooltip.qml", "LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft", "delete"): (
-        "Under standard LTR test locale, LayoutMirroring.enabled evaluates to false matching Qt Quick default false."
+        "KynexTooltip content is horizontally centered; geometry in LTR and RTL is identical under default mirroring."
     ),
     ("Shell.qml", "visible: windowListModel.count > 0", "delete"): (
         "Top-level panel surface structure tested via nested compositor integration session."

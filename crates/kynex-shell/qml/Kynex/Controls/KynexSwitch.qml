@@ -9,10 +9,11 @@ FocusScope {
     property bool spaceDown: false
 
     readonly property bool hovered: mouseArea.containsMouse
-    readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
+    readonly property bool down: root.enabled && (mouseArea.pressed || (activeFocus && spaceDown))
     readonly property color borderColor: track.border.color
     readonly property int borderWidth: track.border.width
     readonly property bool labelVisible: label.visible
+    readonly property int cursorShape: mouseArea.cursorShape
 
     signal toggled(bool checked)
 
@@ -106,8 +107,7 @@ FocusScope {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        enabled: root.enabled
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
         onPressed: {
             root.forceActiveFocus();
@@ -118,28 +118,24 @@ FocusScope {
     }
 
     Keys.onReturnPressed: (event) => {
-        if (root.enabled) {
-            root.toggle();
-            event.accepted = true;
-        }
+        root.toggle();
+        event.accepted = true;
     }
 
     Keys.onEnterPressed: (event) => {
-        if (root.enabled) {
-            root.toggle();
-            event.accepted = true;
-        }
+        root.toggle();
+        event.accepted = true;
     }
 
     Keys.onSpacePressed: (event) => {
-        if (root.enabled && !event.isAutoRepeat) {
+        if (!event.isAutoRepeat) {
             root.spaceDown = true;
             event.accepted = true;
         }
     }
 
     Keys.onReleased: (event) => {
-        if (root.enabled && event.key === Qt.Key_Space && root.spaceDown) {
+        if (event.key === Qt.Key_Space && root.spaceDown) {
             root.spaceDown = false;
             root.toggle();
             event.accepted = true;

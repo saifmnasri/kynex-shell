@@ -1,0 +1,30 @@
+[package]
+name = "kynex-apps-index-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.kynex-apps-index]
+path = ".."
+
+[[bin]]
+name = "fuzz_desktop_entry"
+path = "fuzz_targets/fuzz_desktop_entry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_exec_parser"
+path = "fuzz_targets/fuzz_exec_parser.rs"
+test = false
+doc = false
+bench = false
