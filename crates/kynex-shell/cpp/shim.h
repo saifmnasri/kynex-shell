@@ -14,6 +14,7 @@ void kynex_set_style_tokens(
     rust::Str danger,
     rust::Str warning,
     rust::Str success,
+    rust::Str focus_ring,
     uint32_t spacing_unit,
     uint32_t spacing_small,
     uint32_t spacing_medium,
@@ -27,5 +28,9 @@ void kynex_set_style_tokens(
     uint32_t motion_slow_ms,
     rust::Str font_family,
     rust::Str font_fallback,
-    uint32_t font_base_px
+    uint32_t font_base_px,
+    double opacity_disabled,
+    double opacity_hover,
+    double opacity_pressed,
+    double opacity_focus
 );

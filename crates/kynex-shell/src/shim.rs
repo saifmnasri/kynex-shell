@@ -10,7 +10,7 @@ pub mod ffi {
     // - `kynex_register_core_types` interacts solely with the Qt QML type registration system
     //   (`qmlRegisterType` and `qmlRegisterSingletonInstance`), does not dereference raw pointers,
     //   and has no side effects violating Rust safety invariants.
-    // - `kynex_set_style_tokens` receives validated Rust string slices and integers, converting
+    // - `kynex_set_style_tokens` receives validated Rust string slices and numbers, converting
     //   them to Qt values on the C++ Style singleton. String views are borrowed only during
     //   the call, preserving Rust lifetime and memory safety guarantees.
     unsafe extern "C++" {
@@ -29,6 +29,7 @@ pub mod ffi {
             danger: &str,
             warning: &str,
             success: &str,
+            focus_ring: &str,
             spacing_unit: u32,
             spacing_small: u32,
             spacing_medium: u32,
@@ -43,6 +44,10 @@ pub mod ffi {
             font_family: &str,
             font_fallback: &str,
             font_base_px: u32,
+            opacity_disabled: f64,
+            opacity_hover: f64,
+            opacity_pressed: f64,
+            opacity_focus: f64,
         );
     }
 }
@@ -64,6 +69,7 @@ pub fn init_tokens(tokens: &TokensManifest) {
         &dark.danger,
         &dark.warning,
         &dark.success,
+        &dark.focus_ring,
         tokens.spacing.unit,
         tokens.spacing.small,
         tokens.spacing.medium,
@@ -78,5 +84,9 @@ pub fn init_tokens(tokens: &TokensManifest) {
         &tokens.typography.family,
         &tokens.typography.fallback,
         tokens.typography.base_px,
+        tokens.opacity.disabled,
+        tokens.opacity.hover,
+        tokens.opacity.pressed,
+        tokens.opacity.focus,
     );
 }

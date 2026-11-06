@@ -14,6 +14,7 @@ class StyleColors : public QObject {
     Q_PROPERTY(QColor danger READ danger NOTIFY changed FINAL)
     Q_PROPERTY(QColor warning READ warning NOTIFY changed FINAL)
     Q_PROPERTY(QColor success READ success NOTIFY changed FINAL)
+    Q_PROPERTY(QColor focusRing READ focusRing NOTIFY changed FINAL)
 
 public:
     explicit StyleColors(QObject *parent = nullptr);
@@ -26,11 +27,13 @@ public:
     QColor danger() const { return m_danger; }
     QColor warning() const { return m_warning; }
     QColor success() const { return m_success; }
+    QColor focusRing() const { return m_focusRing; }
 
     void setColors(const QString &surface, const QString &surfaceRaised,
                    const QString &text, const QString &textMuted,
                    const QString &accent, const QString &danger,
-                   const QString &warning, const QString &success);
+                   const QString &warning, const QString &success,
+                   const QString &focusRing);
 
 Q_SIGNALS:
     void changed();
@@ -44,6 +47,7 @@ private:
     QColor m_danger;
     QColor m_warning;
     QColor m_success;
+    QColor m_focusRing;
 };
 
 class StyleSpacing : public QObject {
@@ -148,6 +152,33 @@ private:
     int m_basePx = 14;
 };
 
+class StyleOpacity : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(qreal disabled READ disabled NOTIFY changed FINAL)
+    Q_PROPERTY(qreal hover READ hover NOTIFY changed FINAL)
+    Q_PROPERTY(qreal pressed READ pressed NOTIFY changed FINAL)
+    Q_PROPERTY(qreal focus READ focus NOTIFY changed FINAL)
+
+public:
+    explicit StyleOpacity(QObject *parent = nullptr);
+
+    qreal disabled() const { return m_disabled; }
+    qreal hover() const { return m_hover; }
+    qreal pressed() const { return m_pressed; }
+    qreal focus() const { return m_focus; }
+
+    void setOpacity(qreal disabled, qreal hover, qreal pressed, qreal focus);
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    qreal m_disabled = 0.38;
+    qreal m_hover = 0.08;
+    qreal m_pressed = 0.16;
+    qreal m_focus = 1.0;
+};
+
 class Style : public QObject {
     Q_OBJECT
     Q_PROPERTY(StyleColors* colors READ colors CONSTANT FINAL)
@@ -155,6 +186,7 @@ class Style : public QObject {
     Q_PROPERTY(StyleRadius* radius READ radius CONSTANT FINAL)
     Q_PROPERTY(StyleMotion* motion READ motion CONSTANT FINAL)
     Q_PROPERTY(StyleTypography* typography READ typography CONSTANT FINAL)
+    Q_PROPERTY(StyleOpacity* opacity READ opacity CONSTANT FINAL)
 
 public:
     static Style *instance();
@@ -164,6 +196,7 @@ public:
     StyleRadius *radius() { return &m_radius; }
     StyleMotion *motion() { return &m_motion; }
     StyleTypography *typography() { return &m_typography; }
+    StyleOpacity *opacity() { return &m_opacity; }
 
 private:
     explicit Style(QObject *parent = nullptr);
@@ -173,4 +206,5 @@ private:
     StyleRadius m_radius;
     StyleMotion m_motion;
     StyleTypography m_typography;
+    StyleOpacity m_opacity;
 };

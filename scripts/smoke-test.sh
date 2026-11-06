@@ -11,7 +11,12 @@ echo "Building kynex-shell..."
 cargo build -p kynex-shell
 
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+cleanup() {
+  trap - EXIT INT TERM
+  pkill -TERM -P $$ 2>/dev/null || true
+  rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT INT TERM
 
 SESSION_SH="$TMP_DIR/session.sh"
 cat << 'EOF' > "$SESSION_SH"
