@@ -3,6 +3,7 @@
 //! Hosts the Wayland layer-shell presentation layer driven by swappable style packs.
 
 pub mod clock;
+pub mod network;
 pub mod power;
 pub mod shim;
 

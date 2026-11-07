@@ -39,8 +39,15 @@ if [[ "\${KYNEX_FAKE_UPOWER:-1}" == "1" ]]; then
   FAKE_PID=\$!
 fi
 
+# Start dev fake NetworkManager service if enabled (default 1)
+FAKE_NM_PID=""
+if [[ "\${KYNEX_FAKE_NM:-1}" == "1" ]]; then
+  "$ROOT_DIR/dev/fake-networkmanager.py" >/dev/null 2>&1 &
+  FAKE_NM_PID=\$!
+fi
+
 # Start daemon in background
-KYNEX_UPOWER_BUS=session "$BIN_DIR/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
+KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session "$BIN_DIR/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
 DAEMON_PID=\$!
 
 # Start shell in foreground
@@ -53,6 +60,9 @@ cleanup() {
   kill "\$DAEMON_PID" 2>/dev/null || true
   if [[ -n "\$FAKE_PID" ]]; then
     kill "\$FAKE_PID" 2>/dev/null || true
+  fi
+  if [[ -n "\$FAKE_NM_PID" ]]; then
+    kill "\$FAKE_NM_PID" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT TERM INT
