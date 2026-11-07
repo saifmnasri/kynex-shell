@@ -126,4 +126,45 @@ Module {
             Parameter { name: "id"; type: "QString" }
         }
     }
+    Component {
+        file: "src/launcher.rs"
+        name: "LauncherModel"
+        accessSemantics: "reference"
+        prototype: "QAbstractListModel"
+        exports: ["Kynex.Shell/LauncherModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Property { name: "selectedIndex"; type: "int"; read: "selectedIndex"; notify: "selectedIndexChanged"; isFinal: true }
+        Property { name: "visible"; type: "bool"; read: "visible"; notify: "visibleChanged"; isFinal: true }
+        Property { name: "query"; type: "QString"; read: "query"; notify: "queryChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "setSearchQuery"
+            Parameter { name: "query"; type: "QString" }
+        }
+        Method {
+            name: "selectNext"
+        }
+        Method {
+            name: "selectPrev"
+        }
+        Method {
+            name: "launch"
+            Parameter { name: "index"; type: "int" }
+        }
+        Method {
+            name: "launchSelected"
+        }
+        Method {
+            name: "close"
+        }
+        Method {
+            name: "recordFirstFrame"
+        }
+        Method {
+            name: "toggleVisible"
+        }
+    }
 }

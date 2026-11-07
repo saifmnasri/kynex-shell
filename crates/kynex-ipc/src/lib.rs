@@ -5,6 +5,7 @@ pub mod daemon;
 pub mod network;
 pub mod power;
 pub mod service;
+pub mod shell;
 pub mod windows;
 
 pub use apps::{AppItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
@@ -14,6 +15,7 @@ pub use daemon::{
 pub use network::{Network1Proxy, NetworkKind, NetworkState, NETWORK_INTERFACE, NETWORK_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};
+pub use shell::{Shell1Proxy, ShellFeed1Proxy, SHELL_FEED_INTERFACE, SHELL_INTERFACE, SHELL_PATH};
 pub use windows::{
     WindowItem, Windows1Proxy, WindowsFeed1Proxy, WINDOWS_FEED_INTERFACE, WINDOWS_INTERFACE,
     WINDOWS_PATH,

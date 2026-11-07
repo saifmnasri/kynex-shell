@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
 
-    if (variant == "rtl-100") {
+    if (variant == "rtl-100" || variant == "launcher-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);
         QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
@@ -109,8 +109,28 @@ int main(int argc, char *argv[]) {
     QQuickView view;
     view.engine()->addImportPath("crates/kynex-shell/qml");
 
-    QString qmlPath = QDir::current().filePath("tests/visual/Gallery.qml");
+    QString qmlFile = "tests/visual/Gallery.qml";
+    QString scenario = "results";
+    if (variant == "launcher-results") {
+        qmlFile = "tests/visual/LauncherHarness.qml";
+        scenario = "results";
+    } else if (variant == "launcher-no-results") {
+        qmlFile = "tests/visual/LauncherHarness.qml";
+        scenario = "no-results";
+    } else if (variant == "launcher-empty") {
+        qmlFile = "tests/visual/LauncherHarness.qml";
+        scenario = "empty";
+    } else if (variant == "launcher-rtl") {
+        qmlFile = "tests/visual/LauncherHarness.qml";
+        scenario = "rtl";
+    }
+
+    QString qmlPath = QDir::current().filePath(qmlFile);
     view.setSource(QUrl::fromLocalFile(qmlPath));
+
+    if (auto *rootObj = view.rootObject()) {
+        rootObj->setProperty("scenario", scenario);
+    }
 
     view.setResizeMode(QQuickView::SizeViewToRootObject);
     view.show();

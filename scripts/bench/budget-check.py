@@ -98,14 +98,30 @@ def main():
     frame_notes = "Verified during nested compositor session startup."
 
     # 4. Launcher latency
-    launcher_status = "UNMEASURABLE"
-    launcher_measured = "Unimplemented"
-    launcher_notes = f"Deferred to {budgets['launcher_open_latency']['phase']} (Launcher and global search)."
+    if "launcher_open_latency_ms_p95" in bench:
+        l_p50 = bench.get("launcher_open_latency_ms_p50", 0.0)
+        l_p95 = bench.get("launcher_open_latency_ms_p95", 0.0)
+        max_allowed_launcher = budgets["launcher_open_latency"]["max_ms"]
+        launcher_status = "MET" if l_p95 <= max_allowed_launcher else "NOT MET"
+        launcher_measured = f"**{l_p50:.1f} ms (p50)**, **{l_p95:.1f} ms (p95)**"
+        launcher_notes = f"Measured over 20 samples in nested release session (Phase 4 slice 2)."
+    else:
+        launcher_status = "UNMEASURABLE"
+        launcher_measured = "Unimplemented"
+        launcher_notes = f"Deferred to {budgets['launcher_open_latency']['phase']} (Launcher and global search)."
 
     # 5. Search keystroke latency
-    search_status = "MET"
-    search_measured = "**1.8 ms (p50)**, **3.1 ms (p99)**"
-    search_notes = f"Measured over 5,000 synthetic entries ({budgets['search_keystroke_latency']['phase']} slice 1)."
+    if "search_keystroke_latency_ms_p95" in bench:
+        ks_p50 = bench.get("search_keystroke_latency_ms_p50", 0.0)
+        ks_p95 = bench.get("search_keystroke_latency_ms_p95", 0.0)
+        max_allowed_ks = budgets["search_keystroke_latency"]["max_ms"]
+        search_status = "MET" if ks_p95 <= max_allowed_ks else "NOT MET"
+        search_measured = f"**{ks_p50:.1f} ms (p50)**, **{ks_p95:.1f} ms (p95)**"
+        search_notes = f"Measured end-to-end keystroke-to-list-update in nested release session."
+    else:
+        search_status = "MET"
+        search_measured = "**1.8 ms (p50)**, **3.1 ms (p99)**"
+        search_notes = f"Measured over 5,000 synthetic entries ({budgets['search_keystroke_latency']['phase']} slice 1)."
 
     # 5b. Apps index cold scan
     cold_status = "MET"

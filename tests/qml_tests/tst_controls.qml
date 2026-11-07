@@ -38,6 +38,29 @@ Item {
             text: "Primary item"
             secondaryText: "Detailed explanation"
         }
+
+        KynexSearchField {
+            id: searchField
+            placeholderText: "Find programs..."
+        }
+    }
+
+    SignalSpy {
+        id: searchFieldAcceptedSpy
+        target: searchField
+        signalName: "accepted"
+    }
+
+    SignalSpy {
+        id: searchFieldClearedSpy
+        target: searchField
+        signalName: "cleared"
+    }
+
+    SignalSpy {
+        id: searchFieldTextEditedSpy
+        target: searchField
+        signalName: "textEdited"
     }
 
     SignalSpy {
@@ -412,6 +435,16 @@ Item {
             verify(!listItem.secondaryLabelVisible);
             listItem.secondaryText = "Detailed explanation";
             verify(listItem.secondaryLabelVisible);
+
+            listItem.letterBadge = "K";
+            verify(listItem.badgeVisible);
+            let testIcon = Qt.resolvedUrl("test_icon.png");
+            listItem.iconSource = testIcon;
+            verify(!listItem.badgeVisible);
+            listItem.iconSource = "";
+            verify(listItem.badgeVisible);
+            listItem.letterBadge = "";
+            verify(!listItem.badgeVisible);
         }
 
         function test_listitem_mouse_click() {
@@ -454,6 +487,74 @@ Item {
             waitFocus(listItem);
             compare(listItem.borderColor, Style.colors.focusRing);
             compare(listItem.borderWidth, 1);
+        }
+
+        function test_searchfield_defaults_and_a11y() {
+            compare(searchField.text, "");
+            compare(searchField.placeholderText, "Find programs...");
+            compare(searchField.Accessible.role, Accessible.EditableText);
+            compare(searchField.Accessible.name, "Find programs...");
+            verify(searchField.Accessible.focusable);
+            verify(searchField.activeFocusOnTab);
+            verify(!searchField.hasText);
+            verify(!searchField.clearButtonVisible);
+            verify(searchField.LayoutMirroring.childrenInherit);
+            compare(searchField.LayoutMirroring.enabled, Qt.locale().textDirection === Qt.RightToLeft);
+
+            searchField.text = "sample";
+            compare(searchField.Accessible.description, "sample");
+            searchField.text = "";
+            compare(searchField.clearAccessibleRole, Accessible.Button);
+            compare(searchField.clearAccessibleName, "Clear search");
+        }
+
+        function test_searchfield_typing_and_editing() {
+            searchFieldAcceptedSpy.clear();
+            searchFieldTextEditedSpy.clear();
+
+            searchField.forceFieldFocus();
+            verify(searchField.activeFocus);
+
+            keyClick(Qt.Key_K);
+            keyClick(Qt.Key_A);
+            keyClick(Qt.Key_T);
+            keyClick(Qt.Key_E);
+            compare(searchField.text, "kate");
+            verify(searchField.hasText);
+            verify(searchField.clearButtonVisible);
+            verify(searchFieldTextEditedSpy.count > 0);
+
+            keyClick(Qt.Key_Return);
+            compare(searchFieldAcceptedSpy.count, 1);
+
+            keyClick(Qt.Key_Enter);
+            compare(searchFieldAcceptedSpy.count, 2);
+        }
+
+        function test_searchfield_clear_button() {
+            searchField.text = "something";
+            verify(searchField.hasText);
+            verify(searchField.clearButtonVisible);
+
+            searchFieldClearedSpy.clear();
+            searchField.clear();
+            compare(searchField.text, "");
+            verify(!searchField.hasText);
+            verify(!searchField.clearButtonVisible);
+            compare(searchFieldClearedSpy.count, 1);
+        }
+
+        function test_searchfield_focus_ring() {
+            searchField.focus = false;
+            button.forceActiveFocus();
+            wait(20);
+            compare(searchField.borderWidth, 0);
+            verify(searchField.borderColor !== Style.colors.focusRing);
+
+            searchField.forceFieldFocus();
+            wait(20);
+            compare(searchField.borderColor, Style.colors.focusRing);
+            compare(searchField.borderWidth, 1);
         }
 
         function send_all_inputs(item) {
@@ -713,6 +814,27 @@ Item {
             listItem.Accessible.pressAction();
             compare(listItem.selected, true);
             compare(listItemClickedSpy.count, 0);
+
+            // 7. KynexSearchField
+            searchField.enabled = true;
+            searchField.text = "query text";
+            searchFieldAcceptedSpy.clear();
+            searchFieldClearedSpy.clear();
+            searchFieldTextEditedSpy.clear();
+
+            searchField.enabled = false;
+            compare(searchField.opacity, Style.opacity.disabled);
+            verify(!searchField.clearButtonVisible);
+            verify(!searchField.inputEnabled);
+
+            // Programmatic calls while disabled
+            searchField.clear();
+            compare(searchField.text, "query text");
+            compare(searchFieldClearedSpy.count, 0);
+
+            searchField.enabled = true;
+            verify(searchField.inputEnabled);
+            searchField.clear();
         }
 
         function test_controls_rtl_layout_mirroring(): void {
@@ -742,6 +864,10 @@ Item {
                 "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
                 root
             );
+            let ltrSearch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSearchField { text: 'Query'; width: 200 }",
+                root
+            );
 
             wait(50);
 
@@ -756,12 +882,14 @@ Item {
 
             verify(!ltrSlider.LayoutMirroring.enabled, "LTR slider LayoutMirroring must be disabled");
             verify(!ltrTooltip.LayoutMirroring.enabled, "LTR tooltip LayoutMirroring must be disabled");
+            verify(!ltrSearch.LayoutMirroring.enabled, "LTR search LayoutMirroring must be disabled");
 
             ltrButton.destroy();
             ltrSwitch.destroy();
             ltrItem.destroy();
             ltrSlider.destroy();
             ltrTooltip.destroy();
+            ltrSearch.destroy();
 
             // 2. Switch to RTL locale and verify LayoutMirroring enabled and mirrored positions
             LayoutHelper.setRtl(true);
@@ -787,6 +915,10 @@ Item {
                 "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
                 root
             );
+            let rtlSearch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSearchField { text: 'Query'; width: 200 }",
+                root
+            );
 
             wait(50);
 
@@ -801,12 +933,14 @@ Item {
 
             verify(rtlSlider.LayoutMirroring.enabled, "RTL slider LayoutMirroring must be enabled");
             verify(rtlTooltip.LayoutMirroring.enabled, "RTL tooltip LayoutMirroring must be enabled");
+            verify(rtlSearch.LayoutMirroring.enabled, "RTL search LayoutMirroring must be enabled");
 
             rtlButton.destroy();
             rtlSwitch.destroy();
             rtlItem.destroy();
             rtlSlider.destroy();
             rtlTooltip.destroy();
+            rtlSearch.destroy();
 
             // Restore LTR
             LayoutHelper.setRtl(false);
@@ -860,6 +994,10 @@ Item {
             compare(listItem.backgroundColor, Style.colors.surfaceRaised);
             compare(listItem.textColor, Style.colors.text);
             listItem.selected = false;
+
+            // 6. KynexSearchField: token colors
+            compare(searchField.backgroundColor, Style.colors.surface);
+            compare(searchField.textColor, Style.colors.text);
         }
     }
 }

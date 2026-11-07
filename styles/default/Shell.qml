@@ -44,6 +44,35 @@ LayerSurface {
         Component.onCompleted: windowListModel.init()
     }
 
+    LauncherModel {
+        id: launcherModel
+        Component.onCompleted: launcherModel.init()
+    }
+
+    property bool launcherLoaded: false
+
+    Connections {
+        target: launcherModel
+        function onVisibleChanged(): void {
+            if (launcherModel.visible) {
+                panel.launcherLoaded = true;
+            }
+        }
+    }
+
+    Loader {
+        id: launcherLoader
+        active: panel.launcherLoaded
+        source: "Launcher.qml"
+
+        Binding {
+            target: launcherLoader.item
+            property: "launcherModel"
+            value: launcherModel
+            when: launcherLoader.status === Loader.Ready
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.surfaceRaised

@@ -30,7 +30,7 @@ export LANG=C.UTF-8
 export QT_QPA_PLATFORM=offscreen
 export QT_QUICK_BACKEND=software
 
-VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100")
+VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100" "launcher-results" "launcher-no-results" "launcher-empty" "launcher-rtl")
 TEMP_DIR=$(mktemp -d /tmp/kynex-visual-XXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 

@@ -83,6 +83,9 @@ EQUIVALENT_JUSTIFICATIONS = {
     ("KynexSwitch.qml", "Accessible.focusable: true", "delete"): (
         "Qt Quick QQuickAccessibleAttached::role() for Accessible.CheckBox with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
     ),
+    ("KynexSearchField.qml", "Accessible.focusable: true", "delete"): (
+        "Qt Quick QQuickAccessibleAttached::role() for Accessible.EditableText with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
+    ),
 }
 
 killed = 0
