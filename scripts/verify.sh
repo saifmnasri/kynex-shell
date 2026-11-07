@@ -36,8 +36,8 @@ have ripsecrets && step "secret scan" ripsecrets --strict-ignore . || skip "secr
 
 # shellcheck disable=SC2317,SC2329
 check_style_tokens() {
-  local target_dir="${1:-styles}"
-  ./scripts/check-style-tokens.py "$target_dir"
+  ./scripts/check-style-tokens.py "styles"
+  ./scripts/check-style-tokens.py "crates/kynex-shell/qml"
 }
 
 step "style tokens lint" check_style_tokens
@@ -70,6 +70,18 @@ have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES
 mapfile -t DESKTOP < <(find packaging -name '*.desktop' 2>/dev/null)
 if ((${#DESKTOP[@]})); then
   have desktop-file-validate && step "desktop-file-validate" desktop-file-validate "${DESKTOP[@]}" || skip "desktop-file-validate" "not installed"
+fi
+
+if [[ -f scripts/test-qml-controls.sh ]]; then
+  step "qml quick test (base controls)" ./scripts/test-qml-controls.sh
+fi
+
+if [[ -f scripts/visual-test.sh ]]; then
+  step "visual regression test (gallery)" ./scripts/visual-test.sh
+fi
+
+if [[ -f scripts/test-systemd-unit.sh ]] && systemctl --user list-units >/dev/null 2>&1; then
+  step "systemd user unit sandbox test" ./scripts/test-systemd-unit.sh
 fi
 
 echo; echo "================ SUMMARY ================"

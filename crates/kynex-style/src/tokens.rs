@@ -11,7 +11,7 @@ pub const TOKENS_SCHEMA_VERSION: u32 = 1;
 pub const MAX_TOKENS_FILE_SIZE: u64 = 1024 * 1024;
 
 /// Complete design tokens definition.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TokensManifest {
     /// Schema version of the tokens file.
     pub schema_version: u32,
@@ -25,6 +25,9 @@ pub struct TokensManifest {
     pub motion: MotionConfig,
     /// Typography configuration.
     pub typography: TypographyConfig,
+    /// Opacity configuration.
+    #[serde(default)]
+    pub opacity: OpacityConfig,
 }
 
 /// Color palettes for dark and light modes.
@@ -56,10 +59,57 @@ pub struct Palette {
     pub warning: String,
     /// Success state color.
     pub success: String,
+    /// Focus ring color.
+    #[serde(default)]
+    pub focus_ring: String,
 }
 
 fn default_warning_color() -> String {
     "#e5a50a".to_string()
+}
+
+/// Opacity configuration tokens.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OpacityConfig {
+    /// Disabled state opacity factor.
+    #[serde(default = "default_disabled_opacity")]
+    pub disabled: f64,
+    /// Hover state overlay opacity factor.
+    #[serde(default = "default_hover_opacity")]
+    pub hover: f64,
+    /// Pressed state overlay opacity factor.
+    #[serde(default = "default_pressed_opacity")]
+    pub pressed: f64,
+    /// Focus ring opacity factor.
+    #[serde(default = "default_focus_opacity")]
+    pub focus: f64,
+}
+
+fn default_disabled_opacity() -> f64 {
+    0.38
+}
+
+fn default_hover_opacity() -> f64 {
+    0.08
+}
+
+fn default_pressed_opacity() -> f64 {
+    0.16
+}
+
+fn default_focus_opacity() -> f64 {
+    1.0
+}
+
+impl Default for OpacityConfig {
+    fn default() -> Self {
+        Self {
+            disabled: default_disabled_opacity(),
+            hover: default_hover_opacity(),
+            pressed: default_pressed_opacity(),
+            focus: default_focus_opacity(),
+        }
+    }
 }
 
 /// Spacing system tokens.
@@ -167,6 +217,11 @@ impl TokensManifest {
             if !is_valid_hex_color(c) {
                 return Err(StyleError::InvalidColor { color: c.clone() });
             }
+        }
+        if !palette.focus_ring.is_empty() && !is_valid_hex_color(&palette.focus_ring) {
+            return Err(StyleError::InvalidColor {
+                color: palette.focus_ring.clone(),
+            });
         }
         Ok(())
     }

@@ -1,6 +1,8 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Kynex.Shell
 import Kynex.Style
+import Kynex.Controls
 
 LayerSurface {
     id: panel
@@ -70,52 +72,110 @@ LayerSurface {
             anchors.verticalCenter: parent.verticalCenter
             spacing: Style.spacing.medium
 
-            Row {
+            Item {
                 id: networkIndicator
                 visible: networkModel.present
-                spacing: Style.spacing.small
+                width: networkRow.implicitWidth
+                height: networkRow.implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
 
-                Text {
-                    text: networkModel.connected ? (networkModel.wifi ? "📶" : (networkModel.ethernet ? "🌐" : "🔗")) : "🚫"
-                    color: networkModel.connected ? (networkModel.weak ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
-                    font.family: Style.typography.family
-                    font.pixelSize: Style.typography.basePx
+                Row {
+                    id: networkRow
+                    spacing: Style.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        text: networkModel.connected ? (networkModel.wifi ? "📶" : (networkModel.ethernet ? "🌐" : "🔗")) : "🚫"
+                        color: networkModel.connected ? (networkModel.weak ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        visible: networkModel.connected
+                        text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
+                        color: networkModel.weak ? Style.colors.warning : Style.colors.text
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        font.bold: true
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
-                Text {
-                    visible: networkModel.connected
-                    text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
-                    color: networkModel.weak ? Style.colors.warning : Style.colors.text
-                    font.family: Style.typography.family
-                    font.pixelSize: Style.typography.basePx
-                    font.bold: true
-                    anchors.verticalCenter: parent.verticalCenter
+                MouseArea {
+                    id: networkHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+
+                    Loader {
+                        id: networkTooltipLoader
+                        active: networkHover.containsMouse
+                        sourceComponent: Component {
+                            KynexTooltip {
+                                text: networkModel.connected
+                                    ? (networkModel.wifi
+                                        ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
+                                        : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
+                                    : "Network Disconnected"
+                                visible: true
+                                anchors.bottom: parent.top
+                                anchors.bottomMargin: Style.spacing.small
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                        }
+                    }
                 }
             }
 
-            Row {
+            Item {
                 id: batteryIndicator
                 visible: powerModel.present
-                spacing: Style.spacing.small
+                width: batteryRow.implicitWidth
+                height: batteryRow.implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
 
-                Text {
-                    text: powerModel.charging ? "⚡" : "🔋"
-                    color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
-                    font.family: Style.typography.family
-                    font.pixelSize: Style.typography.basePx
+                Row {
+                    id: batteryRow
+                    spacing: Style.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        text: powerModel.charging ? "⚡" : "🔋"
+                        color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: Math.round(powerModel.percentage) + "%"
+                        color: powerModel.low ? Style.colors.warning : Style.colors.text
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        font.bold: true
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
-                Text {
-                    text: Math.round(powerModel.percentage) + "%"
-                    color: powerModel.low ? Style.colors.warning : Style.colors.text
-                    font.family: Style.typography.family
-                    font.pixelSize: Style.typography.basePx
-                    font.bold: true
-                    anchors.verticalCenter: parent.verticalCenter
+                MouseArea {
+                    id: batteryHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+
+                    Loader {
+                        id: batteryTooltipLoader
+                        active: batteryHover.containsMouse
+                        sourceComponent: Component {
+                            KynexTooltip {
+                                text: (powerModel.charging ? "Battery Charging: " : "Battery: ") + Math.round(powerModel.percentage) + "%"
+                                visible: true
+                                anchors.bottom: parent.top
+                                anchors.bottomMargin: Style.spacing.small
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                        }
+                    }
                 }
             }
         }

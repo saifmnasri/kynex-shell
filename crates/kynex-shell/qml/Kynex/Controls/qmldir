@@ -1,0 +1,8 @@
+module Kynex.Controls
+depends QtQuick
+depends Kynex.Style
+KynexButton 1.0 KynexButton.qml
+KynexSwitch 1.0 KynexSwitch.qml
+KynexSlider 1.0 KynexSlider.qml
+KynexTooltip 1.0 KynexTooltip.qml
+KynexListItem 1.0 KynexListItem.qml

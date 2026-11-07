@@ -13,6 +13,10 @@ CMakeCache.txt
 *.a
 *.so
 *.dylib
+*.moc
+*.moc.cpp
+tests/qml_tests/controls_test_runner
+tests/visual/capture
 
 # Dev / logs / temporary files
 /dev/*

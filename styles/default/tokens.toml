@@ -9,6 +9,7 @@ accent = "#6aa6ff"
 danger = "#ff6b6b"
 warning = "#e5a50a"
 success = "#4cd1a0"
+focus_ring = "#6aa6ff"
 
 [color.light]
 surface = "#f6f7fa"
@@ -19,6 +20,7 @@ accent = "#2f6fe0"
 danger = "#d63c3c"
 warning = "#c07d00"
 success = "#1f9d73"
+focus_ring = "#2f6fe0"
 
 [spacing]
 unit = 4
@@ -41,3 +43,9 @@ slow_ms = 240
 family = "Inter"
 fallback = "sans-serif"
 base_px = 14
+
+[opacity]
+disabled = 0.38
+hover = 0.08
+pressed = 0.16
+focus = 1.0

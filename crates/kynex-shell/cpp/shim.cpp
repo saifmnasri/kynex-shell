@@ -24,6 +24,7 @@ void kynex_set_style_tokens(
     rust::Str danger,
     rust::Str warning,
     rust::Str success,
+    rust::Str focus_ring,
     uint32_t spacing_unit,
     uint32_t spacing_small,
     uint32_t spacing_medium,
@@ -37,7 +38,11 @@ void kynex_set_style_tokens(
     uint32_t motion_slow_ms,
     rust::Str font_family,
     rust::Str font_fallback,
-    uint32_t font_base_px
+    uint32_t font_base_px,
+    double opacity_disabled,
+    double opacity_hover,
+    double opacity_pressed,
+    double opacity_focus
 )
 {
     Style *s = Style::instance();
@@ -49,7 +54,8 @@ void kynex_set_style_tokens(
         QString::fromUtf8(accent.data(), static_cast<qsizetype>(accent.size())),
         QString::fromUtf8(danger.data(), static_cast<qsizetype>(danger.size())),
         QString::fromUtf8(warning.data(), static_cast<qsizetype>(warning.size())),
-        QString::fromUtf8(success.data(), static_cast<qsizetype>(success.size()))
+        QString::fromUtf8(success.data(), static_cast<qsizetype>(success.size())),
+        QString::fromUtf8(focus_ring.data(), static_cast<qsizetype>(focus_ring.size()))
     );
 
     s->spacing()->setSpacing(
@@ -73,5 +79,11 @@ void kynex_set_style_tokens(
         QString::fromUtf8(font_family.data(), static_cast<qsizetype>(font_family.size())),
         QString::fromUtf8(font_fallback.data(), static_cast<qsizetype>(font_fallback.size())),
         static_cast<int>(font_base_px)
+    );
+    s->opacity()->setOpacity(
+        opacity_disabled,
+        opacity_hover,
+        opacity_pressed,
+        opacity_focus
     );
 }

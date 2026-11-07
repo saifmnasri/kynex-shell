@@ -14,6 +14,7 @@ Module {
         Property { name: "danger"; type: "QColor"; read: "danger"; notify: "changed"; isFinal: true }
         Property { name: "warning"; type: "QColor"; read: "warning"; notify: "changed"; isFinal: true }
         Property { name: "success"; type: "QColor"; read: "success"; notify: "changed"; isFinal: true }
+        Property { name: "focusRing"; type: "QColor"; read: "focusRing"; notify: "changed"; isFinal: true }
     }
     Component {
         file: "cpp/style.h"
@@ -55,6 +56,16 @@ Module {
     }
     Component {
         file: "cpp/style.h"
+        name: "StyleOpacity"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        Property { name: "disabled"; type: "double"; read: "disabled"; notify: "changed"; isFinal: true }
+        Property { name: "hover"; type: "double"; read: "hover"; notify: "changed"; isFinal: true }
+        Property { name: "pressed"; type: "double"; read: "pressed"; notify: "changed"; isFinal: true }
+        Property { name: "focus"; type: "double"; read: "focus"; notify: "changed"; isFinal: true }
+    }
+    Component {
+        file: "cpp/style.h"
         name: "Style"
         accessSemantics: "reference"
         prototype: "QObject"
@@ -67,5 +78,6 @@ Module {
         Property { name: "radius"; type: "StyleRadius"; isPointer: true; read: "radius"; isReadonly: true; isFinal: true }
         Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion"; isReadonly: true; isFinal: true }
         Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography"; isReadonly: true; isFinal: true }
+        Property { name: "opacity"; type: "StyleOpacity"; isPointer: true; read: "opacity"; isReadonly: true; isFinal: true }
     }
 }

@@ -91,6 +91,15 @@ fn main() {
 
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
+        let style_components_dir = canonical_style_dir.join("components");
+        if style_components_dir.is_dir() {
+            let comp_str = style_components_dir.to_string_lossy();
+            info!("Adding style components override path: {comp_str}");
+            engine
+                .as_mut()
+                .add_import_path(&QString::from(comp_str.as_ref()));
+        }
+
         let qml_import_dir = find_qml_import_dir();
         if let Ok(canonical_qml) = qml_import_dir.canonicalize() {
             let import_str = canonical_qml.to_string_lossy();
