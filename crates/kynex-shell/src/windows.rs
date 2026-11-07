@@ -41,6 +41,9 @@ pub mod qobject {
         include!("cxx-qt-lib/qhash_i32_QByteArray.h");
         /// Hash map of integer to byte array.
         type QHash_i32_QByteArray = cxx_qt_lib::QHash<cxx_qt_lib::QHashPair_i32_QByteArray>;
+        include!("cxx-qt-lib/qstring.h");
+        /// QString type.
+        type QString = cxx_qt_lib::QString;
     }
 
     unsafe extern "C++Qt" {
@@ -78,6 +81,22 @@ pub mod qobject {
         #[cxx_override]
         #[cxx_name = "roleNames"]
         fn role_names(self: &WindowListModel) -> QHash_i32_QByteArray;
+
+        /// Activates (focuses) the window matching `id`.
+        #[qinvokable]
+        fn activate(self: Pin<&mut Self>, id: &QString);
+
+        /// Minimizes the window matching `id`.
+        #[qinvokable]
+        fn minimize(self: Pin<&mut Self>, id: &QString);
+
+        /// Restores the window matching `id` from minimized state.
+        #[qinvokable]
+        fn restore(self: Pin<&mut Self>, id: &QString);
+
+        /// Closes the window matching `id`.
+        #[qinvokable]
+        fn close(self: Pin<&mut Self>, id: &QString);
     }
 
     unsafe extern "RustQt" {
@@ -151,6 +170,54 @@ impl qobject::WindowListModel {
         roles.insert(ROLE_MINIMIZED, QByteArray::from("minimized"));
         roles.insert(ROLE_ACTIVE, QByteArray::from("active"));
         roles
+    }
+
+    /// Activates (focuses) the window matching `id`.
+    pub fn activate(self: Pin<&mut Self>, id: &QString) {
+        let id_str = id.to_string();
+        tokio::spawn(async move {
+            if let Ok(conn) = zbus::connection::Builder::session().build().await {
+                if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                    let _ = proxy.activate(&id_str).await;
+                }
+            }
+        });
+    }
+
+    /// Minimizes the window matching `id`.
+    pub fn minimize(self: Pin<&mut Self>, id: &QString) {
+        let id_str = id.to_string();
+        tokio::spawn(async move {
+            if let Ok(conn) = zbus::connection::Builder::session().build().await {
+                if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                    let _ = proxy.minimize(&id_str).await;
+                }
+            }
+        });
+    }
+
+    /// Restores the window matching `id` from minimized state.
+    pub fn restore(self: Pin<&mut Self>, id: &QString) {
+        let id_str = id.to_string();
+        tokio::spawn(async move {
+            if let Ok(conn) = zbus::connection::Builder::session().build().await {
+                if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                    let _ = proxy.restore(&id_str).await;
+                }
+            }
+        });
+    }
+
+    /// Closes the window matching `id`.
+    pub fn close(self: Pin<&mut Self>, id: &QString) {
+        let id_str = id.to_string();
+        tokio::spawn(async move {
+            if let Ok(conn) = zbus::connection::Builder::session().build().await {
+                if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                    let _ = proxy.close(&id_str).await;
+                }
+            }
+        });
     }
 }
 

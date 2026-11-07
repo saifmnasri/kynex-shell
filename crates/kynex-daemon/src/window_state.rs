@@ -228,6 +228,15 @@ impl WindowState {
         let new_active = self.active_id().map(ToString::to_string);
         prev_active != new_active
     }
+
+    /// Returns `true` if a window matching `raw_id` exists in currently tracked state.
+    #[must_use]
+    pub fn has_window(&self, raw_id: &str) -> bool {
+        let Some(id) = sanitize_id(raw_id) else {
+            return false;
+        };
+        self.windows.iter().any(|w| w.id == id)
+    }
 }
 
 #[cfg(test)]
@@ -409,5 +418,15 @@ mod tests {
         let removed = state.remove("a");
         assert_eq!(removed.map(|w| w.id), Some("a".into()));
         assert_eq!(state.count(), 1);
+    }
+
+    #[test]
+    fn test_has_window() {
+        let mut state = WindowState::new();
+        state.upsert("cafe-1", "App", "app", false, false);
+        assert!(state.has_window("cafe-1"));
+        assert!(!state.has_window("cafe-2"));
+        assert!(!state.has_window("win$invalid"));
+        assert!(!state.has_window(""));
     }
 }

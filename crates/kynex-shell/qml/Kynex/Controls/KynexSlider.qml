@@ -125,6 +125,14 @@ FocusScope {
                 updateFromMouse(mouse.x);
             }
         }
+
+        onWheel: (wheel) => {
+            if (wheel.angleDelta.y > 0) {
+                root.increase();
+            } else if (wheel.angleDelta.y < 0) {
+                root.decrease();
+            }
+        }
     }
 
     Keys.onLeftPressed: (event) => {
@@ -172,6 +180,12 @@ FocusScope {
             event.accepted = true;
         } else if (event.key === Qt.Key_End) {
             root.setValueClamped(1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_PageUp) {
+            root.increase();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_PageDown) {
+            root.decrease();
             event.accepted = true;
         }
     }

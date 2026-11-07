@@ -5,8 +5,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use kynex_daemon::services::windows::{
-    AllowAllSenderPolicy, KWinSenderPolicy, SenderPolicy, WindowsFeedServer, WindowsServer,
-    WindowsSharedState, FEED_RATE_LIMIT_PER_SEC,
+    AllowAllSenderPolicy, KWinSenderPolicy, MockActionExecutor, SenderPolicy, WindowAction,
+    WindowsFeedServer, WindowsServer, WindowsSharedState, ACTION_RATE_LIMIT_PER_SEC,
+    FEED_RATE_LIMIT_PER_SEC,
 };
 use kynex_daemon::window_state::MAX_WINDOWS;
 use kynex_ipc::windows::{Windows1Proxy, WindowsFeed1Proxy, WINDOWS_PATH};
@@ -351,11 +352,15 @@ async fn test_sender_policy_and_clear_coverage() -> Result<(), Box<dyn Error>> {
     // 1. Test KWinSenderPolicy unit checks directly
     let policy = KWinSenderPolicy::default();
     // Non-matching UID
-    assert!(policy.verify_sender(99999, std::process::id()).is_err());
+    assert!(policy
+        .verify_sender(":1.1", 99999, std::process::id(), Some(":1.1"))
+        .is_err());
     // Current PID has current UID, but exe is the test binary, not kwin_wayland
     let caller_uid = rustix::process::getuid().as_raw();
     let host_process_id = std::process::id();
-    assert!(policy.verify_sender(caller_uid, host_process_id).is_err());
+    assert!(policy
+        .verify_sender(":1.1", caller_uid, host_process_id, Some(":1.1"))
+        .is_err());
 
     // 2. Server snapshot & clear
     let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
@@ -491,6 +496,381 @@ async fn test_kwin_restart_reset() -> Result<(), Box<dyn Error>> {
     // KWin restarts and sends Reset()
     feed_proxy.reset().await?;
     assert_eq!(client_proxy.list().await?.len(), 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_window_actions_happy_path() -> Result<(), Box<dyn Error>> {
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let mock_executor = Arc::new(MockActionExecutor::new());
+    shared.set_action_executor(mock_executor.clone()).await;
+
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let _server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server)
+        .serve_at(WINDOWS_PATH, feed_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+    let feed_proxy = WindowsFeed1Proxy::new(&client_conn).await?;
+
+    // Seed a valid window
+    feed_proxy
+        .upsert("{1234-abcd}", "Test Editor", "editor", false, false)
+        .await?;
+
+    // Execute actions
+    client_proxy.activate("{1234-abcd}").await?;
+    client_proxy.minimize("{1234-abcd}").await?;
+    client_proxy.restore("{1234-abcd}").await?;
+    client_proxy.close("{1234-abcd}").await?;
+
+    let calls = mock_executor.get_calls().await;
+    assert_eq!(calls.len(), 4);
+    assert_eq!(
+        calls[0],
+        ("{1234-abcd}".to_string(), WindowAction::Activate)
+    );
+    assert_eq!(
+        calls[1],
+        ("{1234-abcd}".to_string(), WindowAction::Minimize)
+    );
+    assert_eq!(calls[2], ("{1234-abcd}".to_string(), WindowAction::Restore));
+    assert_eq!(calls[3], ("{1234-abcd}".to_string(), WindowAction::Close));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_window_actions_hostile_ids() -> Result<(), Box<dyn Error>> {
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let mock_executor = Arc::new(MockActionExecutor::new());
+    shared.set_action_executor(mock_executor.clone()).await;
+
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let _server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server)
+        .serve_at(WINDOWS_PATH, feed_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+    let feed_proxy = WindowsFeed1Proxy::new(&client_conn).await?;
+
+    // Seed a legitimate window
+    feed_proxy
+        .upsert("{1234-abcd}", "Legit App", "app", false, false)
+        .await?;
+
+    let hostile_payloads = [
+        r#""); evil();"#,
+        r#""; evil(); //"#,
+        "\"quote\"",
+        "'single_quote'",
+        "backslash\\path",
+        "new\nline",
+        "carriage\rreturn",
+        "${INJECTION}",
+        "$(rm -rf /)",
+        "`touch /tmp/pwn`",
+        "../../etc/passwd",
+        "id with space",
+        "",
+        "null\0byte",
+    ];
+
+    for payload in hostile_payloads {
+        let res_activate = client_proxy.activate(payload).await;
+        assert!(
+            res_activate.is_err(),
+            "Hostile payload '{payload}' should have been rejected for activate"
+        );
+
+        let res_minimize = client_proxy.minimize(payload).await;
+        assert!(
+            res_minimize.is_err(),
+            "Hostile payload '{payload}' should have been rejected for minimize"
+        );
+
+        let res_restore = client_proxy.restore(payload).await;
+        assert!(
+            res_restore.is_err(),
+            "Hostile payload '{payload}' should have been rejected for restore"
+        );
+
+        let res_close = client_proxy.close(payload).await;
+        assert!(
+            res_close.is_err(),
+            "Hostile payload '{payload}' should have been rejected for close"
+        );
+    }
+
+    // Assert zero hostile calls reached the executor
+    let calls = mock_executor.get_calls().await;
+    assert_eq!(calls.len(), 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_window_actions_unknown_ids() -> Result<(), Box<dyn Error>> {
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let mock_executor = Arc::new(MockActionExecutor::new());
+    shared.set_action_executor(mock_executor.clone()).await;
+
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let _server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server)
+        .serve_at(WINDOWS_PATH, feed_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+
+    // Valid hex format, but not present in daemon state
+    let res = client_proxy.activate("{9999-9999-9999}").await;
+    let Err(err) = res else {
+        unreachable!("Unknown window ID must be rejected");
+    };
+
+    let err_str = err.to_string();
+    assert!(
+        err_str.contains("does not exist in tracked state"),
+        "Error message should explain ID does not exist: {err_str}"
+    );
+
+    let calls = mock_executor.get_calls().await;
+    assert_eq!(calls.len(), 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_window_actions_kwin_gone() -> Result<(), Box<dyn Error>> {
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let mock_executor = Arc::new(MockActionExecutor::new());
+    mock_executor
+        .set_fail_with(Some("KWin window manager service is unavailable".into()))
+        .await;
+    shared.set_action_executor(mock_executor.clone()).await;
+
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let _server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server)
+        .serve_at(WINDOWS_PATH, feed_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+    let feed_proxy = WindowsFeed1Proxy::new(&client_conn).await?;
+
+    feed_proxy
+        .upsert("{1234-abcd}", "Test Editor", "editor", false, false)
+        .await?;
+
+    let res = client_proxy.activate("{1234-abcd}").await;
+    let Err(err) = res else {
+        unreachable!("Call must fail when KWin is gone");
+    };
+
+    let err_str = err.to_string();
+    assert!(
+        err_str.contains("KWin window manager service is unavailable"),
+        "Error should reflect KWin failure: {err_str}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_window_actions_rapid_1000_rate_limit() -> Result<(), Box<dyn Error>> {
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let mock_executor = Arc::new(MockActionExecutor::new());
+    shared.set_action_executor(mock_executor.clone()).await;
+
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let _server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server)
+        .serve_at(WINDOWS_PATH, feed_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+    let feed_proxy = WindowsFeed1Proxy::new(&client_conn).await?;
+
+    feed_proxy
+        .upsert("{1234-abcd}", "Test Window", "app", false, false)
+        .await?;
+
+    let mut successful_calls = 0;
+    let mut rate_limited_calls = 0;
+
+    for _ in 0..1000 {
+        match client_proxy.activate("{1234-abcd}").await {
+            Ok(()) => successful_calls += 1,
+            Err(e) => {
+                let err_msg = e.to_string();
+                if err_msg.contains("Rate limit exceeded") || err_msg.contains("LimitsExceeded") {
+                    rate_limited_calls += 1;
+                }
+            }
+        }
+    }
+
+    assert_eq!(
+        successful_calls, ACTION_RATE_LIMIT_PER_SEC,
+        "Exactly 20 actions should succeed within a 1-second burst"
+    );
+    assert_eq!(
+        rate_limited_calls,
+        1000 - ACTION_RATE_LIMIT_PER_SEC,
+        "Remaining 980 actions must be cleanly rate-limited"
+    );
+
+    Ok(())
+}
+
+struct FakeKWinScripting {
+    script_id_to_return: i32,
+    unloaded: Arc<std::sync::atomic::AtomicBool>,
+}
+
+#[zbus::interface(name = "org.kde.kwin.Scripting")]
+impl FakeKWinScripting {
+    #[zbus(name = "loadScript")]
+    fn load_script(&self, path: &str, name: &str) -> i32 {
+        let _ = path;
+        let _ = name;
+        self.script_id_to_return
+    }
+
+    #[zbus(name = "unloadScript")]
+    fn unload_script(&self, name: &str) -> bool {
+        let _ = name;
+        self.unloaded
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        true
+    }
+}
+
+struct FakeKWinScript {
+    ran: Arc<std::sync::atomic::AtomicBool>,
+}
+
+#[zbus::interface(name = "org.kde.kwin.Script")]
+impl FakeKWinScript {
+    #[zbus(name = "run")]
+    fn run(&self) {
+        self.ran.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+#[tokio::test]
+async fn test_kwin_script_action_executor_lifecycle() -> Result<(), Box<dyn Error>> {
+    use kynex_daemon::services::windows::{KWinActionExecutor, KWinScriptActionExecutor};
+
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    let ran_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let unloaded_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+    let scripting_server = FakeKWinScripting {
+        script_id_to_return: 0,
+        unloaded: Arc::clone(&unloaded_flag),
+    };
+    let script_server = FakeKWinScript {
+        ran: Arc::clone(&ran_flag),
+    };
+
+    // Serve fake KWin on the bus
+    let _kwin_conn = zbus::connection::Builder::address(address)
+        .name("org.kde.KWin")
+        .serve_at("/Scripting", scripting_server)
+        .serve_at("/Scripting/Script0", script_server)
+        .build()
+        .await?;
+
+    let client_conn = connect_to_bus(address).await?;
+    let executor = KWinScriptActionExecutor::new(client_conn);
+
+    // 1. Success execution
+    let res = executor
+        .execute_action("{1234-abcd}", WindowAction::Activate)
+        .await;
+    assert!(res.is_ok(), "Execution should succeed on fake KWin");
+    assert!(ran_flag.load(std::sync::atomic::Ordering::Relaxed));
+    assert!(unloaded_flag.load(std::sync::atomic::Ordering::Relaxed));
+
+    // 2. KWin returns error script ID (-1)
+    let bad_scripting_server = FakeKWinScripting {
+        script_id_to_return: -1,
+        unloaded: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    };
+    let bus2 = TestBus::new().await?;
+    let _kwin_conn2 = zbus::connection::Builder::address(bus2.address())
+        .name("org.kde.KWin")
+        .serve_at("/Scripting", bad_scripting_server)
+        .build()
+        .await?;
+    let client_conn2 = connect_to_bus(bus2.address()).await?;
+    let executor2 = KWinScriptActionExecutor::new(client_conn2);
+    let res_err_id = executor2
+        .execute_action("{1234-abcd}", WindowAction::Close)
+        .await;
+    let Err(err_id) = res_err_id else {
+        unreachable!("Should return error on ID -1");
+    };
+    assert!(err_id.contains("returned error script ID"));
+
+    // 3. KWin not running
+    let bus3 = TestBus::new().await?;
+    let client_conn3 = connect_to_bus(bus3.address()).await?;
+    let executor3 = KWinScriptActionExecutor::new(client_conn3);
+    let res_no_kwin = executor3
+        .execute_action("{1234-abcd}", WindowAction::Minimize)
+        .await;
+    let Err(err_kwin) = res_no_kwin else {
+        unreachable!("Should return error when KWin is not running");
+    };
+    assert!(err_kwin.contains("KWin window manager service is unavailable"));
 
     Ok(())
 }

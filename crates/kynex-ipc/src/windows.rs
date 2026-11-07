@@ -37,6 +37,18 @@ pub trait Windows1 {
     /// Returns the full list of currently tracked windows.
     fn list(&self) -> zbus::Result<Vec<WindowItem>>;
 
+    /// Activates (focuses and raises) the specified window.
+    fn activate(&self, id: &str) -> zbus::Result<()>;
+
+    /// Minimizes the specified window.
+    fn minimize(&self, id: &str) -> zbus::Result<()>;
+
+    /// Restores the specified window from minimized state.
+    fn restore(&self, id: &str) -> zbus::Result<()>;
+
+    /// Closes the specified window.
+    fn close(&self, id: &str) -> zbus::Result<()>;
+
     /// Signal emitted when a new window is added.
     #[zbus(signal)]
     fn added(

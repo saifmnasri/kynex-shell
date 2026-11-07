@@ -12,6 +12,7 @@ FocusScope {
     readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
     readonly property color borderColor: track.border.color
     readonly property int borderWidth: track.border.width
+    readonly property bool labelVisible: label.visible
 
     signal toggled(bool checked)
 
@@ -117,6 +118,13 @@ FocusScope {
     }
 
     Keys.onReturnPressed: (event) => {
+        if (root.enabled) {
+            root.toggle();
+            event.accepted = true;
+        }
+    }
+
+    Keys.onEnterPressed: (event) => {
         if (root.enabled) {
             root.toggle();
             event.accepted = true;
