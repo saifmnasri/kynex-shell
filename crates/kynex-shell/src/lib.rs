@@ -4,6 +4,7 @@ pub mod clock;
 pub mod launcher;
 pub mod launcher_logic;
 pub mod network;
+pub mod notifications;
 pub mod power;
 pub mod shim;
 pub mod windows;

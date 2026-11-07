@@ -499,6 +499,216 @@ public:
     }
 };
 
+struct NotificationItem {
+    quint32 id;
+    QString appName;
+    bool appNameVerified;
+    QString appIcon;
+    QString letterBadge;
+    QString summary;
+    QString body;
+    QString actionsJson;
+    QStringList actionsKeys;
+    QStringList actionsLabels;
+    bool hasDefaultAction;
+    int urgency;
+    int timeoutMs;
+};
+
+class MockNotificationModel : public QAbstractListModel {
+    Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool dnd READ dnd WRITE setDnd NOTIFY dndChanged)
+    Q_PROPERTY(quint32 lastDismissedId READ lastDismissedId NOTIFY trackingChanged)
+    Q_PROPERTY(quint32 lastPausedId READ lastPausedId NOTIFY trackingChanged)
+    Q_PROPERTY(quint32 lastResumedId READ lastResumedId NOTIFY trackingChanged)
+    Q_PROPERTY(quint32 lastInvokedId READ lastInvokedId NOTIFY trackingChanged)
+    Q_PROPERTY(QString lastInvokedKey READ lastInvokedKey NOTIFY trackingChanged)
+
+public:
+    enum Roles {
+        IdRole = Qt::UserRole + 1,
+        AppNameRole,
+        AppNameVerifiedRole,
+        AppIconRole,
+        LetterBadgeRole,
+        SummaryRole,
+        BodyRole,
+        ActionsJsonRole,
+        ActionsKeysRole,
+        ActionsLabelsRole,
+        HasDefaultActionRole,
+        UrgencyRole,
+        TimeoutMsRole,
+    };
+
+    explicit MockNotificationModel(QObject *parent = nullptr)
+        : QAbstractListModel(parent), m_dnd(false), m_lastDismissedId(0),
+          m_lastPausedId(0), m_lastResumedId(0), m_lastInvokedId(0) {}
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+        if (parent.isValid()) return 0;
+        return m_items.size();
+    }
+
+    QVariant data(const QModelIndex &index, int role) const override {
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
+            return QVariant();
+        const auto &item = m_items.at(index.row());
+        switch (role) {
+            case IdRole: return item.id;
+            case AppNameRole: return item.appName;
+            case AppNameVerifiedRole: return item.appNameVerified;
+            case AppIconRole: return item.appIcon;
+            case LetterBadgeRole: return item.letterBadge;
+            case SummaryRole: return item.summary;
+            case BodyRole: return item.body;
+            case ActionsJsonRole: return item.actionsJson;
+            case ActionsKeysRole: return item.actionsKeys;
+            case ActionsLabelsRole: return item.actionsLabels;
+            case HasDefaultActionRole: return item.hasDefaultAction;
+            case UrgencyRole: return item.urgency;
+            case TimeoutMsRole: return item.timeoutMs;
+            default: return QVariant();
+        }
+    }
+
+    QHash<int, QByteArray> roleNames() const override {
+        QHash<int, QByteArray> roles;
+        roles[IdRole] = "id";
+        roles[AppNameRole] = "appName";
+        roles[AppNameVerifiedRole] = "appNameVerified";
+        roles[AppIconRole] = "appIcon";
+        roles[LetterBadgeRole] = "letterBadge";
+        roles[SummaryRole] = "summary";
+        roles[BodyRole] = "body";
+        roles[ActionsJsonRole] = "actionsJson";
+        roles[ActionsKeysRole] = "actionsKeys";
+        roles[ActionsLabelsRole] = "actionsLabels";
+        roles[HasDefaultActionRole] = "hasDefaultAction";
+        roles[UrgencyRole] = "urgency";
+        roles[TimeoutMsRole] = "timeoutMs";
+        return roles;
+    }
+
+    int count() const { return m_items.size(); }
+    bool dnd() const { return m_dnd; }
+    void setDnd(bool v) {
+        if (m_dnd != v) {
+            m_dnd = v;
+            Q_EMIT dndChanged();
+        }
+    }
+
+    quint32 lastDismissedId() const { return m_lastDismissedId; }
+    quint32 lastPausedId() const { return m_lastPausedId; }
+    quint32 lastResumedId() const { return m_lastResumedId; }
+    quint32 lastInvokedId() const { return m_lastInvokedId; }
+    QString lastInvokedKey() const { return m_lastInvokedKey; }
+
+    Q_INVOKABLE void init() {}
+    Q_INVOKABLE void clear() {
+        beginResetModel();
+        m_items.clear();
+        endResetModel();
+        Q_EMIT countChanged();
+    }
+
+    Q_INVOKABLE void dismiss(quint32 id) {
+        m_lastDismissedId = id;
+        Q_EMIT trackingChanged();
+        for (int i = 0; i < m_items.size(); ++i) {
+            if (m_items[i].id == id) {
+                beginRemoveRows(QModelIndex(), i, i);
+                m_items.removeAt(i);
+                endRemoveRows();
+                Q_EMIT countChanged();
+                break;
+            }
+        }
+    }
+
+    Q_INVOKABLE void invokeAction(quint32 id, const QString &action_key) {
+        m_lastInvokedId = id;
+        m_lastInvokedKey = action_key;
+        Q_EMIT trackingChanged();
+    }
+
+    Q_INVOKABLE void setDoNotDisturb(bool enabled) {
+        setDnd(enabled);
+    }
+
+    Q_INVOKABLE void pause(quint32 id) {
+        m_lastPausedId = id;
+        Q_EMIT trackingChanged();
+    }
+
+    Q_INVOKABLE void resume(quint32 id) {
+        m_lastResumedId = id;
+        Q_EMIT trackingChanged();
+    }
+
+    Q_INVOKABLE void pauseTimeout(quint32 id) { pause(id); }
+    Q_INVOKABLE void resumeTimeout(quint32 id) { resume(id); }
+    Q_INVOKABLE void recordFirstFrame() {}
+
+    Q_INVOKABLE void addNotification(quint32 id, const QString &appName, const QString &summary, const QString &body, int urgency = 1) {
+        beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
+        m_items.append({
+            id,
+            appName,
+            true,
+            QString(),
+            appName.isEmpty() ? QString("?") : appName.left(1).toUpper(),
+            summary,
+            body,
+            QString("[]"),
+            QStringList(),
+            QStringList(),
+            false,
+            urgency,
+            5000
+        });
+        endInsertRows();
+        Q_EMIT countChanged();
+    }
+
+    Q_INVOKABLE void addNotificationFull(quint32 id, const QString &appName, bool verified, const QString &icon, const QString &summary, const QString &body, int urgency, const QStringList &keys, const QStringList &labels, bool defaultAction) {
+        beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
+        m_items.append({
+            id,
+            appName,
+            verified,
+            icon,
+            appName.isEmpty() ? QString("?") : appName.left(1).toUpper(),
+            summary,
+            body,
+            QString("[]"),
+            keys,
+            labels,
+            defaultAction,
+            urgency,
+            5000
+        });
+        endInsertRows();
+        Q_EMIT countChanged();
+    }
+
+Q_SIGNALS:
+    void countChanged();
+    void dndChanged();
+    void trackingChanged();
+
+private:
+    QList<NotificationItem> m_items;
+    bool m_dnd;
+    quint32 m_lastDismissedId;
+    quint32 m_lastPausedId;
+    quint32 m_lastResumedId;
+    quint32 m_lastInvokedId;
+    QString m_lastInvokedKey;
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
@@ -529,6 +739,7 @@ public slots:
         qmlRegisterType<MockPowerModel>("Kynex.Shell", 1, 0, "PowerModel");
         qmlRegisterType<MockNetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
         qmlRegisterType<MockWindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
+        qmlRegisterType<MockNotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
         engine->addImportPath("crates/kynex-shell/qml");
         engine->rootContext()->setContextProperty("LayoutHelper", new LayoutHelper(engine));
     }

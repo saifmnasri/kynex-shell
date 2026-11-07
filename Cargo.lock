@@ -853,6 +853,7 @@ dependencies = [
  "futures-util",
  "kynex-apps-index",
  "kynex-ipc",
+ "kynex-notifications",
  "rustix",
  "serde",
  "tempfile",
@@ -883,6 +884,16 @@ dependencies = [
  "kynex-common",
  "serde",
  "zbus",
+]
+
+[[package]]
+name = "kynex-notifications"
+version = "0.1.0"
+dependencies = [
+ "kynex-common",
+ "proptest",
+ "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]

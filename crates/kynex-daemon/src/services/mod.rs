@@ -2,6 +2,7 @@
 
 pub mod apps;
 pub mod network;
+pub mod notifications;
 pub mod pins;
 pub mod power;
 pub mod shell;
@@ -12,6 +13,10 @@ pub use network::{
     map_connection_type, map_nm_state, read_network_snapshot, run_network_service,
     sanitize_signal_strength, sanitize_ssid, AccessPointProxy, ActiveConnectionProxy,
     NetworkManagerProxy, NetworkServer, NetworkSnapshot,
+};
+pub use notifications::{
+    run_notification_expiry_scheduler, try_acquire_fdo_name, FdoNotificationsServer,
+    NotificationsServer, NotificationsSharedState,
 };
 pub use pins::{PinsServer, PinsSharedState, MAX_PINS, PINS_MUTATION_RATE_LIMIT_PER_SEC};
 pub use power::{

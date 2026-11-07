@@ -4,9 +4,9 @@ This document catalogs every mutant designated as mathematically or semantically
 
 ---
 
-## 1. Verified Mathematically Equivalent Mutants (4 Total)
+## 1. Verified Mathematically Equivalent Mutants (5 Total)
 
-Following Stage K2 (AUD-K-04), Stage L2 (AUD-L-01), Stage L3 (AUD-L2-01, AUD-L2-02), and Stage M2 (AUD-M-03, AUD-M-04) remediations, all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring`, `test_controls_token_bindings`, `test_searchfield_clear_button`, `test_listitem_defaults_and_a11y`, `tst_launcher.qml`, and `tst_shell.qml`).
+Following Stage K2 (AUD-K-04), Stage L2 (AUD-L-01), Stage L3 (AUD-L2-01, AUD-L2-02), Stage M2 (AUD-M-03, AUD-M-04), and Stage N remediations, all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring`, `test_controls_token_bindings`, `test_searchfield_clear_button`, `test_listitem_defaults_and_a11y`, `tst_launcher.qml`, `tst_shell.qml`, and `tst_notification_popup.qml`).
 
 Only mutants with a rigorous one-line proof of equivalence are retained:
 
@@ -16,6 +16,7 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 | 2 | `crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.CheckBox` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 3 | `crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.EditableText` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 4 | `styles/default/Shell.qml` | `when: launcherLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `launcherLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: launcherLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
+| 5 | `styles/default/Shell.qml` | `when: notificationLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `notificationLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: notificationLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
 
 ---
 

@@ -1,0 +1,290 @@
+# Security checklist (Phase 3 Slice 2 - Window Actions & Remediation)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Window action IDs validated against strict regex (`^[0-9a-fA-F{}-]{1,64}$`) AND checked for existence in daemon state before any action script is generated or executed.
+  - Window titles capped at 256 bytes sliced strictly on valid UTF-8 character boundaries; ASCII controls (0x00-0x1F, 0x7F) and Unicode bidi override/isolate characters (U+202A..=U+202E, U+2066..=U+2069) stripped.
+  - Window IDs validated to <= 64 characters of `[0-9A-Fa-f{}-]` matching standard UUID / internalId representations.
+  - Window appIds validated to <= 128 characters of `[A-Za-z0-9._-]` else dropped to empty string.
+  - Network SSIDs capped at 32 bytes, sanitized against controls and bidi overrides; battery percentage clamped [0, 100].
+- [x] No shell execution; commands use argv arrays only: Daemon and shell invoke zero shell commands; test scripts and benchmarks invoke direct binaries without unquoted expansions.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test): CXX-Qt C++ shims in `crates/kynex-shell/src/windows.rs` and `shim.rs` use minimal required CXX-Qt bridge declarations with `// SAFETY:` justifications; pure-Rust state machine and action executors have 0 `unsafe`.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures: Scanned with `ripsecrets --strict-ignore .` on every gate run; zero secrets found.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - Private interface `org.kynexos.Daemon.WindowsFeed1` enforces layered fail-closed authentication: 1) verifies caller UID matches daemon session UID; 2) verifies sender unique bus name matches current `GetNameOwner("org.kde.KWin")` on every call; 3) verifies caller `/proc/<pid>/exe` equals EXACTLY `/usr/bin/kwin_wayland` (no filename or suffix fallbacks). If unreadable due to kernel non-dumpable file capabilities (`cap_sys_nice=ep`), relies on 1+2 and logs once; every other error rejects. Residual risk: a same-UID rogue process starting before KWin could claim `org.kde.KWin`, causing DoS to KWin, though spoofing feed data still requires elevated/root capabilities to simulate capability-restricted `/proc` state. Non-KWin callers rejected with D-Bus AccessDenied errors.
+  - Public interface `org.kynexos.Daemon.Windows1` provides read-only access and signals for session clients, and implements window control actions `Activate(id s)`, `Minimize(id s)`, `Restore(id s)`, `Close(id s)`. Callers are verified for same session UID (`GetConnectionCredentials`). Rate limited to 20 calls/sec per client.
+  - Both documented in `docs/DBUS_API.md`.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - Action scripts written to temporary directories created with `0700` permissions and files created with `0600` permissions with unpredictable UUID filenames. Files are immediately removed after D-Bus execution, preventing TOCTOU.
+  - Style loader canonicalizes paths, protects against directory traversal, and blocks escaping symlinks.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - Window state machine caps capacity at at most 512 windows total; excess additions dropped safely.
+  - Feeder interface enforces per-sender sliding-window rate limit of 200 calls/second with atomic dropped call counter.
+  - Window action interface enforces per-sender sliding-window rate limit of 20 calls/second.
+  - Shell `WindowListModel` batches rapid D-Bus bursts with 25 ms debouncing; `Shell.qml` uses `ListView` with viewport clipping rather than unbounded `Repeater`.
+- [x] New dependency: license OK, maintained, audited (`cargo deny`, `cargo audit`), justified in DECISIONS.md: Zero new third-party dependencies added; all workspace crates pass `cargo deny` and `cargo audit`.
+- [x] Failure path is safe (deny by default, no panic on bad input):
+  - KWin feeder disconnect clears all tracked windows automatically.
+  - Hostile titles, malformed IDs, unknown IDs, and out-of-spec inputs rejected or sanitized cleanly without panicking.
+  - If KWin service is gone or unavailable, window actions fail gracefully with clean D-Bus error messages.
+  - Daemon restart gracefully handled by shell Tokio reconnect loop.
+- [x] Tests include a malicious/malformed input case:
+  - Tested production policy rejection of spoofed callers (`test_production_policy_rejects_spoofed_caller`).
+  - Tested adversarial titles with bidi overrides, control characters, and length truncation (`test_hostile_titles_and_input_sanitization`).
+  - Tested hostile window action IDs with injection attempts (`"); evil()`, quotes, backslashes, newlines, `${}`) in `test_window_actions_hostile_ids`.
+  - Tested unknown window IDs in `test_window_actions_unknown_ids`.
+  - Tested KWin gone during action dispatch in `test_window_actions_kwin_gone`.
+  - Tested rapid 1,000 action burst rate limiting in `test_window_actions_rapid_1000_rate_limit`.
+  - Tested 1,000-window storm capacity bounding (`test_window_storm_capacity_bound`).
+  - Tested 200 calls/s rate limiting enforcement (`test_rate_limiting_enforcement`).
+  - Tested KWin disappearance and state reset (`test_kwin_watcher_disappearance`, `test_kwin_restart_reset`).
+  - Integration verified in nested KWin with live windows and verified zero filesystem leaks (`dev/demo-window-actions.sh`).
+
+---
+
+# Security checklist (Phase 4 Slice 2 - Launcher Overlay & Remediations)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Search queries trimmed and capped at 128 characters; search results clamped to <= 50 entries.
+  - Desktop entry strings (`name`, `generic_name`, `comment`) sanitized in pure Rust (`launcher_logic::sanitize_untrusted_text`): strips all ASCII control characters (0x00-0x1F, 0x7F) and Unicode bidi override/isolate characters (U+202A..=U+202E, U+2066..=U+2069), normalizes whitespace, and caps lengths (128 for names, 256 for comments).
+  - QML presentation explicitly enforces `textFormat: Text.PlainText` across all launcher text components (`KynexListItem.qml`, `KynexSearchField.qml`, `Launcher.qml`), preventing HTML or rich-text parsing/injection from untrusted app metadata.
+- [x] No shell execution; commands use argv arrays only:
+  - Shell `LauncherModel` invokes `Apps1.Launch(id)` via D-Bus; daemon parses discrete argv arrays and invokes `std::process::Command` without shell execution.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - Pure Rust launcher logic (`crates/kynex-shell/src/launcher_logic.rs`) has zero `unsafe` (100% safe Rust).
+  - CXX-Qt bridge code in `launcher.rs` uses standard safe CXX-Qt macros with minimal pointer dereferences justified with `// SAFETY:` and covered by unit/integration tests.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - `org.kynexos.Daemon.ShellFeed1` and `org.kynexos.Daemon.Shell1` documented in `docs/DBUS_API.md`.
+  - `ShellFeed1.LauncherShortcut()` enforces layered fail-closed authentication: 1) verifies caller UID matches daemon session UID; 2) verifies sender unique bus name matches current `GetNameOwner("org.kde.KWin")` on every call; 3) verifies caller `/proc/<pid>/exe` equals EXACTLY `/usr/bin/kwin_wayland`. Non-KWin callers rejected with AccessDenied.
+  - Worst impact of a spoofed toggle is opening or closing the launcher overlay window; cannot alter privileges.
+- [x] Resource limits and race protection:
+  - `SearchTracker` maintains monotonically increasing query sequence numbers; stale replies returning out of order are dropped immediately (latest-wins).
+  - Selection index bounds and circular wrap-around are computed deterministically in pure Rust.
+- [x] Child waiter zombie bug fixed:
+  - Removed `MAX_CONCURRENT_WAITERS = 64` semaphore permit holding across the entire child lifetime. Tokio waiter tasks await `child.wait()` directly; active waiters tracked by an atomic gauge logged at debug level. Verified with 200 children exiting with 0 zombies within 1 s (20 consecutive runs).
+- [x] Failure path is safe:
+  - Daemon restart handled gracefully by shell async D-Bus connection loop with automatic reconnect.
+  - Empty queries, missing apps, and out-of-bounds selections handled gracefully without panic.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile metadata tests with 10,000-character strings, HTML tags, `<img src=...>`, bidi override characters, control characters, empty fields.
+  - Out-of-order race test verifying slow old queries cannot overwrite newer query results.
+  - End-to-end integration test with fake applications proving execution and argument passing.
+  - Spoof test verifying non-KWin caller of `ShellFeed1.LauncherShortcut()` is rejected with `AccessDenied`.
+  - Clean filesystem test after nested execution proving zero stray files in `~/.config`, `~/.local`, `/usr`, `/tmp`.
+
+---
+
+# Security checklist (Stage M - Icons & Pinned Apps)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Icon names strictly validated against regex `^[a-zA-Z0-9._-]+$` with length <= 128 characters. Path separators (`/`, `\`), traversal sequences (`..`), and NUL bytes rejected.
+  - Icon theme description (`index.theme`) bounded: file size <= 64 KiB (`MAX_THEME_FILE_SIZE`), line length <= 512 bytes (`MAX_THEME_LINE_LENGTH`), total lines <= 2,048 (`MAX_THEME_LINES`). Theme inheritance cycle detection with hard depth cap of 8.
+  - Non-regular files (FIFOs, device nodes, directories) rejected before opening.
+  - Maximum icon file size strictly capped at 1 MiB (`MAX_ICON_FILE_SIZE`).
+  - Symlinks resolved strictly within canonical allowed roots (`IconRoots`).
+  - Absolute path icons from `.desktop` files accepted only if residing within discovered icon roots or XDG data directories (`IconError::AbsolutePathNotAllowed`).
+  - Raster image headers validated prior to decoding; width and height must be <= 512 pixels; `QImageReader::setAllocationLimit(16)` (16 MB) enforced at shell startup.
+  - SVG XML stream filter (`kynex_is_svg_safe`) enforces fail-closed rejection: byte-level filter denies `<!DOCTYPE`, `<!ENTITY`, `@import`, `file://`, and `ftp://`; XML tokenizer rejects `<script>` tags, inline `javascript:` URIs, `<use>` expansion count > 64, external `<use>` references (must start with `#`), and external `<image>` / `<feImage>` references (must be embedded `data:image/` URIs).
+  - Pinned apps persistence (`pinned.toml`): bounded file size <= 64 KiB, list capacity capped at 128 entries, application IDs validated against `^[a-zA-Z0-9._-]+$` length <= 128 characters.
+  - Window matching and taskbar models: window IDs and titles sanitized in pure Rust (`matching.rs`, `taskbar.rs`); StartupWMClass and appId case-folding normalized without allocation bombs.
+- [x] No shell execution; commands use argv arrays only:
+  - Pinned item clicks in taskbar delegate to `Apps1.Launch(id)` via D-Bus; daemon executes discrete argv arrays without invoking a shell.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `crates/kynex-icons` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-shell-core` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-daemon/src/services/pins.rs` has zero `unsafe`.
+  - C++ FFI in `crates/kynex-shell/src/shim.rs` (`kynex_resolve_icon`) justified with `// SAFETY:` and pointer null checks.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`.
+  - Pinned applications configuration file written with owner-only `0600` permissions.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - New public interface `org.kynexos.Daemon.Pins1` added to `docs/DBUS_API.md` with methods `Get() -> as`, `Pin(id s)`, `Unpin(id s)`, `Move(id s, index u)` and signal `Changed()`.
+  - `Pins1` methods enforce same-UID caller verification via `check_same_uid`.
+  - Rate limit: global sliding-window rate limit of 10 mutations/second.
+  - New public method `org.kynexos.Daemon.Apps1.GetAppMapping() -> a{ss}` added without altering existing `Apps1` signatures.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - Pinned apps persistence executes atomic write: writes to temporary file `.pinned.toml.tmp.XXXXXX` in `$XDG_CONFIG_HOME/kynex`, sets `0600` permissions, calls `sync_all()`, and executes atomic rename.
+  - Corrupt `pinned.toml` files are quarantined by renaming to `.pinned.toml.bad.<timestamp>` and initializing an empty list, guaranteeing zero crashes or panics.
+  - Icon resolution canonicalizes symlinks and ensures target paths remain strictly confined inside icon roots.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - `kynex-icons`: LRU-bounded cache with 256 entries (`DEFAULT_CACHE_CAPACITY`), max theme file size 64 KiB, max lines 2,048, max line length 512 bytes, max icon file size 1 MiB.
+  - Shell image decoding: 16 MB allocation limit, 512x512 header dimension clamp, SVG use-expansion depth cap 64.
+  - `Pins1`: 128 pin cap, 64 KiB config file size cap, 10 mutations/sec rate limit.
+- [x] Failure path is safe:
+  - Image decode failure or missing icon falls back cleanly to deterministic letter badge in QML.
+  - Unknown pinned IDs preserved across daemon restarts without failing.
+  - Daemon restart or bus disconnect handled gracefully by shell reconnection loop.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile icon tests: PNG decompression bomb header (60000x60000), truncated PNG, SVG with `<image href="file:///etc/passwd">`, SVG external DTD/entity, nested `use` bomb, 100 MB file, FIFO, symlink to /etc/passwd, symlink loop, traversal names (`../../x`), absolute paths outside roots, NUL bytes, 10,000-icon theme performance.
+  - Proptest for `index.theme` parsing and icon-name validation.
+  - Cargo-fuzz target for `index.theme` parser and icon-name validator (10 minutes, 15,818,138 iterations, 0 crashes).
+  - Pins daemon tests on private bus: pin/unpin/move, corrupt file quarantine, 10,000 pins flood attempt, concurrent pins from 10 connections, kill -9 during atomic write, symlink swap on config path, 0600 file permissions.
+  - 10x consecutive test execution across workspace and QML controls with zero flakes.
+
+---
+
+# Security checklist (Phase 4 Slice 1 - Apps Index & Launching)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Desktop entry file size strictly <= 64 KiB (`MAX_FILE_SIZE`).
+  - Desktop entry line length strictly <= 4 KiB (`MAX_LINE_LENGTH`).
+  - Maximum groups capped at 50 (`MAX_GROUPS`), keys per group capped at 200 (`MAX_KEYS_PER_GROUP`).
+  - Regular files only: FIFOs, sockets, device nodes explicitly rejected before reading.
+  - Symlink cycle protection: recursive directory traversal tracks canonical paths in a `HashSet`.
+  - Search query bounded to <= 128 characters; search limit clamped to <= 50 results.
+  - Invalid UTF-8 bytes handled losslessly without crashing (`from_utf8_lossy`).
+- [x] No shell execution; commands use argv arrays only:
+  - `parse_exec` lexes command line directly into `Vec<String>` following Freedesktop spec.
+  - `Launch` spawns binary via `std::process::Command::new(&argv[0]).args(&argv[1..])`.
+  - Zero shell execution (`sh -c` or shell wrappers are never used).
+  - Proved via integration test with `; rm -rf ~`, `$(reboot)`, backticks, quotes: characters executed literally as arguments.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `kynex-apps-index` enforces `#![forbid(unsafe_code)]` with zero `unsafe`.
+  - `AppsServer` in `kynex-daemon` has zero `unsafe` (only standard unix `pre_exec` for `setpgid` / `process_group(0)`).
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Scanned with `ripsecrets --strict-ignore .`.
+  - Launch logs ONLY the application ID (`app.id`), never command arguments or environment.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - Public interface `org.kynexos.Daemon.Apps1` added to `docs/DBUS_API.md`.
+  - `Launch(id)` validates caller UID matches daemon session UID via `GetConnectionCredentials`.
+  - `Launch` rate limited to 5 launches/second per caller.
+- [x] Environment sanitization & fd leaks:
+  - `Command::env_clear()` wipes all inherited environment variables.
+  - Strict allowlist applied: `HOME`, `PATH`, `XDG_*`, `WAYLAND_DISPLAY`, `DBUS_SESSION_BUS_ADDRESS`, `LANG`, `LC_*`, `DISPLAY`.
+  - Stdin, stdout, and stderr explicitly set to `Stdio::null()`.
+- [x] Process supervision & zombie prevention:
+  - Processes launched in detached process group (`process_group(0)`).
+  - On daemon exit, child processes survive and are reparented to session subreaper (systemd user manager / PID 1) for automatic reaping without zombies (ADR-008).
+- [x] Tests include malicious/malformed input cases:
+  - Hostile corpus with 10,000-char lines, binary data, FIFOs, cyclic symlinks, shell metacharacters, backticks, `$(...)`, quotes, escapes.
+  - Fuzzing: 2 cargo-fuzz targets (`fuzz_desktop_entry`, `fuzz_exec_parser`) with AddressSanitizer run for 10 minutes each, > 5M executions each, 0 crashes/hangs/OOMs.
+  - Proptests: `parse_bytes` never panics on arbitrary bytes; `parse_exec` never panics and never leaks unexpanded field codes.
+
+---
+
+# Security checklist (Phase 4 Slice 2 - Launcher Overlay & Remediations)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Search queries trimmed and capped at 128 characters; search results clamped to <= 50 entries.
+  - Desktop entry strings (`name`, `generic_name`, `comment`) sanitized in pure Rust (`launcher_logic::sanitize_untrusted_text`): strips all ASCII control characters (0x00-0x1F, 0x7F) and Unicode bidi override/isolate characters (U+202A..=U+202E, U+2066..=U+2069), normalizes whitespace, and caps lengths (128 for names, 256 for comments).
+  - QML presentation explicitly enforces `textFormat: Text.PlainText` across all launcher text components (`KynexListItem.qml`, `KynexSearchField.qml`, `Launcher.qml`), preventing HTML or rich-text parsing/injection from untrusted app metadata.
+- [x] No shell execution; commands use argv arrays only:
+  - Shell `LauncherModel` invokes `Apps1.Launch(id)` via D-Bus; daemon parses discrete argv arrays and invokes `std::process::Command` without shell execution.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - Pure Rust launcher logic (`crates/kynex-shell/src/launcher_logic.rs`) has zero `unsafe` (100% safe Rust).
+  - CXX-Qt bridge code in `launcher.rs` uses standard safe CXX-Qt macros with minimal pointer dereferences justified with `// SAFETY:` and covered by unit/integration tests.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - `org.kynexos.Daemon.ShellFeed1` and `org.kynexos.Daemon.Shell1` documented in `docs/DBUS_API.md`.
+  - `ShellFeed1.LauncherShortcut()` enforces layered fail-closed authentication: 1) verifies caller UID matches daemon session UID; 2) verifies sender unique bus name matches current `GetNameOwner("org.kde.KWin")` on every call; 3) verifies caller `/proc/<pid>/exe` equals EXACTLY `/usr/bin/kwin_wayland`. Non-KWin callers rejected with AccessDenied.
+  - Worst impact of a spoofed toggle is opening or closing the launcher overlay window; cannot alter privileges.
+- [x] Resource limits and race protection:
+  - `SearchTracker` maintains monotonically increasing query sequence numbers; stale replies returning out of order are dropped immediately (latest-wins).
+  - Selection index bounds and circular wrap-around are computed deterministically in pure Rust.
+- [x] Child waiter zombie bug fixed:
+  - Removed `MAX_CONCURRENT_WAITERS = 64` semaphore permit holding across the entire child lifetime. Tokio waiter tasks await `child.wait()` directly; active waiters tracked by an atomic gauge logged at debug level. Verified with 200 children exiting with 0 zombies within 1 s (20 consecutive runs).
+- [x] Failure path is safe:
+  - Daemon restart handled gracefully by shell async D-Bus connection loop with automatic reconnect.
+  - Empty queries, missing apps, and out-of-bounds selections handled gracefully without panic.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile metadata tests with 10,000-character strings, HTML tags, `<img src=...>`, bidi override characters, control characters, empty fields.
+  - Out-of-order race test verifying slow old queries cannot overwrite newer query results.
+  - End-to-end integration test with fake applications proving execution and argument passing.
+  - Spoof test verifying non-KWin caller of `ShellFeed1.LauncherShortcut()` is rejected with `AccessDenied`.
+  - Clean filesystem test after nested execution proving zero stray files in `~/.config`, `~/.local`, `/usr`, `/tmp`.
+
+---
+
+# Security checklist (Stage M - Icons & Pinned Apps)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - Icon names strictly validated against regex `^[a-zA-Z0-9._-]+$` with length <= 128 characters. Path separators (`/`, `\`), traversal sequences (`..`), and NUL bytes rejected.
+  - Icon theme description (`index.theme`) bounded: file size <= 64 KiB (`MAX_THEME_FILE_SIZE`), line length <= 512 bytes (`MAX_THEME_LINE_LENGTH`), total lines <= 2,048 (`MAX_THEME_LINES`). Theme inheritance cycle detection with hard depth cap of 8.
+  - Non-regular files (FIFOs, device nodes, directories) rejected before opening.
+  - Maximum icon file size strictly capped at 1 MiB (`MAX_ICON_FILE_SIZE`).
+  - Symlinks resolved strictly within canonical allowed roots (`IconRoots`).
+  - Absolute path icons from `.desktop` files accepted only if residing within discovered icon roots or XDG data directories (`IconError::AbsolutePathNotAllowed`).
+  - Raster image headers validated prior to decoding; width and height must be <= 512 pixels; `QImageReader::setAllocationLimit(16)` (16 MB) enforced at shell startup.
+  - SVG XML stream filter (`kynex_is_svg_safe`) enforces fail-closed rejection: byte-level filter denies `<!DOCTYPE`, `<!ENTITY`, `@import`, `file://`, and `ftp://`; XML tokenizer rejects `<script>` tags, inline `javascript:` URIs, `<use>` expansion count > 64, external `<use>` references (must start with `#`), and external `<image>` / `<feImage>` references (must be embedded `data:image/` URIs).
+  - Pinned apps persistence (`pinned.toml`): bounded file size <= 64 KiB, list capacity capped at 128 entries, application IDs validated against `^[a-zA-Z0-9._-]+$` length <= 128 characters.
+  - Window matching and taskbar models: window IDs and titles sanitized in pure Rust (`matching.rs`, `taskbar.rs`); StartupWMClass and appId case-folding normalized without allocation bombs.
+- [x] No shell execution; commands use argv arrays only:
+  - Pinned item clicks in taskbar delegate to `Apps1.Launch(id)` via D-Bus; daemon executes discrete argv arrays without invoking a shell.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `crates/kynex-icons` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-shell-core` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-daemon/src/services/pins.rs` has zero `unsafe`.
+  - C++ FFI in `crates/kynex-shell/src/shim.rs` (`kynex_resolve_icon`) justified with `// SAFETY:` and pointer null checks.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`.
+  - Pinned applications configuration file written with owner-only `0600` permissions.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - New public interface `org.kynexos.Daemon.Pins1` added to `docs/DBUS_API.md` with methods `Get() -> as`, `Pin(id s)`, `Unpin(id s)`, `Move(id s, index u)` and signal `Changed()`.
+  - `Pins1` methods enforce same-UID caller verification via `check_same_uid`.
+  - Rate limit: global sliding-window rate limit of 10 mutations/second.
+  - New public method `org.kynexos.Daemon.Apps1.GetAppMapping() -> a{ss}` added without altering existing `Apps1` signatures.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - Pinned apps persistence executes atomic write: writes to temporary file `.pinned.toml.tmp.XXXXXX` in `$XDG_CONFIG_HOME/kynex`, sets `0600` permissions, calls `sync_all()`, and executes atomic rename.
+  - Corrupt `pinned.toml` files are quarantined by renaming to `.pinned.toml.bad.<timestamp>` and initializing an empty list, guaranteeing zero crashes or panics.
+  - Icon resolution canonicalizes symlinks and ensures target paths remain strictly confined inside icon roots.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - `kynex-icons`: LRU-bounded cache with 256 entries (`DEFAULT_CACHE_CAPACITY`), max theme file size 64 KiB, max lines 2,048, max line length 512 bytes, max icon file size 1 MiB.
+  - Shell image decoding: 16 MB allocation limit, 512x512 header dimension clamp, SVG use-expansion depth cap 64.
+  - `Pins1`: 128 pin cap, 64 KiB config file size cap, 10 mutations/sec rate limit.
+- [x] Failure path is safe:
+  - Image decode failure or missing icon falls back cleanly to deterministic letter badge in QML.
+  - Unknown pinned IDs preserved across daemon restarts without failing.
+  - Daemon restart or bus disconnect handled gracefully by shell reconnection loop.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile icon tests: PNG decompression bomb header (60000x60000), truncated PNG, SVG with `<image href="file:///etc/passwd">`, SVG external DTD/entity, nested `use` bomb, 100 MB file, FIFO, symlink to /etc/passwd, symlink loop, traversal names (`../../x`), absolute paths outside roots, NUL bytes, 10,000-icon theme performance.
+  - Proptest for `index.theme` parsing and icon-name validation.
+  - Cargo-fuzz target for `index.theme` parser and icon-name validator (10 minutes, 15,818,138 iterations, 0 crashes).
+  - Pins daemon tests on private bus: pin/unpin/move, corrupt file quarantine, 10,000 pins flood attempt, concurrent pins from 10 connections, kill -9 during atomic write, symlink swap on config path, 0600 file permissions.
+  - 10x consecutive test execution across workspace and QML controls with zero flakes.
+
+---
+
+# Security checklist (Stage N - Desktop Notifications Subsystem)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - String payloads bounded: `app_name <= 64` bytes, `summary <= 256` bytes, `body <= 4096` bytes, `actions <= 8` pairs (`action_key <= 32` bytes, `label <= 64` bytes), `hints <= 32`.
+  - All textual input sanitized in pure Rust (`kynex_notifications::sanitize_text`): strips XML/HTML markup tags, eliminates `<script>` and `<style>` blocks and their inner contents, decodes standard entities safely, drops ASCII C0 control characters (except `\n`, `\t`) and `0x7F`, drops Unicode bidirectional override/isolate characters (U+202A..=U+202E, U+2066..=U+2069, U+200E, U+200F, U+061C), and slices strictly on valid UTF-8 character boundaries.
+  - In QML presentation (`NotificationPopup.qml`), all text elements explicitly declare `textFormat: Text.PlainText`.
+  - `image-data` hints strictly validated in pure Rust (`validate_image_data`): width/height [1, 256], bits_per_sample 8, channels 3 or 4, alpha flag consistency, checked arithmetic for rowstride (`checked_mul`), rowstride >= width * channels, exact matching byte buffer length, total payload <= 256 KiB (`MAX_IMAGE_DATA_BYTES`).
+- [x] No shell execution; commands use argv arrays only:
+  - Notifications subsystem executes zero shell commands and zero external child processes.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `crates/kynex-notifications` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-daemon/src/services/notifications.rs` has zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - C++ methods in `crates/kynex-shell/cpp/layersurface.cpp` (`setInputMask`) use standard Qt `QWindow::setMask` without raw pointers or undefined behavior.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Scanned with `ripsecrets --strict-ignore .`; zero secrets found.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - Freedesktop Notifications v1.2 spec verified. Capabilities advertised: `body`, `actions` only (NO `body-markup`, NO `persistence`).
+  - Acquired with `DO_NOT_QUEUE` flag (`0x4`): if another notification daemon already owns `org.freedesktop.Notifications`, `kynex-daemon` never replaces it; logs a warning and disables the standard endpoint gracefully.
+  - Internal presentation interface `org.kynexos.Daemon.Notifications1` documented in `docs/DBUS_API.md` with methods `Dismiss`, `InvokeAction`, `PauseTimeout`, `ResumeTimeout`, `GetHistory`, property `DoNotDisturb`, and signals `Shown`, `Updated`, `Closed`.
+  - Caller authorization: `replaces_id > 0` and `CloseNotification(id)` enforced strictly against the creator's unique D-Bus connection name; other callers rejected with `SenderMismatch`.
+  - Signal privacy: `ActionInvoked` signals dispatched strictly via unicast to the creator's unique connection name; vanished senders receive nothing and no broadcast is emitted.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - App icons resolved through `kynex-icons` theme hierarchy; arbitrary file paths from clients rejected unless resolving within canonical allowed icon roots.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - Token-bucket rate limiting per sender: burst 10, sustained 2 tokens/sec; sender tracking capped at 256 active senders with 60-second idle pruning. Excess calls receive `RateLimitExceeded`.
+  - Visible notification stack capped at 5 popups (`MAX_VISIBLE_POPUPS`); excess queued in FIFO buffer (`MAX_QUEUE_ITEMS = 50`).
+  - Notification history ring buffer capped at 200 items (`MAX_HISTORY_ITEMS`).
+  - Expiration timeouts capped at 86,400,000 ms (24 hours).
+  - Single deadline expiration timer with zero polling wakeups (`0.00 cswch/s`).
+- [x] Failure path is safe:
+  - Corrupt or oversized images rejected cleanly with `InvalidImageData`.
+  - Hostile markup stripped cleanly without panics.
+  - Disconnected clients handled cleanly during action dispatch.
+  - Non-interactivity guaranteed: `KeyboardInteractivityNone` prevents focus theft; dynamic input mask passes clicks through.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile corpus tests: 10,000-byte strings, 10,000 actions, script tags, style tags, img tags, javascript: URIs, entity expansion, bidi overrides, control characters.
+  - Pathological image-data: lying dimensions, u32 overflow products, rowstride < width * channels, 16-bit samples, 5 channels, data length mismatch.
+  - Authorization attacks: replaces_id hijacking, unauthorized CloseNotification from third-party connections.
+  - Flood tests: 1,000 rapid notifications from single and multiple connections verifying rate limiter and memory bounds.
+  - Proptests for text sanitizer, actions validator, and image-data validator.
+  - Cargo-fuzz targets for markup stripper and image-data validator (10 min each, 0 crashes).
+  - 10x consecutive test execution across workspace with zero flakes.

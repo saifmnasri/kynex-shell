@@ -184,5 +184,20 @@ Item {
             verify(shell.launcherLoader.item !== null);
             compare(shell.launcherLoader.item.launcherModel, shell.launcherModel);
         }
+
+        function test_notification_loader_and_model() {
+            compare(shell.notificationPopupLoaded, false);
+            compare(shell.notificationModel.count, 0);
+
+            shell.notificationModel.addNotification(1, "TestApp", "Test Summary", "Test Body", 1);
+            compare(shell.notificationModel.count, 1);
+            compare(shell.notificationPopupLoaded, true);
+
+            tryVerify(function() {
+                return shell.notificationLoader.status === Loader.Ready;
+            });
+            verify(shell.notificationLoader.item !== null);
+            compare(shell.notificationLoader.item.notificationModel, shell.notificationModel);
+        }
     }
 }
