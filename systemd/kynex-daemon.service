@@ -12,6 +12,18 @@ Restart=on-failure
 RestartSec=2s
 
 # Sandboxing and Security Hardening
+# NOTE on unprivileged user manager environment (systemd --user on Ubuntu):
+# Directives requested for defense-in-depth that are NOT effective in unprivileged
+# user sessions because systemd --user lacks CAP_SYS_ADMIN / user namespace delegation:
+# - PrivateNetwork=yes: Kernel/manager lacks network namespace privileges ("proceeding without").
+# - ProtectHostname=yes: UTS namespace setup prohibited for unprivileged user units ("ignoring namespace setup").
+# - ProtectSystem=strict, ProtectHome=read-only, PrivateTmp=yes: Mount namespace is not unshared (/proc/<pid>/ns/mnt matches user session).
+#
+# Directives that ARE fully effective for the unprivileged daemon process:
+# - NoNewPrivileges=yes: Effective (NoNewPrivs: 1 in /proc/<pid>/status; prctl(PR_SET_NO_NEW_PRIVS)).
+# - SystemCallFilter=@system-service, SystemCallArchitectures=native: Effective (Seccomp: 2 in /proc/<pid>/status).
+# - RestrictAddressFamilies=AF_UNIX: Effective via seccomp socket filtering.
+# - UMask=0077: Effective (restricts file creation modes to owner-only).
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only
