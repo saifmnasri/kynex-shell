@@ -64,6 +64,7 @@ LayerSurface {
             visible: windowListModel.count > 0
 
             delegate: KynexButton {
+                required property string id
                 required property string title
                 required property bool active
                 required property bool minimized
@@ -73,6 +74,35 @@ LayerSurface {
                 opacity: minimized ? Style.opacity.disabled : 1
                 width: Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
                 height: Style.spacing.panel - Style.spacing.small
+
+                Accessible.name: (title.length > 0 ? title : "Window") + (active ? " (Active)" : (minimized ? " (Minimized)" : ""))
+
+                onClicked: {
+                    if (active) {
+                        windowListModel.minimize(id);
+                    } else {
+                        windowListModel.activate(id);
+                    }
+                }
+
+                onMiddleClicked: {
+                    windowListModel.close(id);
+                }
+
+                Keys.onReturnPressed: (event) => {
+                    windowListModel.activate(id);
+                    event.accepted = true;
+                }
+
+                Keys.onEnterPressed: (event) => {
+                    windowListModel.activate(id);
+                    event.accepted = true;
+                }
+
+                Keys.onSpacePressed: (event) => {
+                    windowListModel.activate(id);
+                    event.accepted = true;
+                }
             }
         }
 

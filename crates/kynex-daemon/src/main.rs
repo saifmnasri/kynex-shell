@@ -51,6 +51,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     info!("kynex-daemon active and serving '{DAEMON_PATH}'");
 
+    // Initialize KWin script action executor on session bus
+    windows_shared
+        .set_action_executor(Arc::new(
+            kynex_daemon::services::windows::KWinScriptActionExecutor::new(session_conn.clone()),
+        ))
+        .await;
+
     // Create emitter for window change signals on session bus
     if let Ok(windows_emitter) = SignalEmitter::new(&session_conn, WINDOWS_PATH) {
         windows_feed_server

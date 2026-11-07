@@ -13,8 +13,10 @@ FocusScope {
     readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
     readonly property color borderColor: bg.border.color
     readonly property int borderWidth: bg.border.width
+    readonly property bool labelVisible: label.visible
 
     signal clicked()
+    signal middleClicked()
     signal pressed()
     signal released()
 
@@ -90,17 +92,37 @@ FocusScope {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         enabled: root.enabled
 
-        onPressed: {
+        onPressed: (mouse) => {
             root.forceActiveFocus();
-            root.pressed();
+            if (mouse.button === Qt.LeftButton) {
+                root.pressed();
+            }
         }
-        onReleased: root.released()
-        onClicked: root.clicked()
+        onReleased: (mouse) => {
+            if (mouse.button === Qt.LeftButton) {
+                root.released();
+            }
+        }
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.MiddleButton) {
+                root.middleClicked();
+            } else {
+                root.clicked();
+            }
+        }
     }
 
     Keys.onReturnPressed: (event) => {
+        if (root.enabled) {
+            root.clicked();
+            event.accepted = true;
+        }
+    }
+
+    Keys.onEnterPressed: (event) => {
         if (root.enabled) {
             root.clicked();
             event.accepted = true;

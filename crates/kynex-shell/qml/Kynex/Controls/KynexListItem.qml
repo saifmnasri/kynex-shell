@@ -14,6 +14,8 @@ FocusScope {
     readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
     readonly property color borderColor: bg.border.color
     readonly property int borderWidth: bg.border.width
+    readonly property bool labelVisible: label.visible
+    readonly property bool secondaryLabelVisible: subLabel.visible
 
     signal clicked()
     signal pressed()
@@ -117,6 +119,13 @@ FocusScope {
     }
 
     Keys.onReturnPressed: (event) => {
+        if (root.enabled) {
+            root.clicked();
+            event.accepted = true;
+        }
+    }
+
+    Keys.onEnterPressed: (event) => {
         if (root.enabled) {
             root.clicked();
             event.accepted = true;
