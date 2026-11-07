@@ -5,7 +5,7 @@ import Kynex.Style
 Rectangle {
     id: root
     width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
-    height: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+    height: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
     color: Style.colors.surface
 
     Column {
@@ -28,6 +28,12 @@ Rectangle {
             KynexButton {
                 text: "Primary"
                 primary: true
+            }
+            KynexButton {
+                id: focusedBtn
+                text: "Focused"
+                focus: true
+                Component.onCompleted: forceActiveFocus()
             }
             KynexButton {
                 text: "Disabled"
@@ -93,6 +99,42 @@ Rectangle {
                 text: "List Item Disabled"
                 secondaryText: "Inactive item"
                 enabled: false
+            }
+        }
+
+        Text {
+            text: "Taskbar Buttons (Active, Inactive, Minimized, Elided)"
+            font.family: Style.typography.family
+            font.pixelSize: Style.typography.basePx
+            color: Style.colors.text
+        }
+
+        Row {
+            spacing: Style.spacing.small
+            KynexButton {
+                text: "Active Window"
+                primary: true
+                width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+                height: Style.spacing.panel - Style.spacing.small
+            }
+            KynexButton {
+                text: "Inactive Window"
+                primary: false
+                width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+                height: Style.spacing.panel - Style.spacing.small
+            }
+            KynexButton {
+                text: "Minimized Window"
+                primary: false
+                opacity: Style.opacity.disabled
+                width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+                height: Style.spacing.panel - Style.spacing.small
+            }
+            KynexButton {
+                text: "Very Long Window Title That Must Be Elided Cleanly"
+                primary: false
+                width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+                height: Style.spacing.panel - Style.spacing.small
             }
         }
     }

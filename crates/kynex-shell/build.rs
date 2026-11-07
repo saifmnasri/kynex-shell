@@ -9,6 +9,7 @@ fn main() {
             "src/network.rs",
             "src/power.rs",
             "src/shim.rs",
+            "src/windows.rs",
         ])
         .cpp_files([
             "cpp/layersurface.cpp",

@@ -6,6 +6,7 @@ pub mod clock;
 pub mod network;
 pub mod power;
 pub mod shim;
+pub mod windows;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
 use std::path::{Path, PathBuf};
