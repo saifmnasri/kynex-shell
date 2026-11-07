@@ -27,6 +27,8 @@ FocusScope {
     readonly property real iconWidth: iconImage.width
     readonly property real iconHeight: iconImage.height
     readonly property bool badgeVisible: badgeRect.visible
+    readonly property bool countBadgeVisible: countBadge.visible
+    readonly property string countBadgeText: countText.text
 
     signal clicked()
     signal middleClicked()

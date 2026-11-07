@@ -201,6 +201,25 @@ Item {
             verify(!button.badgeVisible);
         }
 
+        function test_button_window_count_badge() {
+            compare(button.windowCount, 0);
+            verify(!button.countBadgeVisible);
+
+            button.windowCount = 1;
+            verify(!button.countBadgeVisible);
+
+            button.windowCount = 2;
+            verify(button.countBadgeVisible);
+            compare(button.countBadgeText, "2");
+
+            button.windowCount = 5;
+            verify(button.countBadgeVisible);
+            compare(button.countBadgeText, "5");
+
+            button.windowCount = 0;
+            verify(!button.countBadgeVisible);
+        }
+
         function test_button_mouse_click() {
             mouseClick(button, button.width / 2, button.height / 2, Qt.LeftButton);
             compare(buttonClickedSpy.count, 1);
@@ -421,6 +440,7 @@ Item {
             compare(tooltip.Accessible.name, "Helpful hint");
             verify(tooltip.LayoutMirroring.childrenInherit);
             compare(tooltip.LayoutMirroring.enabled, Qt.locale().textDirection === Qt.RightToLeft);
+            compare(tooltip.textFormat, Text.PlainText);
             compare(tooltip.opacity, 0.0);
 
             tooltip.visible = true;

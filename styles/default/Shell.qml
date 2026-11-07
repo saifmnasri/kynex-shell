@@ -24,6 +24,19 @@ LayerSurface {
         console.log("Kynex Shell panel initialized successfully");
     }
 
+    readonly property alias powerModel: powerModel
+    readonly property alias networkModel: networkModel
+    readonly property alias windowListModel: windowListModel
+    readonly property alias launcherModel: launcherModel
+    readonly property alias taskbarList: taskbarList
+    readonly property alias launcherLoader: launcherLoader
+    readonly property alias networkText: networkText
+    readonly property string networkTooltipText: networkModel.connected
+        ? (networkModel.wifi
+            ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
+            : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
+        : "Network Disconnected"
+
     Clock {
         id: clock
         Component.onCompleted: clock.init()
@@ -104,14 +117,12 @@ LayerSurface {
                 required property bool minimized
                 required property bool isPinned
                 required property bool isRunning
-                required property int windowCount
+                required windowCount
 
                 text: title.length > 0 ? title : (appId.length > 0 ? appId : "Window")
                 letterBadge: letterBadge
                 iconSource: iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : ""
                 primary: active
-                isRunning: isRunning
-                windowCount: windowCount
                 showRunningIndicator: isRunning
                 opacity: (isRunning && minimized) ? Style.opacity.disabled : 1
                 width: Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
@@ -125,21 +136,6 @@ LayerSurface {
 
                 onMiddleClicked: {
                     windowListModel.handleMiddleClick(index);
-                }
-
-                Keys.onReturnPressed: (event) => {
-                    windowListModel.handleClick(index);
-                    event.accepted = true;
-                }
-
-                Keys.onEnterPressed: (event) => {
-                    windowListModel.handleClick(index);
-                    event.accepted = true;
-                }
-
-                Keys.onSpacePressed: (event) => {
-                    windowListModel.handleClick(index);
-                    event.accepted = true;
                 }
 
                 KynexTooltip {
@@ -204,6 +200,7 @@ LayerSurface {
                     }
 
                     Text {
+                        id: networkText
                         visible: networkModel.connected
                         text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
                         color: networkModel.weak ? Style.colors.warning : Style.colors.text
@@ -224,11 +221,7 @@ LayerSurface {
                         active: networkHover.containsMouse
                         sourceComponent: Component {
                             KynexTooltip {
-                                text: networkModel.connected
-                                    ? (networkModel.wifi
-                                        ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
-                                        : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
-                                    : "Network Disconnected"
+                                text: panel.networkTooltipText
                                 visible: true
                                 anchors.bottom: parent.top
                                 anchors.bottomMargin: Style.spacing.small

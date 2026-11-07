@@ -9,6 +9,7 @@ Item {
 
     readonly property color backgroundColor: bg.color
     readonly property color textColor: tooltipLabel.color
+    readonly property int textFormat: tooltipLabel.textFormat
 
     Accessible.role: Accessible.ToolTip
     Accessible.name: text

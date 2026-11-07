@@ -18,6 +18,7 @@ use crate::theme::ThemeIndex;
 pub const MAX_ICON_NAME_LENGTH: usize = 128;
 
 /// Maximum inheritance depth for parent themes (preventing cyclic or pathologically deep inheritance).
+/// Spec Section 5: bounded to 8 levels of parent inheritance recursion.
 pub const MAX_INHERITANCE_DEPTH: usize = 8;
 
 /// Validate an icon name against allowed character sets and bounds.
@@ -176,7 +177,10 @@ impl IconResolver {
         Ok(resolved)
     }
 
-    /// Traverse the theme hierarchy (active theme -> parents -> hicolor -> pixmaps).
+    /// Traverse the theme hierarchy according to Freedesktop Icon Theme Spec v0.13:
+    /// 1. `FindIconHelper(icon, size, initial_theme)`
+    /// 2. `FindIconHelper(icon, size, "hicolor")` (only if hicolor was not already searched)
+    /// 3. `LookupFallbackIcon(icon)` (`/usr/share/pixmaps`)
     fn lookup_in_theme_hierarchy(
         &self,
         icon_name: &str,
@@ -185,40 +189,77 @@ impl IconResolver {
         initial_theme: &str,
     ) -> Option<PathBuf> {
         let mut visited = HashSet::new();
-        let mut queue = Vec::new();
 
         if !initial_theme.is_empty() {
-            queue.push((initial_theme.to_string(), 0usize));
-            visited.insert(initial_theme.to_string());
-        }
-
-        // Process theme queue (Breadth-First Search up to MAX_INHERITANCE_DEPTH)
-        while let Some((theme, depth)) = queue.pop() {
-            if let Some(path) = self.lookup_icon_in_theme(icon_name, size, scale, &theme) {
+            if let Some(path) =
+                self.find_icon_helper(icon_name, size, scale, initial_theme, 0, &mut visited)
+            {
                 return Some(path);
             }
-
-            if depth < MAX_INHERITANCE_DEPTH {
-                if let Some(theme_idx) = self.load_theme_index(&theme) {
-                    for parent in &theme_idx.inherits {
-                        let parent = parent.trim();
-                        if !parent.is_empty() && visited.insert(parent.to_string()) {
-                            queue.push((parent.to_string(), depth + 1));
-                        }
-                    }
-                }
-            }
         }
 
-        // Mandatory fallback: hicolor (Section "Icon Lookup": parents = ["hicolor"])
-        if visited.insert("hicolor".to_string()) {
-            if let Some(path) = self.lookup_icon_in_theme(icon_name, size, scale, "hicolor") {
+        // Mandatory fallback: hicolor (Section "Icon Lookup": FindIconHelper(icon, size, "hicolor"))
+        // Searched only after the entire initial theme and parent inheritance tree has been searched.
+        if !visited.contains("hicolor") {
+            if let Some(path) =
+                self.find_icon_helper(icon_name, size, scale, "hicolor", 0, &mut visited)
+            {
                 return Some(path);
             }
         }
 
         // Unthemed fallback: /usr/share/pixmaps (Section "Icon Lookup": LookupFallbackIcon)
         self.lookup_fallback_pixmaps(icon_name)
+    }
+
+    /// Freedesktop Icon Theme Specification Section "Icon Lookup": `FindIconHelper(icon, size, theme)`.
+    ///
+    /// Depth-first search in listed order:
+    /// 1. Searches `theme` directly via `LookupIcon(icon, size, scale, theme)`.
+    /// 2. If not found, iterates through `theme.Inherits` in listed order,
+    ///    recursing into each parent (and its entire ancestor tree) before proceeding to the next parent.
+    ///
+    /// Guarded by:
+    /// - `visited` set for cycle detection (cycles terminate without infinite recursion).
+    /// - `MAX_INHERITANCE_DEPTH` (capped at 8) preventing pathologically deep chains.
+    fn find_icon_helper(
+        &self,
+        icon_name: &str,
+        size: u32,
+        scale: u32,
+        theme: &str,
+        depth: usize,
+        visited: &mut HashSet<String>,
+    ) -> Option<PathBuf> {
+        if theme.is_empty() || !visited.insert(theme.to_string()) {
+            return None;
+        }
+
+        if let Some(path) = self.lookup_icon_in_theme(icon_name, size, scale, theme) {
+            return Some(path);
+        }
+
+        if depth < MAX_INHERITANCE_DEPTH {
+            if let Some(theme_idx) = self.load_theme_index(theme) {
+                for parent in &theme_idx.inherits {
+                    let parent = parent.trim();
+                    if !parent.is_empty() {
+                        if let Some(path) = self.find_icon_helper(
+                            icon_name,
+                            size,
+                            scale,
+                            parent,
+                            depth + 1,
+                            visited,
+                        ) {
+                            return Some(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     /// Load or retrieve cached `ThemeIndex` for a theme name.
