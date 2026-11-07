@@ -1,0 +1,11 @@
+//! Kynex Shell Core library.
+//!
+//! Pure-Rust business logic for the shell presentation layer, decoupled from Qt Quick / CXX-Qt.
+
+pub mod launcher;
+
+pub use launcher::{
+    compute_letter_badge, sanitize_app_item, sanitize_display_text, sanitize_query, AppDisplayItem,
+    LatestWinsTracker, LauncherCore, SelectionState, MAX_COMMENT_LEN, MAX_GENERIC_NAME_LEN,
+    MAX_LAUNCHER_RESULTS, MAX_NAME_LEN, MAX_QUERY_LEN,
+};

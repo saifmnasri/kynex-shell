@@ -419,6 +419,8 @@ Item {
             compare(listItem.Accessible.role, Accessible.ListItem);
             compare(listItem.Accessible.name, "Primary item - Detailed explanation");
             verify(listItem.Accessible.focusable);
+            compare(listItem.textFormat, Text.PlainText);
+            compare(listItem.secondaryTextFormat, Text.PlainText);
             verify(listItem.activeFocusOnTab);
             verify(listItem.LayoutMirroring.childrenInherit);
             compare(listItem.LayoutMirroring.enabled, Qt.locale().textDirection === Qt.RightToLeft);

@@ -106,7 +106,8 @@ cleanup_outer() {
       kill -KILL "$p" 2>/dev/null || true
     fi
   done
-  rm -f "$TMP_DIR/dbus-session-bus-address" "$TMP_DIR/dbus-address" "$TMP_DIR/bus.sock"
+  rm -f "$TMP_DIR/dbus-session-bus-address" "$TMP_DIR/dbus-address" "$TMP_DIR/bus.sock" "$TMP_DIR/wayland-display"
+  rm -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/wayland-[1-9]*
   exit 0
 }
 trap cleanup_outer EXIT INT TERM HUP
@@ -129,6 +130,7 @@ set -euo pipefail
 set +m
 
 echo "\$\$ session-wrapper" >> "$PID_FILE"
+echo "\$WAYLAND_DISPLAY" > "$TMP_DIR/wayland-display"
 
 if [[ -f "$TMP_DIR/dbus-session-bus-address" ]]; then
   export DBUS_SESSION_BUS_ADDRESS="\$(cat "$TMP_DIR/dbus-session-bus-address")"
@@ -210,20 +212,26 @@ cleanup() {
 trap cleanup EXIT INT TERM HUP
 
 # Optional auto-exit timeout for automated testing
-if [[ -n "${KYNEX_TIMEOUT:-}" ]]; then
-  ( sleep "${KYNEX_TIMEOUT}"; kill -TERM "\$SHELL_PID" 2>/dev/null || true ) &
+if [[ -n "\${KYNEX_TIMEOUT:-}" ]]; then
+  ( sleep "\${KYNEX_TIMEOUT}"; kill -TERM "\$SHELL_PID" 2>/dev/null || true ) &
 fi
 
 # Optional extra dev client (e.g. dev/test-windows)
-if [[ -n "${KYNEX_EXTRA_CLIENT:-}" ]]; then
+if [[ -n "\${KYNEX_EXTRA_CLIENT:-}" ]]; then
   (
     sleep 1.5
-    ${KYNEX_EXTRA_CLIENT}
+    \${KYNEX_EXTRA_CLIENT}
   ) &
 fi
 
 # Wait for shell
-wait "\$SHELL_PID" || true
+if [[ "\${KYNEX_KEEP_SESSION_ALIVE:-0}" == "1" ]]; then
+  while true; do
+    sleep 1
+  done
+else
+  wait "\$SHELL_PID" || true
+fi
 cleanup
 EOF
 chmod +x "$WRAPPER"

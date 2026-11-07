@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QFontDatabase>
 #include <QQmlEngine>
 #include <QQuickView>
 #include <QQuickItem>
@@ -116,6 +117,18 @@ int main(int argc, char *argv[]) {
     std::string outputPath = argv[2];
 
     QGuiApplication app(argc, argv);
+
+    // Load bundled application fonts
+    QDir fontsDir("assets/fonts");
+    if (!fontsDir.exists()) {
+        fontsDir = QDir("../assets/fonts");
+    }
+    if (fontsDir.exists()) {
+        const QStringList fontFiles = fontsDir.entryList(QStringList() << "*.ttf" << "*.otf", QDir::Files);
+        for (const QString &f : fontFiles) {
+            QFontDatabase::addApplicationFont(fontsDir.filePath(f));
+        }
+    }
 
     if (variant == "rtl-100" || variant == "launcher-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);

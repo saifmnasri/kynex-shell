@@ -17,6 +17,8 @@ FocusScope {
     readonly property int borderWidth: bg.border.width
     readonly property bool labelVisible: label.visible
     readonly property bool secondaryLabelVisible: subLabel.visible
+    readonly property int textFormat: label.textFormat
+    readonly property int secondaryTextFormat: subLabel.textFormat
     readonly property int cursorShape: mouseArea.cursorShape
     readonly property color backgroundColor: bg.color
     readonly property color textColor: label.color

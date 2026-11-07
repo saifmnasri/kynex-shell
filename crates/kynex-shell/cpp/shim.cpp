@@ -7,6 +7,9 @@
 #include "kynex-shell/src/power.cxxqt.h"
 #include "kynex-shell/src/windows.cxxqt.h"
 #include <QtQml>
+#include <QFontDatabase>
+#include <QDir>
+#include <QCoreApplication>
 
 void kynex_register_core_types()
 {
@@ -17,6 +20,34 @@ void kynex_register_core_types()
     qmlRegisterType<NetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
+}
+
+void kynex_load_bundled_fonts()
+{
+    QStringList fontDirs = {
+        QStringLiteral("assets/fonts"),
+        QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../assets/fonts")),
+        QStringLiteral("/usr/share/kynex/fonts"),
+        QStringLiteral("/usr/local/share/kynex/fonts")
+    };
+
+    QByteArray envDir = qgetenv("KYNEX_FONTS_DIR");
+    if (!envDir.isEmpty()) {
+        fontDirs.prepend(QString::fromUtf8(envDir));
+    }
+
+    for (const QString &dirPath : fontDirs) {
+        QDir dir(dirPath);
+        if (dir.exists()) {
+            QStringList filters;
+            filters << QStringLiteral("*.ttf") << QStringLiteral("*.otf");
+            const QStringList fontFiles = dir.entryList(filters, QDir::Files);
+            for (const QString &f : fontFiles) {
+                QFontDatabase::addApplicationFont(dir.filePath(f));
+            }
+            break;
+        }
+    }
 }
 
 void kynex_set_style_tokens(

@@ -82,6 +82,9 @@ fn main() {
 
     let mut app = QGuiApplication::new();
 
+    // Load bundled application fonts
+    shim::load_bundled_fonts();
+
     // Register C++ LayerSurface and Style singleton into Kynex.Shell and Kynex.Style
     shim::register_types();
 

@@ -8,6 +8,28 @@ LayerSurface {
     id: root
 
     property LauncherModel launcherModel: null
+    readonly property var model: root.launcherModel
+    property bool launching: false
+
+    readonly property alias searchFieldItem: searchField
+    readonly property alias backdropArea: backdropMouse
+    readonly property alias listView: resultsList
+    readonly property alias dismissShortcut: escShortcut
+    readonly property alias placeholderTextItem: emptyPlaceholderText
+
+    function triggerLaunchSelected(): void {
+        if (!root.launching && root.model) {
+            root.launching = true;
+            root.model.launchSelected();
+        }
+    }
+
+    function triggerLaunch(index: int): void {
+        if (!root.launching && root.model) {
+            root.launching = true;
+            root.model.launch(index);
+        }
+    }
 
     visible: root.launcherModel ? root.launcherModel.visible : false
     width: Screen.width
@@ -28,18 +50,19 @@ LayerSurface {
         id: backdropMouse
         anchors.fill: parent
         onClicked: {
-            if (root.launcherModel) {
-                root.launcherModel.close();
+            if (root.model) {
+                root.model.close();
             }
         }
     }
 
     // Dismiss on Escape
     Shortcut {
+        id: escShortcut
         sequence: "Esc"
         onActivated: {
-            if (root.launcherModel) {
-                root.launcherModel.close();
+            if (root.model) {
+                root.model.close();
             }
         }
     }
@@ -69,46 +92,43 @@ LayerSurface {
             KynexSearchField {
                 id: searchField
                 width: parent.width
+                Keys.priority: Keys.BeforeItem
                 text: root.launcherModel ? root.launcherModel.query : ""
                 placeholderText: "Search applications..."
 
                 onTextEdited: {
-                    if (root.launcherModel) {
-                        root.launcherModel.setSearchQuery(searchField.text);
+                    if (root.model) {
+                        root.model.setSearchQuery(searchField.text);
                     }
                 }
 
                 Keys.onUpPressed: (event) => {
-                    if (root.launcherModel) {
-                        root.launcherModel.selectPrev();
+                    if (root.model) {
+                        root.model.selectPrev();
                     }
                     event.accepted = true;
                 }
 
                 Keys.onDownPressed: (event) => {
-                    if (root.launcherModel) {
-                        root.launcherModel.selectNext();
+                    if (root.model) {
+                        root.model.selectNext();
                     }
                     event.accepted = true;
                 }
 
                 Keys.onReturnPressed: (event) => {
-                    if (root.launcherModel) {
-                        root.launcherModel.launchSelected();
-                    }
+                    root.triggerLaunchSelected();
                     event.accepted = true;
                 }
 
                 Keys.onEnterPressed: (event) => {
-                    if (root.launcherModel) {
-                        root.launcherModel.launchSelected();
-                    }
+                    root.triggerLaunchSelected();
                     event.accepted = true;
                 }
 
                 Keys.onEscapePressed: (event) => {
-                    if (root.launcherModel) {
-                        root.launcherModel.close();
+                    if (root.model) {
+                        root.model.close();
                     }
                     event.accepted = true;
                 }
@@ -126,7 +146,7 @@ LayerSurface {
                     anchors.top: parent.top
                     visible: root.launcherModel ? (root.launcherModel.count > 0) : false
                     model: root.launcherModel
-                    currentIndex: root.launcherModel ? root.launcherModel.selectedIndex : 0
+                    currentIndex: (root.launcherModel && root.launcherModel.selectedIndex !== undefined) ? root.launcherModel.selectedIndex : 0
                     clip: true
                     spacing: Style.spacing.small
                     implicitHeight: contentHeight
@@ -147,9 +167,7 @@ LayerSurface {
                         selected: root.launcherModel ? (root.launcherModel.selectedIndex === index) : false
 
                         onClicked: {
-                            if (root.launcherModel) {
-                                root.launcherModel.launch(index);
-                            }
+                            root.triggerLaunch(index);
                         }
                     }
                 }
@@ -163,6 +181,7 @@ LayerSurface {
                     height: Style.spacing.panel + Style.spacing.panel
 
                     Text {
+                        id: emptyPlaceholderText
                         anchors.centerIn: parent
                         text: (searchField.text.length > 0) ? "No applications found" : "Type to search applications"
                         textFormat: Text.PlainText
@@ -179,6 +198,7 @@ LayerSurface {
         target: root
         function onVisibleChanged(): void {
             if (root.visible) {
+                root.launching = false;
                 searchField.forceFieldFocus();
             }
         }
@@ -186,11 +206,12 @@ LayerSurface {
 
     Component.onCompleted: {
         if (root.visible) {
+            root.launching = false;
             searchField.forceFieldFocus();
         }
         root.frameSwapped.connect(function() {
-            if (root.visible && root.launcherModel) {
-                root.launcherModel.recordFirstFrame();
+            if (root.visible && root.model) {
+                root.model.recordFirstFrame();
             }
         });
     }

@@ -17,10 +17,7 @@ use tokio::sync::{mpsc, Mutex};
 use tracing::{debug, error, info, warn};
 use zbus::fdo::DBusProxy;
 
-use crate::launcher_logic::{
-    sanitize_app_item, sanitize_query, AppDisplayItem, LatestWinsTracker, SelectionState,
-    MAX_LAUNCHER_RESULTS,
-};
+use crate::launcher_logic::{LauncherCore, MAX_LAUNCHER_RESULTS};
 
 /// Role ID for desktop entry ID.
 pub const ROLE_ID: i32 = 257;
@@ -147,13 +144,12 @@ pub mod qobject {
 /// Backing data for `LauncherModel`.
 #[derive(Default)]
 pub struct LauncherModelRust {
-    items: Vec<AppDisplayItem>,
+    core: LauncherCore,
     count: i32,
     selected_index: i32,
     visible: bool,
     query: QString,
     search_tx: Option<mpsc::UnboundedSender<(u64, String)>>,
-    tracker: LatestWinsTracker,
     open_start: Option<std::time::Instant>,
     last_keystroke_start: Option<std::time::Instant>,
 }
@@ -170,14 +166,14 @@ impl qobject::LauncherModel {
         });
 
         // Trigger initial search for full application list
-        let seq = self.as_mut().rust_mut().tracker.next_seq();
-        let _ = tx.send((seq, String::new()));
+        let (seq, empty) = self.as_mut().rust_mut().core.close();
+        let _ = tx.send((seq, empty));
     }
 
     /// Returns row count for the model.
     #[must_use]
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
-        self.rust().count
+        i32::try_from(self.rust().core.count()).unwrap_or(0)
     }
 
     /// Returns role data for a given index and role.
@@ -188,7 +184,7 @@ impl qobject::LauncherModel {
             return QVariant::default();
         };
 
-        let items = &self.rust().items;
+        let items = self.rust().core.items();
         if row_idx >= items.len() {
             return QVariant::default();
         }
@@ -219,78 +215,65 @@ impl qobject::LauncherModel {
     /// Submits a search query with latest-wins sequence tracking.
     pub fn set_search_query(mut self: Pin<&mut Self>, query: &QString) {
         let raw = query.to_string();
-        let clean = sanitize_query(&raw);
+        let (seq, clean) = self.as_mut().rust_mut().core.prepare_search_query(&raw);
         self.as_mut().rust_mut().last_keystroke_start = Some(std::time::Instant::now());
         self.as_mut().set_query(query.clone());
 
         let tx_opt = self.rust().search_tx.clone();
         if let Some(tx) = tx_opt {
-            let seq = self.as_mut().rust_mut().tracker.next_seq();
             let _ = tx.send((seq, clean));
         }
     }
 
     /// Moves selection down with wrap-around.
     pub fn select_next(mut self: Pin<&mut Self>) {
-        let total = self.rust().items.len();
-        let current = self.rust().selected_index;
-        let next = SelectionState::select_next(current, total);
-        self.as_mut().rust_mut().selected_index = next;
+        let next = self.as_mut().rust_mut().core.select_next();
         self.as_mut().set_selected_index(next);
     }
 
     /// Moves selection up with wrap-around.
     pub fn select_prev(mut self: Pin<&mut Self>) {
-        let total = self.rust().items.len();
-        let current = self.rust().selected_index;
-        let prev = SelectionState::select_prev(current, total);
-        self.as_mut().rust_mut().selected_index = prev;
+        let prev = self.as_mut().rust_mut().core.select_prev();
         self.as_mut().set_selected_index(prev);
     }
 
     /// Launches the application at row `index`.
     pub fn launch(self: Pin<&mut Self>, index: i32) {
-        let Ok(idx) = usize::try_from(index) else {
-            return;
-        };
-        let items = &self.rust().items;
-        if idx >= items.len() {
-            return;
-        }
-
-        let app_id = items[idx].id.clone();
-        tokio::spawn(async move {
-            match zbus::connection::Builder::session().build().await {
-                Ok(conn) => match Apps1Proxy::new(&conn).await {
-                    Ok(proxy) => {
-                        if let Err(err) = proxy.launch(&app_id).await {
-                            error!("Failed to launch {app_id}: {err}");
+        if let Some(app_id) = self.rust().core.launch(index) {
+            tokio::spawn(async move {
+                match zbus::connection::Builder::session().build().await {
+                    Ok(conn) => match Apps1Proxy::new(&conn).await {
+                        Ok(proxy) => {
+                            if let Err(err) = proxy.launch(&app_id).await {
+                                error!("Failed to launch {app_id}: {err}");
+                            }
                         }
-                    }
-                    Err(err) => error!("Failed to create Apps1Proxy: {err}"),
-                },
-                Err(err) => error!("Failed to connect to session bus: {err}"),
-            }
-        });
+                        Err(err) => error!("Failed to create Apps1Proxy: {err}"),
+                    },
+                    Err(err) => error!("Failed to connect to session bus: {err}"),
+                }
+            });
+        }
 
         self.close();
     }
 
     /// Launches the currently selected application.
     pub fn launch_selected(self: Pin<&mut Self>) {
-        let selected = self.rust().selected_index;
+        let selected = self.rust().core.selected_index();
         self.launch(selected);
     }
 
     /// Closes the launcher overlay and clears query.
     pub fn close(mut self: Pin<&mut Self>) {
+        let (seq, empty) = self.as_mut().rust_mut().core.close();
         self.as_mut().rust_mut().open_start = None;
         self.as_mut().set_visible(false);
         self.as_mut().set_query(QString::default());
+        self.as_mut().set_selected_index(-1);
         let tx_opt = self.rust().search_tx.clone();
         if let Some(tx) = tx_opt {
-            let seq = self.as_mut().rust_mut().tracker.next_seq();
-            let _ = tx.send((seq, String::new()));
+            let _ = tx.send((seq, empty));
         }
     }
 
@@ -314,10 +297,10 @@ impl qobject::LauncherModel {
         self.as_mut().set_visible(new_vis);
         if new_vis {
             self.as_mut().set_query(QString::default());
+            let (seq, empty) = self.as_mut().rust_mut().core.close();
             let tx_opt = self.rust().search_tx.clone();
             if let Some(tx) = tx_opt {
-                let seq = self.as_mut().rust_mut().tracker.next_seq();
-                let _ = tx.send((seq, String::new()));
+                let _ = tx.send((seq, empty));
             }
         }
     }
@@ -327,22 +310,19 @@ impl qobject::LauncherModel {
 fn dispatch_search_results(
     qt_thread: &cxx_qt::CxxQtThread<qobject::LauncherModel>,
     seq: u64,
-    items: Vec<AppDisplayItem>,
+    items: Vec<kynex_ipc::apps::AppItem>,
 ) {
     let _ = qt_thread.queue(move |mut qobj| {
-        if !qobj.as_mut().rust_mut().tracker.should_apply(seq) {
+        qobj.as_mut().begin_reset_model();
+        let applied = qobj.as_mut().rust_mut().core.apply_results(seq, &items);
+        let count = i32::try_from(qobj.rust().core.count()).unwrap_or(0);
+        let selected = qobj.rust().core.selected_index();
+        qobj.as_mut().end_reset_model();
+
+        if !applied {
             debug!("Discarding stale search result with seq {seq}");
             return;
         }
-
-        let count = i32::try_from(items.len()).unwrap_or(0);
-        let selected = if count > 0 { 0 } else { -1 };
-
-        qobj.as_mut().begin_reset_model();
-        qobj.as_mut().rust_mut().items = items;
-        qobj.as_mut().rust_mut().count = count;
-        qobj.as_mut().rust_mut().selected_index = selected;
-        qobj.as_mut().end_reset_model();
 
         qobj.as_mut().set_count(count);
         qobj.as_mut().set_selected_index(selected);
@@ -395,6 +375,7 @@ async fn run_launcher_service(
     };
 
     let latest_query = Arc::new(Mutex::new(String::new()));
+    info!("LauncherModel connected to session bus");
 
     loop {
         tokio::select! {
@@ -406,11 +387,7 @@ async fn run_launcher_service(
                     let results = proxy.search(&query, MAX_LAUNCHER_RESULTS).await;
                     match results {
                         Ok(raw_items) => {
-                            let display_items: Vec<AppDisplayItem> = raw_items
-                                .iter()
-                                .map(sanitize_app_item)
-                                .collect();
-                            dispatch_search_results(&qt_thread, seq, display_items);
+                            dispatch_search_results(&qt_thread, seq, raw_items);
                         }
                         Err(err) => {
                             warn!("Apps1.Search failed: {err}");
@@ -429,9 +406,25 @@ async fn run_launcher_service(
                     None => futures_util::future::pending().await,
                 }
             } => {
+                let recv_instant = std::time::Instant::now();
                 info!("Launcher toggle requested received over D-Bus");
-                let _ = qt_thread.queue(|mut qobj| {
-                    qobj.as_mut().toggle_visible();
+                let _ = qt_thread.queue(move |mut qobj| {
+                    let current = qobj.rust().visible;
+                    let new_vis = !current;
+                    if new_vis {
+                        qobj.as_mut().rust_mut().open_start = Some(recv_instant);
+                    } else {
+                        qobj.as_mut().rust_mut().open_start = None;
+                    }
+                    qobj.as_mut().set_visible(new_vis);
+                    if new_vis {
+                        qobj.as_mut().set_query(QString::default());
+                        let (seq, empty) = qobj.as_mut().rust_mut().core.close();
+                        let tx_opt = qobj.rust().search_tx.clone();
+                        if let Some(tx) = tx_opt {
+                            let _ = tx.send((seq, empty));
+                        }
+                    }
                 });
             }
 
@@ -446,21 +439,17 @@ async fn run_launcher_service(
                 let q = latest_query.lock().await.clone();
                 if let Ok(proxy) = Apps1Proxy::builder(&session_conn).build().await {
                     if let Ok(raw_items) = proxy.search(&q, MAX_LAUNCHER_RESULTS).await {
-                        let display_items: Vec<AppDisplayItem> = raw_items
-                            .iter()
-                            .map(sanitize_app_item)
-                            .collect();
-                        // Dispatch with special sequence 0 or latest tracker seq
                         let _ = qt_thread.queue(move |mut qobj| {
-                            let count = i32::try_from(display_items.len()).unwrap_or(0);
-                            let selected = if count > 0 { 0 } else { -1 };
+                            let current_seq = qobj.rust().core.current_seq();
                             qobj.as_mut().begin_reset_model();
-                            qobj.as_mut().rust_mut().items = display_items;
-                            qobj.as_mut().rust_mut().count = count;
-                            qobj.as_mut().rust_mut().selected_index = selected;
+                            let applied = qobj.as_mut().rust_mut().core.apply_results(current_seq, &raw_items);
+                            let count = i32::try_from(qobj.rust().core.count()).unwrap_or(0);
+                            let selected = qobj.rust().core.selected_index();
                             qobj.as_mut().end_reset_model();
-                            qobj.as_mut().set_count(count);
-                            qobj.as_mut().set_selected_index(selected);
+                            if applied {
+                                qobj.as_mut().set_count(count);
+                                qobj.as_mut().set_selected_index(selected);
+                            }
                         });
                     }
                 }
@@ -497,20 +486,17 @@ async fn run_launcher_service(
                         let q = latest_query.lock().await.clone();
                         if let Some(ref proxy) = apps_proxy {
                             if let Ok(raw_items) = proxy.search(&q, MAX_LAUNCHER_RESULTS).await {
-                                let display_items: Vec<AppDisplayItem> = raw_items
-                                    .iter()
-                                    .map(sanitize_app_item)
-                                    .collect();
                                 let _ = qt_thread.queue(move |mut qobj| {
-                                    let count = i32::try_from(display_items.len()).unwrap_or(0);
-                                    let selected = if count > 0 { 0 } else { -1 };
+                                    let current_seq = qobj.rust().core.current_seq();
                                     qobj.as_mut().begin_reset_model();
-                                    qobj.as_mut().rust_mut().items = display_items;
-                                    qobj.as_mut().rust_mut().count = count;
-                                    qobj.as_mut().rust_mut().selected_index = selected;
+                                    let applied = qobj.as_mut().rust_mut().core.apply_results(current_seq, &raw_items);
+                                    let count = i32::try_from(qobj.rust().core.count()).unwrap_or(0);
+                                    let selected = qobj.rust().core.selected_index();
                                     qobj.as_mut().end_reset_model();
-                                    qobj.as_mut().set_count(count);
-                                    qobj.as_mut().set_selected_index(selected);
+                                    if applied {
+                                        qobj.as_mut().set_count(count);
+                                        qobj.as_mut().set_selected_index(selected);
+                                    }
                                 });
                             }
                         }
