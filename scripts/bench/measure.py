@@ -5,7 +5,7 @@ Example: scripts/bench/measure.py --label kynex-idle --procs kwin_wayland kynex-
          scripts/bench/measure.py --label plasma-idle --procs kwin_wayland plasmashell --duration 120
 Output: table + JSON in dev/bench/. Methodology: docs/PERFORMANCE.md
 """
-import argparse, json, os, time, datetime, subprocess
+import argparse, json, os, time, datetime, subprocess, sys
 
 CLK = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
 
@@ -70,7 +70,13 @@ def main():
     ap.add_argument("--duration", type=int, default=120)
     ap.add_argument("--interval", type=float, default=5.0)
     ap.add_argument("--build-profile", choices=["release", "debug"], help="Build profile (default: auto-detected)")
+    ap.add_argument("--allow-multiple", action="store_true", help="Allow multiple instances of measured processes")
     a = ap.parse_args()
+
+    for name in a.procs:
+        found_pids = pids(name)
+        if len(found_pids) > 1 and not a.allow_multiple:
+            sys.exit(f"ERROR: Multiple instances of '{name}' running: {found_pids}. Pass --allow-multiple to allow.")
 
     samples = {p: [] for p in a.procs}
     cpu0, t0 = {}, time.time()

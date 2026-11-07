@@ -10,13 +10,15 @@ StyleColors::StyleColors(QObject *parent)
     , m_danger("#ff6b6b")
     , m_warning("#e5a50a")
     , m_success("#4cd1a0")
+    , m_focusRing("#6aa6ff")
 {
 }
 
 void StyleColors::setColors(const QString &surface, const QString &surfaceRaised,
                            const QString &text, const QString &textMuted,
                            const QString &accent, const QString &danger,
-                           const QString &warning, const QString &success)
+                           const QString &warning, const QString &success,
+                           const QString &focusRing)
 {
     m_surface = QColor(surface);
     m_surfaceRaised = QColor(surfaceRaised);
@@ -26,6 +28,7 @@ void StyleColors::setColors(const QString &surface, const QString &surfaceRaised
     m_danger = QColor(danger);
     m_warning = QColor(warning);
     m_success = QColor(success);
+    m_focusRing = focusRing.isEmpty() ? QColor(accent) : QColor(focusRing);
     Q_EMIT changed();
 }
 
@@ -97,6 +100,24 @@ void StyleTypography::setTypography(const QString &family, const QString &fallba
     Q_EMIT changed();
 }
 
+StyleOpacity::StyleOpacity(QObject *parent)
+    : QObject(parent)
+    , m_disabled(0.38)
+    , m_hover(0.08)
+    , m_pressed(0.16)
+    , m_focus(1.0)
+{
+}
+
+void StyleOpacity::setOpacity(qreal disabled, qreal hover, qreal pressed, qreal focus)
+{
+    m_disabled = disabled;
+    m_hover = hover;
+    m_pressed = pressed;
+    m_focus = focus;
+    Q_EMIT changed();
+}
+
 Style::Style(QObject *parent)
     : QObject(parent)
     , m_colors(this)
@@ -104,6 +125,7 @@ Style::Style(QObject *parent)
     , m_radius(this)
     , m_motion(this)
     , m_typography(this)
+    , m_opacity(this)
 {
 }
 

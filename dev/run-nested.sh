@@ -25,6 +25,9 @@ cargo build "${CARGO_ARGS[@]}"
 BIN_DIR="$ROOT_DIR/target/$BUILD_PROFILE"
 
 WRAPPER="$TMP_DIR/session.sh"
+PID_FILE="$TMP_DIR/session.pids"
+rm -f "$PID_FILE"
+
 cat << EOF > "$WRAPPER"
 #!/usr/bin/env bash
 set -euo pipefail
@@ -46,26 +49,35 @@ if [[ "\${KYNEX_FAKE_NM:-1}" == "1" ]]; then
   FAKE_NM_PID=\$!
 fi
 
-# Start daemon in background
-KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session "$BIN_DIR/kynex-daemon" 2>&1 | tee "$DAEMON_LOG" &
+# Start daemon in background (direct redirection guarantees \$! is the actual daemon PID, not tee)
+KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session "$BIN_DIR/kynex-daemon" > "$DAEMON_LOG" 2>&1 &
 DAEMON_PID=\$!
 
-# Start shell in foreground
-"$BIN_DIR/kynex-shell" 2>&1 | tee "$SHELL_LOG" &
+# Start shell in background
+"$BIN_DIR/kynex-shell" > "$SHELL_LOG" 2>&1 &
 SHELL_PID=\$!
 
+# Save active PIDs for outer process-group cleanup
+echo "\$SHELL_PID \$DAEMON_PID \$FAKE_PID \$FAKE_NM_PID" > "$PID_FILE"
+
 cleanup() {
-  rm -f "$TMP_DIR/dbus-session-bus-address"
-  kill "\$SHELL_PID" 2>/dev/null || true
-  kill "\$DAEMON_PID" 2>/dev/null || true
-  if [[ -n "\$FAKE_PID" ]]; then
-    kill "\$FAKE_PID" 2>/dev/null || true
-  fi
-  if [[ -n "\$FAKE_NM_PID" ]]; then
-    kill "\$FAKE_NM_PID" 2>/dev/null || true
-  fi
+  trap - EXIT INT TERM HUP
+  rm -f "$TMP_DIR/dbus-session-bus-address" "$PID_FILE"
+  # Terminate tracked children directly
+  [[ -n "\$SHELL_PID" ]] && kill -TERM "\$SHELL_PID" 2>/dev/null || true
+  [[ -n "\$DAEMON_PID" ]] && kill -TERM "\$DAEMON_PID" 2>/dev/null || true
+  [[ -n "\$FAKE_PID" ]] && kill -TERM "\$FAKE_PID" 2>/dev/null || true
+  [[ -n "\$FAKE_NM_PID" ]] && kill -TERM "\$FAKE_NM_PID" 2>/dev/null || true
+  # Terminate any remaining child processes of this wrapper
+  pkill -TERM -P \$\$ 2>/dev/null || true
+  sleep 0.1
+  [[ -n "\$SHELL_PID" ]] && kill -KILL "\$SHELL_PID" 2>/dev/null || true
+  [[ -n "\$DAEMON_PID" ]] && kill -KILL "\$DAEMON_PID" 2>/dev/null || true
+  [[ -n "\$FAKE_PID" ]] && kill -KILL "\$FAKE_PID" 2>/dev/null || true
+  [[ -n "\$FAKE_NM_PID" ]] && kill -KILL "\$FAKE_NM_PID" 2>/dev/null || true
+  pkill -KILL -P \$\$ 2>/dev/null || true
 }
-trap cleanup EXIT TERM INT
+trap cleanup EXIT INT TERM HUP
 
 # Optional auto-exit timeout for automated testing
 if [[ -n "\${KYNEX_TIMEOUT:-}" ]]; then
@@ -90,7 +102,35 @@ export QT_QPA_PLATFORM=wayland
 export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
 export RUST_LOG="${RUST_LOG:-info}"
 
-exec dbus-run-session bash -c "
-  exec kwin_wayland --width 1280 --height 720 \
-    --no-lockscreen --no-global-shortcuts --exit-with-session \"$WRAPPER\" 2>&1 | tee \"$KWIN_LOG\"
-"
+KWIN_RUNNER_PID=""
+
+cleanup_outer() {
+  trap - EXIT INT TERM HUP
+  echo "Stopping nested session and cleaning up children..."
+  if [[ -f "$PID_FILE" ]]; then
+    SESSION_PIDS="$(cat "$PID_FILE" 2>/dev/null || true)"
+    for p in $SESSION_PIDS; do
+      kill -TERM "$p" 2>/dev/null || true
+    done
+    sleep 0.1
+    for p in $SESSION_PIDS; do
+      kill -KILL "$p" 2>/dev/null || true
+    done
+    rm -f "$PID_FILE"
+  fi
+  if [[ -n "$KWIN_RUNNER_PID" ]]; then
+    kill -TERM "$KWIN_RUNNER_PID" 2>/dev/null || true
+    sleep 0.1
+    kill -KILL "$KWIN_RUNNER_PID" 2>/dev/null || true
+  fi
+  pkill -TERM -P $$ 2>/dev/null || true
+}
+trap cleanup_outer EXIT INT TERM HUP
+
+dbus-run-session bash -c "
+  kwin_wayland --width 1280 --height 720 \
+    --no-lockscreen --no-global-shortcuts --exit-with-session \"$WRAPPER\" > \"$KWIN_LOG\" 2>&1
+" &
+KWIN_RUNNER_PID=$!
+
+wait "$KWIN_RUNNER_PID" || true
