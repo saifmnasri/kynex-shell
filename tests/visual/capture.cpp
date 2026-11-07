@@ -79,6 +79,33 @@ int main(int argc, char *argv[]) {
         std::cout << "RMS delta: " << rms << " (tolerance: " << tolerance << ")" << std::endl;
 
         if (rms > tolerance) {
+            std::string diffPath = argc > 5 ? argv[5] : "";
+            if (!diffPath.empty()) {
+                QImage diffImg(golden.size(), QImage::Format_RGBA8888);
+                for (int y = 0; y < golden.height(); ++y) {
+                    for (int x = 0; x < golden.width(); ++x) {
+                        QRgb pg = gRgba.pixel(x, y);
+                        QRgb pr = rRgba.pixel(x, y);
+                        int dr = std::abs(qRed(pg) - qRed(pr));
+                        int dg = std::abs(qGreen(pg) - qGreen(pr));
+                        int db = std::abs(qBlue(pg) - qBlue(pr));
+                        int da = std::abs(qAlpha(pg) - qAlpha(pr));
+                        if (dr == 0 && dg == 0 && db == 0 && da == 0) {
+                            diffImg.setPixel(x, y, qRgba(0, 0, 0, 255));
+                        } else {
+                            diffImg.setPixel(x, y, qRgba(
+                                std::min(255, dr * 10 + 64),
+                                std::min(255, dg * 10),
+                                std::min(255, db * 10 + 64),
+                                255
+                            ));
+                        }
+                    }
+                }
+                if (!diffImg.save(QString::fromStdString(diffPath))) {
+                    std::cerr << "WARNING: Failed to save diff image to " << diffPath << std::endl;
+                }
+            }
             std::cerr << "FAIL: RMS delta " << rms << " exceeds tolerance " << tolerance << std::endl;
             return 1;
         }

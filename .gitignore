@@ -17,6 +17,7 @@ CMakeCache.txt
 *.moc.cpp
 tests/qml_tests/controls_test_runner
 tests/visual/capture
+tests/visual/failures/
 
 # Dev / logs / temporary files
 /dev/*
