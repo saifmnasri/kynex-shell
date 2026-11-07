@@ -9,6 +9,8 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QQuickItem>
+#include <QQuickImageProvider>
+#include <QPixmap>
 #include "../../crates/kynex-shell/cpp/style.h"
 #include "../../crates/kynex-shell/cpp/layersurface.h"
 
@@ -59,7 +61,9 @@ public:
         NameRole,
         GenericNameRole,
         CommentRole,
-        LetterBadgeRole
+        LetterBadgeRole,
+        IconNameRole,
+        IsPinnedRole
     };
 
     struct Item {
@@ -68,6 +72,8 @@ public:
         QString genericName;
         QString comment;
         QString letterBadge;
+        QString iconName;
+        bool isPinned;
     };
 
     explicit MockLauncherModel(QObject *parent = nullptr)
@@ -89,6 +95,8 @@ public:
             case GenericNameRole: return item.genericName;
             case CommentRole: return item.comment;
             case LetterBadgeRole: return item.letterBadge;
+            case IconNameRole: return item.iconName;
+            case IsPinnedRole: return item.isPinned;
             default: return QVariant();
         }
     }
@@ -100,6 +108,8 @@ public:
         roles[GenericNameRole] = "genericName";
         roles[CommentRole] = "comment";
         roles[LetterBadgeRole] = "letterBadge";
+        roles[IconNameRole] = "iconName";
+        roles[IsPinnedRole] = "isPinned";
         return roles;
     }
 
@@ -140,11 +150,18 @@ public:
     bool closeCalled() const { return m_closeCalled; }
     int closeCallCount() const { return m_closeCallCount; }
 
-    Q_INVOKABLE void addItem(const QString &id, const QString &name, const QString &genericName, const QString &comment, const QString &badge) {
+    Q_INVOKABLE void addItem(const QString &id, const QString &name, const QString &genericName, const QString &comment, const QString &badge, const QString &icon = QString(), bool pinned = false) {
         beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-        m_items.append({id, name, genericName, comment, badge});
+        m_items.append({id, name, genericName, comment, badge, icon, pinned});
         endInsertRows();
         setCount(m_items.size());
+    }
+
+    Q_INVOKABLE void togglePinSelected() {
+        if (m_selectedIndex >= 0 && m_selectedIndex < m_items.size()) {
+            m_items[m_selectedIndex].isPinned = !m_items[m_selectedIndex].isPinned;
+            Q_EMIT dataChanged(index(m_selectedIndex), index(m_selectedIndex), {IsPinnedRole});
+        }
     }
 
     Q_INVOKABLE void clearItems() {
@@ -237,12 +254,26 @@ private:
     int m_closeCallCount;
 };
 
+class DummyIconProvider : public QQuickImageProvider {
+public:
+    DummyIconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+    QPixmap requestPixmap(const QString &, QSize *size, const QSize &requestedSize) override {
+        int w = requestedSize.width() > 0 ? requestedSize.width() : 24;
+        int h = requestedSize.height() > 0 ? requestedSize.height() : 24;
+        if (size) *size = QSize(w, h);
+        QPixmap pm(w, h);
+        pm.fill(Qt::transparent);
+        return pm;
+    }
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
     Setup() {}
 public slots:
     void qmlEngineAvailable(QQmlEngine *engine) {
+        engine->addImageProvider(QStringLiteral("kynex-icon"), new DummyIconProvider());
         QDir fontsDir("assets/fonts");
         if (fontsDir.exists()) {
             const QStringList fontFiles = fontsDir.entryList(QStringList() << "*.ttf" << "*.otf", QDir::Files);

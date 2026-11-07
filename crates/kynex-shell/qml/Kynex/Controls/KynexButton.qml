@@ -6,7 +6,11 @@ FocusScope {
 
     property string text: ""
     property url iconSource: ""
+    property string letterBadge: ""
     property bool primary: false
+    property bool isRunning: false
+    property int windowCount: 0
+    property bool showRunningIndicator: false
     property bool spaceDown: false
 
     readonly property bool hovered: mouseArea.containsMouse
@@ -19,6 +23,10 @@ FocusScope {
     readonly property color textColor: label.color
     readonly property real iconX: iconImage.x
     readonly property real labelX: label.x
+    readonly property bool iconVisible: iconImage.visible
+    readonly property real iconWidth: iconImage.width
+    readonly property real iconHeight: iconImage.height
+    readonly property bool badgeVisible: badgeRect.visible
 
     signal clicked()
     signal middleClicked()
@@ -95,24 +103,80 @@ FocusScope {
 
         Image {
             id: iconImage
-            visible: source.toString() !== ""
+            visible: source.toString() !== "" && status === Image.Ready
             source: root.iconSource
             anchors.verticalCenter: parent.verticalCenter
-            width: visible ? Style.typography.basePx + Style.spacing.unit : 0
-            height: visible ? Style.typography.basePx + Style.spacing.unit : 0
+            width: (source.toString() !== "") ? Style.typography.basePx + Style.spacing.unit : 0
+            height: (source.toString() !== "") ? Style.typography.basePx + Style.spacing.unit : 0
             fillMode: Image.PreserveAspectFit
+            asynchronous: true
+        }
+
+        Rectangle {
+            id: badgeRect
+            visible: root.letterBadge.length > 0 && (!iconImage.visible || iconImage.status === Image.Error || iconImage.status === Image.Null)
+            width: Style.typography.basePx + Style.spacing.unit
+            height: Style.typography.basePx + Style.spacing.unit
+            radius: Style.radius.small
+            color: root.primary ? Style.colors.surface : Style.colors.surfaceRaised
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text {
+                id: badgeText
+                anchors.centerIn: parent
+                text: root.letterBadge
+                textFormat: Text.PlainText
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx - Style.spacing.unit
+                font.bold: true
+                color: root.primary ? Style.colors.accent : Style.colors.text
+            }
         }
 
         Text {
             id: label
             visible: text !== ""
             text: root.text
-            elide: Text.ElideRight
-            width: root.width > (Style.spacing.medium + Style.spacing.medium) ? Math.min(implicitWidth, root.width - Style.spacing.medium - Style.spacing.medium - (iconImage.visible ? iconImage.width + Style.spacing.small : 0)) : implicitWidth
             font.family: Style.typography.family
             font.pixelSize: Style.typography.basePx
             color: root.primary ? Style.colors.surface : Style.colors.text
             anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
+    Rectangle {
+        id: runningIndicator
+        visible: root.showRunningIndicator
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Style.spacing.unit / (1 + 1)
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.primary ? Style.spacing.large : Style.spacing.small
+        height: Style.spacing.unit / (1 + 1)
+        radius: Style.radius.small
+        color: root.primary ? Style.colors.surface : Style.colors.accent
+    }
+
+    Rectangle {
+        id: countBadge
+        visible: root.windowCount > 1
+        anchors.top: parent.top
+        anchors.topMargin: Style.spacing.unit / (1 + 1)
+        anchors.right: parent.right
+        anchors.rightMargin: Style.spacing.unit / (1 + 1)
+        width: countText.implicitWidth + Style.spacing.unit + Style.spacing.unit
+        height: countText.implicitHeight + Style.spacing.unit
+        radius: Style.radius.small
+        color: root.primary ? Style.colors.surface : Style.colors.surfaceRaised
+
+        Text {
+            id: countText
+            anchors.centerIn: parent
+            text: root.windowCount.toString()
+            textFormat: Text.PlainText
+            font.family: Style.typography.family
+            font.pixelSize: Style.typography.basePx - Style.spacing.unit
+            font.bold: true
+            color: root.primary ? Style.colors.accent : Style.colors.text
         }
     }
 

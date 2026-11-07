@@ -1,0 +1,12 @@
+[n Tlme]
+Name=SeedHicolor
+Comment=Fallback icon theme
+Inherits=hicolor
+Directories=48xld
+Threshold=
+[si=128
+Scale=1
+MinSize=16
+MaxSize=26
+Cont=A`p
+Type=Scalabll

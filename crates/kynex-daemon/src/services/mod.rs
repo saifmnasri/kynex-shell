@@ -2,6 +2,7 @@
 
 pub mod apps;
 pub mod network;
+pub mod pins;
 pub mod power;
 pub mod shell;
 pub mod windows;
@@ -12,6 +13,7 @@ pub use network::{
     sanitize_signal_strength, sanitize_ssid, AccessPointProxy, ActiveConnectionProxy,
     NetworkManagerProxy, NetworkServer, NetworkSnapshot,
 };
+pub use pins::{PinsServer, PinsSharedState, MAX_PINS, PINS_MUTATION_RATE_LIMIT_PER_SEC};
 pub use power::{
     read_device_snapshot, run_power_service, sanitize_percentage, sanitize_state, sanitize_time,
     PowerServer, PowerSnapshot, UPowerDeviceProxy,

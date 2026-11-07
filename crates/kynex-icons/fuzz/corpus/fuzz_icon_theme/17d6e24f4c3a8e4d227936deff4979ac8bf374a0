@@ -1,0 +1,7 @@
+[Icon Theme]
+Name=SeedHicolor
+Comment=Fallback icon theme
+InheritSize=16
+MaxSize=256
+Context=Applications
+Type=Scalable

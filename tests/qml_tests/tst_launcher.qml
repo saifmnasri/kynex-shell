@@ -239,5 +239,51 @@ Item {
             compare(mockModel.lastLaunchedIndex, 0);
             compare(launcher.launching, true);
         }
+
+        function test_ctrl_p_pin_toggle() {
+            mockModel.addItem("app-1", "App 1", "", "", "1", "icon-1", false);
+            mockModel.selectedIndex = 0;
+            mockModel.visible = true;
+            tryVerify(function() { return launcher.visible; });
+            tryVerify(function() { return launcher.searchFieldItem.focus; });
+
+            // Verify delegate has correct iconSource from iconName
+            let children = launcher.listView.contentItem.children;
+            let foundIcon = false;
+            for (let i = 0; i < children.length; ++i) {
+                if (children[i].hasOwnProperty("iconSource")) {
+                    compare(children[i].iconSource, "image://kynex-icon/icon-1?size=24&scale=1");
+                    foundIcon = true;
+                    break;
+                }
+            }
+            verify(foundIcon, "Delegate must have iconSource bound from iconName");
+
+            // Non-matching keys must NOT toggle pinned state
+            LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_O, Qt.ControlModifier);
+            LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_P, Qt.NoModifier);
+            wait(20);
+            let stillUnpinned = false;
+            children = launcher.listView.contentItem.children;
+            for (let i = 0; i < children.length; ++i) {
+                if (children[i].hasOwnProperty("pinned")) {
+                    stillUnpinned = (children[i].pinned === false);
+                    break;
+                }
+            }
+            verify(stillUnpinned, "Non-Ctrl+P key must not toggle pin");
+
+            // Send Ctrl+P to toggle pin
+            LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_P, Qt.ControlModifier);
+            tryVerify(function() {
+                let items = launcher.listView.contentItem.children;
+                for (let i = 0; i < items.length; ++i) {
+                    if (items[i].hasOwnProperty("pinned")) {
+                        return items[i].pinned === true;
+                    }
+                }
+                return false;
+            }, 1000, "Ctrl+P must toggle pinned status on selected item");
+        }
     }
 }

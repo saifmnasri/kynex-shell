@@ -67,6 +67,17 @@ LayerSurface {
         }
     }
 
+    // Toggle pin on Ctrl+P
+    Shortcut {
+        id: pinShortcut
+        sequence: "Ctrl+P"
+        onActivated: {
+            if (root.model) {
+                root.model.togglePinSelected();
+            }
+        }
+    }
+
     Rectangle {
         id: card
         anchors.centerIn: parent
@@ -132,6 +143,15 @@ LayerSurface {
                     }
                     event.accepted = true;
                 }
+
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_P && (event.modifiers & Qt.ControlModifier)) {
+                        if (root.model) {
+                            root.model.togglePinSelected();
+                        }
+                        event.accepted = true;
+                    }
+                }
             }
 
             Item {
@@ -158,12 +178,16 @@ LayerSurface {
                         required property string name
                         required property string genericName
                         required property string comment
+                        required property string iconName
                         required property string letterBadge
+                        required property bool isPinned
 
                         width: resultsList.width
                         text: name
                         secondaryText: genericName.length > 0 ? genericName : comment
                         letterBadge: letterBadge
+                        iconSource: iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : ""
+                        pinned: isPinned
                         selected: root.launcherModel ? (root.launcherModel.selectedIndex === index) : false
 
                         onClicked: {

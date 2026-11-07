@@ -742,8 +742,11 @@ async fn test_window_actions_rapid_1000_rate_limit() -> Result<(), Box<dyn Error
     let mut successful_calls = 0;
     let mut rate_limited_calls = 0;
 
-    for _ in 0..1000 {
-        match client_proxy.activate("{1234-abcd}").await {
+    let calls = (0..1000).map(|_| client_proxy.activate("{1234-abcd}"));
+    let results = futures_util::future::join_all(calls).await;
+
+    for res in results {
+        match res {
             Ok(()) => successful_calls += 1,
             Err(e) => {
                 let err_msg = e.to_string();

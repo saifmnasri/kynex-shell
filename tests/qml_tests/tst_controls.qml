@@ -184,6 +184,23 @@ Item {
             verify(button.labelVisible);
         }
 
+        function test_button_icon_and_letter_badge() {
+            verify(!button.iconVisible);
+            button.letterBadge = "B";
+            verify(button.badgeVisible);
+            let testIcon = Qt.resolvedUrl("test_icon.png");
+            button.iconSource = testIcon;
+            tryVerify(function() { return button.iconVisible; });
+            compare(button.iconWidth, Style.typography.basePx + Style.spacing.unit);
+            compare(button.iconHeight, Style.typography.basePx + Style.spacing.unit);
+            verify(!button.badgeVisible);
+            button.iconSource = "";
+            verify(!button.iconVisible);
+            verify(button.badgeVisible);
+            button.letterBadge = "";
+            verify(!button.badgeVisible);
+        }
+
         function test_button_mouse_click() {
             mouseClick(button, button.width / 2, button.height / 2, Qt.LeftButton);
             compare(buttonClickedSpy.count, 1);
@@ -439,12 +456,17 @@ Item {
             listItem.secondaryText = "Detailed explanation";
             verify(listItem.secondaryLabelVisible);
 
+            verify(!listItem.iconVisible);
             listItem.letterBadge = "K";
             verify(listItem.badgeVisible);
             let testIcon = Qt.resolvedUrl("test_icon.png");
             listItem.iconSource = testIcon;
+            tryVerify(function() { return listItem.iconVisible; });
+            compare(listItem.iconWidth, Style.typography.basePx + Style.spacing.unit);
+            compare(listItem.iconHeight, Style.typography.basePx + Style.spacing.unit);
             verify(!listItem.badgeVisible);
             listItem.iconSource = "";
+            verify(!listItem.iconVisible);
             verify(listItem.badgeVisible);
             listItem.letterBadge = "";
             verify(!listItem.badgeVisible);

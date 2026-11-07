@@ -125,6 +125,14 @@ Module {
             name: "close"
             Parameter { name: "id"; type: "QString" }
         }
+        Method {
+            name: "handleClick"
+            Parameter { name: "index"; type: "int" }
+        }
+        Method {
+            name: "handleMiddleClick"
+            Parameter { name: "index"; type: "int" }
+        }
     }
     Component {
         file: "src/launcher.rs"
@@ -165,6 +173,9 @@ Module {
         }
         Method {
             name: "toggleVisible"
+        }
+        Method {
+            name: "togglePinSelected"
         }
     }
 }

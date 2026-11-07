@@ -40,6 +40,7 @@ Item {
             id: tooltipLabel
             anchors.centerIn: parent
             text: root.text
+            textFormat: Text.PlainText
             font.family: Style.typography.family
             font.pixelSize: Style.typography.basePx
             color: Style.colors.text

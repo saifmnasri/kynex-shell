@@ -26,6 +26,17 @@ pub struct AppItem {
     pub categories: Vec<String>,
 }
 
+/// Representation of an application mapping entry for window-to-app matching and icons.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+pub struct AppMappingItem {
+    /// Desktop entry ID (e.g. `org.kde.konsole.desktop`).
+    pub id: String,
+    /// `StartupWMClass` if specified in desktop entry.
+    pub startup_wm_class: String,
+    /// Icon name or path.
+    pub icon_name: String,
+}
+
 /// Client-side D-Bus proxy for `org.kynexos.Daemon.Apps1`.
 #[zbus::proxy(
     interface = "org.kynexos.Daemon.Apps1",
@@ -35,6 +46,9 @@ pub struct AppItem {
 pub trait Apps1 {
     /// Returns the full list of available applications.
     fn get_apps(&self) -> zbus::Result<Vec<AppItem>>;
+
+    /// Returns application mapping entries (`id`, `startup_wm_class`, `icon_name`).
+    fn get_app_mapping(&self) -> zbus::Result<Vec<AppMappingItem>>;
 
     /// Searches and ranks applications matching `query` up to `limit` entries.
     fn search(&self, query: &str, limit: u32) -> zbus::Result<Vec<AppItem>>;

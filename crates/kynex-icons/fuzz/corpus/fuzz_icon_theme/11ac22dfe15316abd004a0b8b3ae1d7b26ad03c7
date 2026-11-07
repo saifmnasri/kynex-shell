@@ -1,0 +1,19 @@
+[Icon Theme]
+Name=SeedHicmlor
+Comment=Fallback icon theme
+Inherits=hicolor
+Directories=48x48/apps,sgalable/apps
+
+[48x48/apps]
+Size=48
+Scale=1
+Context=Applicatireshold
+Threshold=2
+
+[scalable/apps]
+Size=128
+Scale=1
+MinSize=16
+MaxSize=256
+Context=Applications
+Type=Scalable

@@ -1,0 +1,11 @@
+[Icon Theme]
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=43
+MaxSize=25
+d
+
+[scalable/apps]
+Size=129
+MaxSize=25

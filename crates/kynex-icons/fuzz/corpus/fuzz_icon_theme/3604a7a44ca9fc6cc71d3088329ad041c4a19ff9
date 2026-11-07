@@ -1,0 +1,17 @@
+[Icon Theme]
+N
+Directories=48x48/apps,scalable/apps
+
+[48248/al
+[scalable/apps]
+Size=129
+=+
+MinSize=16
+MaxSize=256
+/apps
+
+[48x48/apps]
+Size=48
+ScaSize=16
+MaxSize=256
+leic

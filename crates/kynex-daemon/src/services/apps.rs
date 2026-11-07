@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use kynex_apps_index::{parse_exec, AppsIndex, AppsWatcher, DesktopEntry, ExecContext};
-use kynex_ipc::apps::AppItem;
+use kynex_ipc::apps::{AppItem, AppMappingItem};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, info, warn};
@@ -178,6 +178,21 @@ impl AppsServer {
             .map(|e| Self::entry_to_item(e, locale.as_deref()))
             .collect();
         Ok(items)
+    }
+
+    /// Returns application mapping entries (`id`, `startup_wm_class`, `icon_name`).
+    async fn get_app_mapping(&self) -> zbus::fdo::Result<Vec<AppMappingItem>> {
+        let index = self.shared.index.read().await;
+        let mappings = index
+            .entries()
+            .iter()
+            .map(|e| AppMappingItem {
+                id: e.id.clone(),
+                startup_wm_class: e.startup_wm_class.clone().unwrap_or_default(),
+                icon_name: e.icon.clone(),
+            })
+            .collect();
+        Ok(mappings)
     }
 
     /// Searches and ranks applications matching `query` up to `limit` entries.

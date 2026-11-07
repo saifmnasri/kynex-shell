@@ -1,0 +1,13 @@
+[I
+[4ps]
+Size=48
+Scale=1
+Context=Appns
+Type=Thres
+T?reshold=2
+J[scalable/apps]S=128
+Scale=1
+MinSize=
+MaxSize=256
+Context=Applications
+Type=Scable
