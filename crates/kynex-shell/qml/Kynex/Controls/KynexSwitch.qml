@@ -10,6 +10,8 @@ FocusScope {
 
     readonly property bool hovered: mouseArea.containsMouse
     readonly property bool down: mouseArea.pressed || (activeFocus && spaceDown)
+    readonly property color borderColor: track.border.color
+    readonly property int borderWidth: track.border.width
 
     signal toggled(bool checked)
 

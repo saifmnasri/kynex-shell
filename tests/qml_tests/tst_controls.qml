@@ -75,6 +75,7 @@ Item {
         when: windowShown
 
         function init() {
+            root.forceActiveFocus();
             button.enabled = true;
             button.primary = false;
             buttonClickedSpy.clear();
@@ -145,6 +146,16 @@ Item {
             compare(buttonClickedSpy.count, 0);
         }
 
+        function test_button_focus_ring() {
+            compare(button.borderWidth, 0);
+            verify(button.borderColor !== Style.colors.focusRing);
+
+            button.forceActiveFocus();
+            verify(button.activeFocus);
+            compare(button.borderColor, Style.colors.focusRing);
+            compare(button.borderWidth, 1);
+        }
+
         // --- KynexSwitch Tests ---
 
         function test_switch_defaults_and_a11y() {
@@ -193,6 +204,16 @@ Item {
             compare(switchToggledSpy.count, 0);
         }
 
+        function test_switch_focus_ring() {
+            compare(toggleSwitch.borderWidth, 0);
+            verify(toggleSwitch.borderColor !== Style.colors.focusRing);
+
+            toggleSwitch.forceActiveFocus();
+            verify(toggleSwitch.activeFocus);
+            compare(toggleSwitch.borderColor, Style.colors.focusRing);
+            compare(toggleSwitch.borderWidth, 1);
+        }
+
         // --- KynexSlider Tests ---
 
         function test_slider_defaults_and_a11y() {
@@ -235,10 +256,22 @@ Item {
             compare(slider.opacity, Style.opacity.disabled);
 
             let oldVal = slider.value;
+            slider.increase();
+            compare(slider.value, oldVal);
+
             slider.forceActiveFocus();
             keyClick(Qt.Key_Right);
-            keyClick(Qt.Key_Left);
             compare(slider.value, oldVal);
+        }
+
+        function test_slider_focus_ring() {
+            compare(slider.borderWidth, 1);
+            compare(slider.borderColor, Style.colors.accent);
+
+            slider.forceActiveFocus();
+            verify(slider.activeFocus);
+            compare(slider.borderColor, Style.colors.focusRing);
+            compare(slider.borderWidth, 1);
         }
 
         // --- KynexTooltip Tests ---
@@ -288,6 +321,16 @@ Item {
 
             mouseClick(listItem);
             compare(listItemClickedSpy.count, 0);
+        }
+
+        function test_listitem_focus_ring() {
+            compare(listItem.borderWidth, 0);
+            verify(listItem.borderColor !== Style.colors.focusRing);
+
+            listItem.forceActiveFocus();
+            verify(listItem.activeFocus);
+            compare(listItem.borderColor, Style.colors.focusRing);
+            compare(listItem.borderWidth, 1);
         }
     }
 }

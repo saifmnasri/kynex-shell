@@ -1,5 +1,6 @@
 //! The live clock `QObject` exposed to QML.
 
+use chrono::Timelike;
 use core::pin::Pin;
 use cxx_qt::Threading;
 use cxx_qt_lib::QString;
@@ -62,15 +63,20 @@ impl qobject::Clock {
         self.as_mut().set_date(date_qstring);
     }
 
-    /// Starts the background ticker updating clock time and date every second.
+    /// Starts the background ticker updating clock time and date aligned to minute boundaries.
     pub fn init(self: Pin<&mut Self>) {
         let qt_thread = self.qt_thread();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
-            // First tick completes immediately; skip it to match clock state
-            interval.tick().await;
             loop {
-                interval.tick().await;
+                // Sleep until the next minute boundary + 10ms margin
+                let now = chrono::Local::now();
+                let second = u64::from(now.time().second());
+                let subsec_nanos = u64::from(now.time().nanosecond());
+                let nanos_remaining = (60 - second) * 1_000_000_000 - subsec_nanos + 10_000_000;
+                let sleep_duration = std::time::Duration::from_nanos(nanos_remaining);
+
+                tokio::time::sleep(sleep_duration).await;
+
                 let (time, date) = current_time_and_date();
                 let res = qt_thread.queue(move |mut qobj| {
                     qobj.as_mut().set_time(QString::from(&time));
@@ -87,7 +93,7 @@ impl qobject::Clock {
 fn current_time_and_date() -> (String, String) {
     let now = chrono::Local::now();
     (
-        now.format("%H:%M:%S").to_string(),
+        now.format("%H:%M").to_string(),
         now.format("%a %b %e").to_string(),
     )
 }

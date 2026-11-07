@@ -80,6 +80,10 @@ if [[ -f scripts/visual-test.sh ]]; then
   step "visual regression test (gallery)" ./scripts/visual-test.sh
 fi
 
+if [[ -f scripts/mutation-test-qml.sh ]]; then
+  step "adversarial mutation test (qml controls)" ./scripts/mutation-test-qml.sh
+fi
+
 if [[ -f scripts/test-systemd-unit.sh ]] && systemctl --user list-units >/dev/null 2>&1; then
   step "systemd user unit sandbox test" ./scripts/test-systemd-unit.sh
 fi

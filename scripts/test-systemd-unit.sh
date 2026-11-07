@@ -25,6 +25,7 @@ trap cleanup EXIT INT TERM
 echo "=== 1. Probing Individual Systemd Sandboxing Directives ==="
 
 PROBE_FAILURES=0
+PROBE_COUNTER=0
 
 probe_directive() {
   local directive="$1"
@@ -32,18 +33,22 @@ probe_directive() {
   local expect_effect="$3" # "EFFECTIVE" or "INEFFECTIVE-HERE"
   local desc="$4"
 
-  local probe_unit="kynex-probe-$RANDOM"
+  PROBE_COUNTER=$((PROBE_COUNTER + 1))
+  local probe_unit="kynex-probe-$$-${PROBE_COUNTER}-${RANDOM}"
   local out=""
   local rc=0
+
+  local probe_start
+  probe_start="$(date -u '+%Y-%m-%d %H:%M:%S')"
 
   set +e
   out="$(systemd-run --user --unit="$probe_unit" --wait --pipe -p "$directive" bash -c "$cmd" 2>&1)"
   rc=$?
   set -e
 
-  # Check journal specifically for this probe unit
+  # Check journal specifically for this probe unit since probe_start
   local journal_warn
-  journal_warn="$(journalctl --user -u "${probe_unit}.service" --no-pager 2>&1 | grep -Ei 'proceeding without|ignoring namespace setup|failed to' || true)"
+  journal_warn="$(journalctl --user -u "${probe_unit}.service" --since "$probe_start" --no-pager 2>&1 | grep -Ei 'proceeding without|ignoring namespace setup|failed to' || true)"
 
   echo "------------------------------------------------------------"
   echo "Directive: $directive"

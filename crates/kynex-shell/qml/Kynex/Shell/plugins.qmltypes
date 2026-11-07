@@ -98,4 +98,16 @@ Module {
             name: "init"
         }
     }
+    Component {
+        file: "src/windows.rs"
+        name: "WindowListModel"
+        accessSemantics: "reference"
+        prototype: "QAbstractListModel"
+        exports: ["Kynex.Shell/WindowListModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+    }
 }

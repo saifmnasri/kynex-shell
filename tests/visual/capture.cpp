@@ -92,8 +92,10 @@ int main(int argc, char *argv[]) {
 
     if (variant == "rtl-100") {
         app.setLayoutDirection(Qt::RightToLeft);
+        QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
         app.setLayoutDirection(Qt::LeftToRight);
+        QLocale::setDefault(QLocale(QLocale::English));
     }
 
     if (variant.rfind("light", 0) == 0) {
@@ -112,6 +114,7 @@ int main(int argc, char *argv[]) {
 
     view.setResizeMode(QQuickView::SizeViewToRootObject);
     view.show();
+    view.requestActivate();
 
     // Process events to ensure layout and rendering pipeline finishes
     for (int i = 0; i < 10; ++i) {

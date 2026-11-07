@@ -39,11 +39,45 @@ LayerSurface {
         Component.onCompleted: networkModel.init()
     }
 
+    WindowListModel {
+        id: windowListModel
+        Component.onCompleted: windowListModel.init()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.surfaceRaised
 
+        ListView {
+            id: taskbarList
+            anchors.left: parent.left
+            anchors.leftMargin: Style.spacing.medium
+            anchors.right: clockRow.left
+            anchors.rightMargin: Style.spacing.medium
+            anchors.verticalCenter: parent.verticalCenter
+            height: Style.spacing.panel - Style.spacing.small
+            orientation: ListView.Horizontal
+            spacing: Style.spacing.small
+            clip: true
+            interactive: false
+            model: windowListModel
+            visible: windowListModel.count > 0
+
+            delegate: KynexButton {
+                required property string title
+                required property bool active
+                required property bool minimized
+
+                text: title.length > 0 ? title : "Window"
+                primary: active
+                opacity: minimized ? Style.opacity.disabled : 1
+                width: Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
+                height: Style.spacing.panel - Style.spacing.small
+            }
+        }
+
         Row {
+            id: clockRow
             anchors.centerIn: parent
             spacing: Style.spacing.medium
 

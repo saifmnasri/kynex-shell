@@ -4,6 +4,7 @@
 #include "kynex-shell/src/clock.cxxqt.h"
 #include "kynex-shell/src/network.cxxqt.h"
 #include "kynex-shell/src/power.cxxqt.h"
+#include "kynex-shell/src/windows.cxxqt.h"
 #include <QtQml>
 
 void kynex_register_core_types()
@@ -12,6 +13,7 @@ void kynex_register_core_types()
     qmlRegisterType<Clock>("Kynex.Shell", 1, 0, "Clock");
     qmlRegisterType<PowerModel>("Kynex.Shell", 1, 0, "PowerModel");
     qmlRegisterType<NetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
+    qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
 }
 
