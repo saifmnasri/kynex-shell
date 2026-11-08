@@ -1,2 +1,6 @@
 [files]
 extend-exclude = ["target", "build", "dev/tmp", "dev/logs"]
+
+[default.extend-words]
+INVOKABLE = "INVOKABLE"
+

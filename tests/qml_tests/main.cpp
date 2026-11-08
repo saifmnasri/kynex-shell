@@ -1,7 +1,24 @@
 #include <QtQuickTest/quicktest.h>
 #include <QQmlEngine>
+#include <QQmlContext>
 #include <QGuiApplication>
+#include <QLocale>
 #include "../../crates/kynex-shell/cpp/style.h"
+
+class LayoutHelper : public QObject {
+    Q_OBJECT
+public:
+    explicit LayoutHelper(QObject *parent = nullptr) : QObject(parent) {}
+    Q_INVOKABLE void setRtl(bool rtl) {
+        if (rtl) {
+            QLocale::setDefault(QLocale(QLocale::Arabic, QLocale::SaudiArabia));
+            QGuiApplication::setLayoutDirection(Qt::RightToLeft);
+        } else {
+            QLocale::setDefault(QLocale::c());
+            QGuiApplication::setLayoutDirection(Qt::LeftToRight);
+        }
+    }
+};
 
 class Setup : public QObject {
     Q_OBJECT
@@ -20,6 +37,7 @@ public slots:
         Style::instance()->opacity()->setOpacity(0.38, 0.08, 0.16, 1.0);
         qmlRegisterSingletonInstance("Kynex.Style", 1, 0, "Style", Style::instance());
         engine->addImportPath("crates/kynex-shell/qml");
+        engine->rootContext()->setContextProperty("LayoutHelper", new LayoutHelper(engine));
     }
 };
 

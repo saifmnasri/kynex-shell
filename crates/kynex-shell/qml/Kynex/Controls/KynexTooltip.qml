@@ -7,6 +7,9 @@ Item {
     property string text: ""
     property int delay: Style.motion.slowMs
 
+    readonly property color backgroundColor: bg.color
+    readonly property color textColor: tooltipLabel.color
+
     Accessible.role: Accessible.ToolTip
     Accessible.name: text
 

@@ -34,6 +34,27 @@ max_ms = 16.0
 unit = "ms"
 phase = "Phase 4"
 
+[apps_index_cold_scan]
+name = "Apps index cold scan (5,000 entries)"
+target = "< 500 ms"
+max_ms = 500.0
+unit = "ms"
+phase = "Phase 4"
+
+[apps_index_incremental_update]
+name = "Apps index incremental update"
+target = "< 50 ms"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 4"
+
+[apps_index_daemon_pss]
+name = "Daemon PSS with 5,000 entries"
+target = "< 15 MB PSS"
+max_pss_mb = 15.0
+unit = "MB"
+phase = "Phase 4"
+
 [taskbar_update_latency]
 name = "Taskbar update after window open/close"
 target = "< 50 ms"

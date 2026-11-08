@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Default
+Name[en_US]=US English
+Name[fr]=Français
+Exec=app --test
+Icon=test

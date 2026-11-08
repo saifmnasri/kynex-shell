@@ -1,9 +1,11 @@
 //! Sub-services provided by `kynex-daemon`.
 
+pub mod apps;
 pub mod network;
 pub mod power;
 pub mod windows;
 
+pub use apps::{setup_apps_watcher, AppsServer, AppsSharedState, LAUNCH_RATE_LIMIT_PER_SEC};
 pub use network::{
     map_connection_type, map_nm_state, read_network_snapshot, run_network_service,
     sanitize_signal_strength, sanitize_ssid, AccessPointProxy, ActiveConnectionProxy,
