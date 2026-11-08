@@ -228,6 +228,9 @@ fn dispatch_windows(
 ) {
     let count = i32::try_from(windows.len()).unwrap_or(0);
     let _ = qt_thread.queue(move |mut qobj| {
+        if qobj.rust().windows == windows {
+            return;
+        }
         qobj.as_mut().begin_reset_model();
         qobj.as_mut().rust_mut().windows = windows;
         qobj.as_mut().rust_mut().count = count;
@@ -359,19 +362,33 @@ pub async fn run_windows_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
             } => {
                 if let Ok(args) = signal.args() {
                     let mut lock = local_windows.lock().await;
-                    info!("WindowListModel: window changed '{}' (active={}, minimized={})", args.title, args.active, args.minimized);
-                    if args.active {
-                        for w in lock.iter_mut() {
-                            w.active = false;
+                    let mut need_update = false;
+                    for w in lock.iter() {
+                        if w.id == args.id {
+                            if w.title != args.title
+                                || w.app_id != args.app_id
+                                || w.minimized != args.minimized
+                                || w.active != args.active
+                            {
+                                need_update = true;
+                            }
+                            break;
                         }
                     }
-                    if let Some(existing) = lock.iter_mut().find(|w| w.id == args.id) {
-                        existing.title = args.title.to_string();
-                        existing.app_id = args.app_id.to_string();
-                        existing.minimized = args.minimized;
-                        existing.active = args.active;
+                    if need_update {
+                        info!("WindowListModel: window changed '{}' (active={}, minimized={})", args.title, args.active, args.minimized);
+                        for w in lock.iter_mut() {
+                            if w.id == args.id {
+                                w.title = args.title.to_string();
+                                w.app_id = args.app_id.to_string();
+                                w.minimized = args.minimized;
+                                w.active = args.active;
+                            } else if args.active {
+                                w.active = false;
+                            }
+                        }
+                        dirty = true;
                     }
-                    dirty = true;
                 }
             }
 
@@ -399,11 +416,18 @@ pub async fn run_windows_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
             } => {
                 if let Ok(args) = signal.args() {
                     let mut lock = local_windows.lock().await;
-                    info!("WindowListModel: active window changed to '{}'", args.id);
+                    let mut changed = false;
                     for w in lock.iter_mut() {
-                        w.active = w.id == args.id;
+                        let should_be_active = w.id == args.id;
+                        if w.active != should_be_active {
+                            w.active = should_be_active;
+                            changed = true;
+                        }
                     }
-                    dirty = true;
+                    if changed {
+                        info!("WindowListModel: active window changed to '{}'", args.id);
+                        dirty = true;
+                    }
                 }
             }
 

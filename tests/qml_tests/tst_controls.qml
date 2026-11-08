@@ -82,9 +82,37 @@ Item {
         signalName: "clicked"
     }
 
+    SignalSpy {
+        id: listItemPressedSpy
+        target: listItem
+        signalName: "pressed"
+    }
+
+    SignalSpy {
+        id: listItemReleasedSpy
+        target: listItem
+        signalName: "released"
+    }
+
     TestCase {
+        id: testCase
         name: "KynexControlsTests"
         when: windowShown
+
+        readonly property var window: root.Window ? root.Window.window : null
+
+        function waitFocus(item) {
+            if (window) {
+                if (!window.active) {
+                    window.requestActivate();
+                }
+                tryVerify(() => window.active);
+            }
+            item.forceActiveFocus();
+            if (item.enabled) {
+                tryVerify(() => item.activeFocus);
+            }
+        }
 
         function init() {
             root.forceActiveFocus();
@@ -108,6 +136,8 @@ Item {
             listItem.enabled = true;
             listItem.selected = false;
             listItemClickedSpy.clear();
+            listItemPressedSpy.clear();
+            listItemReleasedSpy.clear();
         }
 
         // --- KynexButton Tests ---
@@ -146,8 +176,7 @@ Item {
         }
 
         function test_button_keyboard_space() {
-            button.forceActiveFocus();
-            verify(button.activeFocus);
+            waitFocus(button);
 
             keyPress(Qt.Key_Space);
             compare(buttonPressedSpy.count, 1);
@@ -159,12 +188,12 @@ Item {
         }
 
         function test_button_keyboard_return() {
-            button.forceActiveFocus();
-            verify(button.activeFocus);
+            waitFocus(button);
 
             keyClick(Qt.Key_Return);
             compare(buttonClickedSpy.count, 1);
 
+            waitFocus(button);
             keyClick(Qt.Key_Enter);
             compare(buttonClickedSpy.count, 2);
         }
@@ -173,8 +202,7 @@ Item {
             compare(button.borderWidth, 0);
             verify(button.borderColor !== Style.colors.focusRing);
 
-            button.forceActiveFocus();
-            verify(button.activeFocus);
+            waitFocus(button);
             compare(button.borderColor, Style.colors.focusRing);
             compare(button.borderWidth, 1);
         }
@@ -215,22 +243,24 @@ Item {
         }
 
         function test_switch_keyboard_toggle() {
-            toggleSwitch.forceActiveFocus();
-            verify(toggleSwitch.activeFocus);
+            waitFocus(toggleSwitch);
 
             keyClick(Qt.Key_Space);
             compare(toggleSwitch.checked, true);
             compare(switchToggledSpy.count, 1);
 
+            waitFocus(toggleSwitch);
             keyClick(Qt.Key_Return);
             compare(toggleSwitch.checked, false);
             compare(switchToggledSpy.count, 2);
 
+            waitFocus(toggleSwitch);
             keyClick(Qt.Key_Enter);
             compare(toggleSwitch.checked, true);
             compare(switchToggledSpy.count, 3);
 
             toggleSwitch.checked = false;
+            waitFocus(toggleSwitch);
             keyPress(Qt.Key_Space);
             verify(toggleSwitch.down);
             keyRelease(Qt.Key_Space);
@@ -241,8 +271,7 @@ Item {
             compare(toggleSwitch.borderWidth, 0);
             verify(toggleSwitch.borderColor !== Style.colors.focusRing);
 
-            toggleSwitch.forceActiveFocus();
-            verify(toggleSwitch.activeFocus);
+            waitFocus(toggleSwitch);
             compare(toggleSwitch.borderColor, Style.colors.focusRing);
             compare(toggleSwitch.borderWidth, 1);
         }
@@ -266,8 +295,7 @@ Item {
         }
 
         function test_slider_keyboard_navigation() {
-            slider.forceActiveFocus();
-            verify(slider.activeFocus);
+            waitFocus(slider);
 
             slider.value = 0.5;
             let initial = slider.value;
@@ -276,30 +304,37 @@ Item {
             compare(sliderMovedSpy.count, 1);
 
             let higher = slider.value;
+            waitFocus(slider);
             keyClick(Qt.Key_Left);
             compare(slider.value, initial);
             compare(sliderMovedSpy.count, 2);
 
             let valBeforeUp = slider.value;
+            waitFocus(slider);
             keyClick(Qt.Key_Up);
             verify(slider.value > valBeforeUp);
 
             let valBeforeDown = slider.value;
+            waitFocus(slider);
             keyClick(Qt.Key_Down);
             verify(slider.value < valBeforeDown);
 
             slider.value = 0.5;
             let valBeforePageUp = slider.value;
+            waitFocus(slider);
             keyClick(Qt.Key_PageUp);
             verify(slider.value > valBeforePageUp);
 
             let valBeforePageDown = slider.value;
+            waitFocus(slider);
             keyClick(Qt.Key_PageDown);
             verify(slider.value < valBeforePageDown);
 
+            waitFocus(slider);
             keyClick(Qt.Key_Home);
             compare(slider.value, 0.0);
 
+            waitFocus(slider);
             keyClick(Qt.Key_End);
             compare(slider.value, 1.0);
         }
@@ -333,8 +368,7 @@ Item {
             compare(slider.borderWidth, 1);
             compare(slider.borderColor, Style.colors.accent);
 
-            slider.forceActiveFocus();
-            verify(slider.activeFocus);
+            waitFocus(slider);
             compare(slider.borderColor, Style.colors.focusRing);
             compare(slider.borderWidth, 1);
         }
@@ -386,18 +420,20 @@ Item {
         }
 
         function test_listitem_keyboard_activation() {
-            listItem.forceActiveFocus();
-            verify(listItem.activeFocus);
+            waitFocus(listItem);
 
             keyClick(Qt.Key_Return);
             compare(listItemClickedSpy.count, 1);
 
+            waitFocus(listItem);
             keyClick(Qt.Key_Enter);
             compare(listItemClickedSpy.count, 2);
 
+            waitFocus(listItem);
             keyClick(Qt.Key_Space);
             compare(listItemClickedSpy.count, 3);
 
+            waitFocus(listItem);
             keyPress(Qt.Key_Space);
             verify(listItem.down);
             keyRelease(Qt.Key_Space);
@@ -415,14 +451,13 @@ Item {
             compare(listItem.borderWidth, 0);
             verify(listItem.borderColor !== Style.colors.focusRing);
 
-            listItem.forceActiveFocus();
-            verify(listItem.activeFocus);
+            waitFocus(listItem);
             compare(listItem.borderColor, Style.colors.focusRing);
             compare(listItem.borderWidth, 1);
         }
 
         function send_all_inputs(item) {
-            item.forceActiveFocus();
+            waitFocus(item);
             let keys = [
                 Qt.Key_Right,
                 Qt.Key_Left,
@@ -437,6 +472,7 @@ Item {
                 Qt.Key_Enter
             ];
             for (let i = 0; i < keys.length; ++i) {
+                waitFocus(item);
                 keyClick(keys[i]);
             }
 
@@ -461,15 +497,58 @@ Item {
             slider.enabled = false;
             compare(slider.opacity, Style.opacity.disabled);
             compare(slider.value, 0.5);
+            compare(slider.cursorShape, Qt.ArrowCursor);
 
             send_all_inputs(slider);
             compare(slider.value, 0.5);
             compare(sliderMovedSpy.count, 0);
 
-            // Positive control: when enabled, inputs MUST alter value and emit signals
+            // Programmatic calls while disabled
+            slider.decrease();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            slider.increase();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            slider.toMinimum();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            slider.toMaximum();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            slider.setInteractiveRatio(0.1);
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            // Accessible actions while disabled
+            slider.Accessible.decreaseAction();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            slider.Accessible.increaseAction();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 0);
+
+            // Positive control: when enabled, inputs and methods alter value and emit signals
             slider.enabled = true;
+            compare(slider.cursorShape, Qt.PointingHandCursor);
             send_all_inputs(slider);
             verify(sliderMovedSpy.count > 0);
+
+            sliderMovedSpy.clear();
+            slider.value = 0.5;
+            slider.decrease();
+            verify(slider.value < 0.5);
+            compare(sliderMovedSpy.count, 1);
+
+            sliderMovedSpy.clear();
+            slider.increase();
+            compare(slider.value, 0.5);
+            compare(sliderMovedSpy.count, 1);
 
             // 2. KynexSwitch: state 1 (checked = false)
             toggleSwitch.enabled = true;
@@ -479,15 +558,33 @@ Item {
             toggleSwitch.enabled = false;
             compare(toggleSwitch.opacity, Style.opacity.disabled);
             compare(toggleSwitch.checked, false);
+            compare(toggleSwitch.cursorShape, Qt.ArrowCursor);
 
             send_all_inputs(toggleSwitch);
             compare(toggleSwitch.checked, false);
             compare(switchToggledSpy.count, 0);
 
+            // Programmatic call while disabled
+            toggleSwitch.toggle();
+            compare(toggleSwitch.checked, false);
+            compare(switchToggledSpy.count, 0);
+
+            // Accessible action while disabled
+            toggleSwitch.Accessible.pressAction();
+            compare(toggleSwitch.checked, false);
+            compare(switchToggledSpy.count, 0);
+
             // Positive control
             toggleSwitch.enabled = true;
+            compare(toggleSwitch.cursorShape, Qt.PointingHandCursor);
             send_all_inputs(toggleSwitch);
             verify(switchToggledSpy.count > 0);
+
+            switchToggledSpy.clear();
+            toggleSwitch.checked = false;
+            toggleSwitch.toggle();
+            compare(toggleSwitch.checked, true);
+            compare(switchToggledSpy.count, 1);
 
             // 3. KynexSwitch: state 2 (checked = true)
             toggleSwitch.enabled = true;
@@ -502,46 +599,102 @@ Item {
             compare(toggleSwitch.checked, true);
             compare(switchToggledSpy.count, 0);
 
+            toggleSwitch.toggle();
+            compare(toggleSwitch.checked, true);
+            compare(switchToggledSpy.count, 0);
+
+            toggleSwitch.Accessible.pressAction();
+            compare(toggleSwitch.checked, true);
+            compare(switchToggledSpy.count, 0);
+
             // 4. KynexButton
             button.enabled = true;
             buttonClickedSpy.clear();
             buttonPressedSpy.clear();
+            buttonReleasedSpy.clear();
+            buttonMiddleClickedSpy.clear();
 
             button.enabled = false;
             compare(button.opacity, Style.opacity.disabled);
+            compare(button.cursorShape, Qt.ArrowCursor);
 
             send_all_inputs(button);
             compare(buttonClickedSpy.count, 0);
             compare(buttonPressedSpy.count, 0);
+            compare(buttonReleasedSpy.count, 0);
+            compare(buttonMiddleClickedSpy.count, 0);
             verify(!button.down);
+
+            // Programmatic calls while disabled
+            button.click();
+            button.middleClick();
+            button.press();
+            button.release();
+            compare(buttonClickedSpy.count, 0);
+            compare(buttonPressedSpy.count, 0);
+            compare(buttonReleasedSpy.count, 0);
+            compare(buttonMiddleClickedSpy.count, 0);
+
+            // Accessible action while disabled
+            button.Accessible.pressAction();
+            compare(buttonClickedSpy.count, 0);
 
             // Positive control
             button.enabled = true;
+            compare(button.cursorShape, Qt.PointingHandCursor);
             send_all_inputs(button);
             verify(buttonClickedSpy.count > 0);
+
+            buttonClickedSpy.clear();
+            button.click();
+            compare(buttonClickedSpy.count, 1);
 
             // 5. KynexListItem: state 1 (selected = false)
             listItem.enabled = true;
             listItem.selected = false;
             listItemClickedSpy.clear();
+            listItemPressedSpy.clear();
+            listItemReleasedSpy.clear();
 
             listItem.enabled = false;
             compare(listItem.opacity, Style.opacity.disabled);
             compare(listItem.selected, false);
+            compare(listItem.cursorShape, Qt.ArrowCursor);
 
             send_all_inputs(listItem);
             compare(listItem.selected, false);
             compare(listItemClickedSpy.count, 0);
+            compare(listItemPressedSpy.count, 0);
+            compare(listItemReleasedSpy.count, 0);
+
+            // Programmatic calls while disabled
+            listItem.click();
+            listItem.press();
+            listItem.release();
+            compare(listItemClickedSpy.count, 0);
+            compare(listItemPressedSpy.count, 0);
+            compare(listItemReleasedSpy.count, 0);
+
+            // Accessible action while disabled
+            listItem.Accessible.pressAction();
+            compare(listItemClickedSpy.count, 0);
 
             // Positive control
             listItem.enabled = true;
+            compare(listItem.cursorShape, Qt.PointingHandCursor);
             send_all_inputs(listItem);
             verify(listItemClickedSpy.count > 0);
+
+            listItemClickedSpy.clear();
+            listItem.click();
+            compare(listItemClickedSpy.count, 1);
 
             // 6. KynexListItem: state 2 (selected = true)
             listItem.enabled = true;
             listItem.selected = true;
             listItemClickedSpy.clear();
+            listItemPressedSpy.clear();
+            listItemReleasedSpy.clear();
 
             listItem.enabled = false;
             compare(listItem.opacity, Style.opacity.disabled);
@@ -550,6 +703,163 @@ Item {
             send_all_inputs(listItem);
             compare(listItem.selected, true);
             compare(listItemClickedSpy.count, 0);
+            compare(listItemPressedSpy.count, 0);
+            compare(listItemReleasedSpy.count, 0);
+
+            listItem.click();
+            compare(listItem.selected, true);
+            compare(listItemClickedSpy.count, 0);
+
+            listItem.Accessible.pressAction();
+            compare(listItem.selected, true);
+            compare(listItemClickedSpy.count, 0);
+        }
+
+        function test_controls_rtl_layout_mirroring(): void {
+            // 1. Assert LTR baseline
+            LayoutHelper.setRtl(false);
+            compare(Qt.locale().textDirection, Qt.LeftToRight);
+
+            // Re-instantiate buttons in LTR to check position ordering
+            let testIcon = Qt.resolvedUrl("test_icon.png");
+            let ltrButton = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexButton { text: 'Test'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let ltrSwitch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSwitch { text: 'Toggle Option'; width: 200 }",
+                root
+            );
+            let ltrItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexListItem { text: 'List Item'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let ltrSlider = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSlider { width: 200 }",
+                root
+            );
+            let ltrTooltip = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
+                root
+            );
+
+            wait(50);
+
+            verify(!ltrButton.LayoutMirroring.enabled, "LTR button LayoutMirroring must be disabled");
+            verify(ltrButton.iconX < ltrButton.labelX, "In LTR, icon must be to the left of label");
+
+            verify(!ltrSwitch.LayoutMirroring.enabled, "LTR switch LayoutMirroring must be disabled");
+            verify(ltrSwitch.trackX < ltrSwitch.labelX, "In LTR, track must be to the left of label");
+
+            verify(!ltrItem.LayoutMirroring.enabled, "LTR list item LayoutMirroring must be disabled");
+            verify(ltrItem.iconX < ltrItem.labelX, "In LTR, icon must be to the left of label");
+
+            verify(!ltrSlider.LayoutMirroring.enabled, "LTR slider LayoutMirroring must be disabled");
+            verify(!ltrTooltip.LayoutMirroring.enabled, "LTR tooltip LayoutMirroring must be disabled");
+
+            ltrButton.destroy();
+            ltrSwitch.destroy();
+            ltrItem.destroy();
+            ltrSlider.destroy();
+            ltrTooltip.destroy();
+
+            // 2. Switch to RTL locale and verify LayoutMirroring enabled and mirrored positions
+            LayoutHelper.setRtl(true);
+            compare(Qt.locale().textDirection, Qt.RightToLeft);
+
+            let rtlButton = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexButton { text: 'Test'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let rtlSwitch = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSwitch { text: 'Toggle Option'; width: 200 }",
+                root
+            );
+            let rtlItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexListItem { text: 'List Item'; iconSource: '" + testIcon + "'; width: 200 }",
+                root
+            );
+            let rtlSlider = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexSlider { width: 200 }",
+                root
+            );
+            let rtlTooltip = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexTooltip { text: 'Hint'; width: 100 }",
+                root
+            );
+
+            wait(50);
+
+            verify(rtlButton.LayoutMirroring.enabled, "RTL button LayoutMirroring must be enabled");
+            verify(rtlButton.iconX > rtlButton.labelX, "In RTL, icon must be mirrored to the right of label");
+
+            verify(rtlSwitch.LayoutMirroring.enabled, "RTL switch LayoutMirroring must be enabled");
+            verify(rtlSwitch.trackX > rtlSwitch.labelX, "In RTL, track must be mirrored to the right of label");
+
+            verify(rtlItem.LayoutMirroring.enabled, "RTL list item LayoutMirroring must be enabled");
+            verify(rtlItem.iconX > rtlItem.labelX, "In RTL, icon must be mirrored to the right of label");
+
+            verify(rtlSlider.LayoutMirroring.enabled, "RTL slider LayoutMirroring must be enabled");
+            verify(rtlTooltip.LayoutMirroring.enabled, "RTL tooltip LayoutMirroring must be enabled");
+
+            rtlButton.destroy();
+            rtlSwitch.destroy();
+            rtlItem.destroy();
+            rtlSlider.destroy();
+            rtlTooltip.destroy();
+
+            // Restore LTR
+            LayoutHelper.setRtl(false);
+        }
+
+        function test_controls_token_bindings(): void {
+            // 1. KynexButton: non-primary vs primary token colors
+            button.primary = false;
+            button.focus = false;
+            root.forceActiveFocus(); // unfocus button
+            wait(20);
+            compare(button.backgroundColor, Style.colors.surfaceRaised);
+            compare(button.textColor, Style.colors.text);
+            compare(button.borderColor, Style.colors.surfaceRaised);
+
+            button.primary = true;
+            wait(50);
+            compare(button.backgroundColor, Style.colors.accent);
+            compare(button.textColor, Style.colors.surface);
+            compare(button.borderColor, Style.colors.surfaceRaised);
+            button.primary = false;
+            wait(20);
+
+            // 2. KynexSwitch: indicator token colors
+            toggleSwitch.checked = false;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.surfaceRaised);
+            tryCompare(toggleSwitch, "thumbColor", Style.colors.text);
+
+            toggleSwitch.checked = true;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.accent);
+            tryCompare(toggleSwitch, "thumbColor", Style.colors.surface);
+            toggleSwitch.checked = false;
+            tryCompare(toggleSwitch, "trackColor", Style.colors.surfaceRaised);
+
+            // 3. KynexSlider: track and handle token colors
+            compare(slider.trackColor, Style.colors.surfaceRaised);
+            compare(slider.filledTrackColor, Style.colors.accent);
+            compare(slider.handleColor, Style.colors.surfaceRaised);
+            compare(slider.handleBorderColor, Style.colors.accent);
+
+            // 4. KynexTooltip: token colors
+            compare(tooltip.backgroundColor, Style.colors.surfaceRaised);
+            compare(tooltip.textColor, Style.colors.text);
+
+            // 5. KynexListItem: selection token colors
+            listItem.selected = false;
+            compare(listItem.backgroundColor, Style.colors.surface);
+            compare(listItem.textColor, Style.colors.text);
+
+            listItem.selected = true;
+            compare(listItem.backgroundColor, Style.colors.surfaceRaised);
+            compare(listItem.textColor, Style.colors.text);
+            listItem.selected = false;
         }
     }
 }

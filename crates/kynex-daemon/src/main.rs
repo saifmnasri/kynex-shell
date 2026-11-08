@@ -4,6 +4,7 @@ use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use kynex_daemon::services::apps::{setup_apps_watcher, AppsServer, AppsSharedState};
 use kynex_daemon::services::network::{run_network_service, NetworkServer};
 use kynex_daemon::services::power::{run_power_service, PowerServer};
 use kynex_daemon::services::windows::{
@@ -11,7 +12,9 @@ use kynex_daemon::services::windows::{
     WindowsServer, WindowsSharedState,
 };
 use kynex_daemon::DaemonServer;
-use kynex_ipc::{DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH, WINDOWS_PATH};
+use kynex_ipc::{
+    apps::APPS_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH, WINDOWS_PATH,
+};
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
 use zbus::object_server::SignalEmitter;
@@ -19,6 +22,14 @@ use zbus::object_server::SignalEmitter;
 #[allow(clippy::too_many_lines)]
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Install panic hook: abort process immediately on any thread panic so systemd restarts it
+    let default_panic_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        tracing::error!("FATAL: kynex-daemon thread panicked: {info}");
+        default_panic_hook(info);
+        std::process::abort();
+    }));
+
     tracing_subscriber::fmt::init();
     info!("Starting kynex-daemon v{}", env!("CARGO_PKG_VERSION"));
 
@@ -38,6 +49,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let windows_server = WindowsServer::new(Arc::clone(&windows_shared));
     let windows_feed_server = WindowsFeedServer::new(Arc::clone(&windows_shared));
 
+    let app_dirs = kynex_apps_index::AppsIndex::standard_app_dirs();
+    let current_desktop =
+        std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_else(|_| "Kynex".to_string());
+    let apps_shared = Arc::new(AppsSharedState::new(app_dirs, current_desktop));
+    let apps_server = AppsServer::new(Arc::clone(&apps_shared));
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -46,6 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(NETWORK_PATH, network_server.clone())
         .serve_at(WINDOWS_PATH, windows_server.clone())
         .serve_at(WINDOWS_PATH, windows_feed_server.clone())
+        .serve_at(APPS_PATH, apps_server)
         .build()
         .await?;
 
@@ -71,6 +89,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else {
         warn!("Failed to create SignalEmitter for Windows1");
     }
+
+    // Set up application index directory watcher and signal emitter
+    let _apps_watcher = if let Ok(apps_emitter) = SignalEmitter::new(&session_conn, APPS_PATH) {
+        setup_apps_watcher(Arc::clone(&apps_shared), apps_emitter)
+    } else {
+        warn!("Failed to create SignalEmitter for Apps1");
+        None
+    };
 
     // Create emitter for power property change signals on session bus
     let emitter = match SignalEmitter::new(&session_conn, POWER_PATH) {

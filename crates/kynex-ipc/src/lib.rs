@@ -1,11 +1,13 @@
 //! D-Bus interface definitions and IPC protocols shared by the Kynex daemon and clients.
 
+pub mod apps;
 pub mod daemon;
 pub mod network;
 pub mod power;
 pub mod service;
 pub mod windows;
 
+pub use apps::{AppItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
 pub use daemon::{
     Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
 };

@@ -12,9 +12,11 @@ var IFACE = "org.kynexos.Daemon.WindowsFeed1";
 
 var trackedWindows = {};
 var pendingUpserts = {};
+var lastSent = {};
+var lastActiveId = null;
 var timerRunning = false;
 var flushTimer = new QTimer();
-flushTimer.interval = 25;
+flushTimer.interval = 50;
 flushTimer.singleShot = true;
 
 function isValidWindow(window) {
@@ -33,17 +35,27 @@ function flushPendingUpserts() {
     for (var id in pendingUpserts) {
         if (Object.prototype.hasOwnProperty.call(pendingUpserts, id)) {
             var item = pendingUpserts[id];
-            callDBus(
-                SERVICE,
-                PATH,
-                IFACE,
-                "Upsert",
-                item.id,
-                item.title,
-                item.appId,
-                item.minimized,
-                item.active
-            );
+            var last = lastSent[id];
+            if (!last || last.title !== item.title || last.appId !== item.appId ||
+                last.minimized !== item.minimized || last.active !== item.active) {
+                lastSent[id] = {
+                    title: item.title,
+                    appId: item.appId,
+                    minimized: item.minimized,
+                    active: item.active
+                };
+                callDBus(
+                    SERVICE,
+                    PATH,
+                    IFACE,
+                    "Upsert",
+                    item.id,
+                    item.title,
+                    item.appId,
+                    item.minimized,
+                    item.active
+                );
+            }
         }
     }
     pendingUpserts = {};
@@ -58,6 +70,14 @@ function scheduleUpsert(window) {
     var appId = String(window.desktopFileName || window.resourceClass || "");
     var minimized = Boolean(window.minimized);
     var active = Boolean(window.active);
+
+    var last = lastSent[id];
+    if (last && last.title === title && last.appId === appId &&
+        last.minimized === minimized && last.active === active) {
+        if (!pendingUpserts[id]) {
+            return;
+        }
+    }
 
     pendingUpserts[id] = {
         id: id,
@@ -110,6 +130,10 @@ function untrackWindow(window) {
     if (trackedWindows[id]) {
         delete trackedWindows[id];
         delete pendingUpserts[id];
+        delete lastSent[id];
+        if (lastActiveId === id) {
+            lastActiveId = null;
+        }
         callDBus(SERVICE, PATH, IFACE, "Remove", id);
     }
 }
@@ -117,6 +141,8 @@ function untrackWindow(window) {
 flushTimer.timeout.connect(flushPendingUpserts);
 
 // Initial synchronization: send Reset to clear any stale state
+lastSent = {};
+lastActiveId = null;
 callDBus(SERVICE, PATH, IFACE, "Reset");
 
 // Track all existing windows
@@ -135,11 +161,10 @@ workspace.windowRemoved.connect(function(window) {
 });
 
 workspace.windowActivated.connect(function(window) {
-    if (window && isValidWindow(window)) {
-        var id = String(window.internalId);
-        callDBus(SERVICE, PATH, IFACE, "SetActive", id);
-    } else {
-        callDBus(SERVICE, PATH, IFACE, "SetActive", "");
+    var newActiveId = (window && isValidWindow(window)) ? String(window.internalId) : "";
+    if (newActiveId !== lastActiveId) {
+        lastActiveId = newActiveId;
+        callDBus(SERVICE, PATH, IFACE, "SetActive", newActiveId);
     }
 });
 

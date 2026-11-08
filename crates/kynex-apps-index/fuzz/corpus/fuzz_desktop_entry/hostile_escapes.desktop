@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Escaped\\sValue\\nWith\\tTabs
+Exec=app "arg 1" 'arg 2' \s\n\t
+Icon=icon
