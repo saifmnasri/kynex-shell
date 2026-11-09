@@ -6,6 +6,7 @@ fn main() {
     CxxQtBuilder::new_qml_module(QmlModule::new("Kynex.Shell"))
         .files([
             "src/clock.rs",
+            "src/launcher.rs",
             "src/network.rs",
             "src/power.rs",
             "src/shim.rs",
@@ -27,4 +28,5 @@ fn main() {
         .build();
 
     println!("cargo:rustc-link-lib=LayerShellQtInterface");
+    println!("cargo:rustc-link-arg=-Wl,--allow-multiple-definition");
 }

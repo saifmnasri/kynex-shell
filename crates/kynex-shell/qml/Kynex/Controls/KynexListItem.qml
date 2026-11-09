@@ -7,6 +7,7 @@ FocusScope {
     property string text: ""
     property string secondaryText: ""
     property url iconSource: ""
+    property string letterBadge: ""
     property bool selected: false
     property bool spaceDown: false
 
@@ -16,11 +17,14 @@ FocusScope {
     readonly property int borderWidth: bg.border.width
     readonly property bool labelVisible: label.visible
     readonly property bool secondaryLabelVisible: subLabel.visible
+    readonly property int textFormat: label.textFormat
+    readonly property int secondaryTextFormat: subLabel.textFormat
     readonly property int cursorShape: mouseArea.cursorShape
     readonly property color backgroundColor: bg.color
     readonly property color textColor: label.color
     readonly property real iconX: iconImage.x
     readonly property real labelX: textColumn.x
+    readonly property bool badgeVisible: badgeRect.visible
 
     signal clicked()
     signal pressed()
@@ -102,6 +106,26 @@ FocusScope {
             fillMode: Image.PreserveAspectFit
         }
 
+        Rectangle {
+            id: badgeRect
+            visible: root.letterBadge.length > 0 && iconImage.source.toString() === ""
+            width: Style.typography.basePx + Style.spacing.unit + Style.spacing.unit
+            height: Style.typography.basePx + Style.spacing.unit + Style.spacing.unit
+            radius: Style.radius.small
+            color: root.selected ? Style.colors.accent : Style.colors.surfaceRaised
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text {
+                anchors.centerIn: parent
+                text: root.letterBadge
+                textFormat: Text.PlainText
+                font.family: Style.typography.family
+                font.pixelSize: Style.typography.basePx - Style.spacing.unit
+                font.bold: true
+                color: root.selected ? Style.colors.surface : Style.colors.text
+            }
+        }
+
         Column {
             id: textColumn
             anchors.verticalCenter: parent.verticalCenter
@@ -111,6 +135,7 @@ FocusScope {
                 id: label
                 visible: text !== ""
                 text: root.text
+                textFormat: Text.PlainText
                 font.family: Style.typography.family
                 font.pixelSize: Style.typography.basePx
                 color: Style.colors.text
@@ -120,6 +145,7 @@ FocusScope {
                 id: subLabel
                 visible: text !== ""
                 text: root.secondaryText
+                textFormat: Text.PlainText
                 font.family: Style.typography.family
                 font.pixelSize: Style.typography.basePx - Style.spacing.unit
                 color: Style.colors.textMuted

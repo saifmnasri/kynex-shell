@@ -20,10 +20,17 @@ target = "< 1.0 s"
 max_ms = 1000.0
 unit = "ms"
 
-[launcher_open_latency]
-name = "Launcher: key press -> first visible frame"
+[launcher_open_latency_cold]
+name = "Launcher: key press -> first visible frame (cold)"
 target = "< 50 ms (p95)"
 max_ms = 50.0
+unit = "ms"
+phase = "Phase 4"
+
+[launcher_open_latency_warm]
+name = "Launcher: key press -> first visible frame (warm)"
+target = "< 16 ms (p95)"
+max_ms = 16.0
 unit = "ms"
 phase = "Phase 4"
 

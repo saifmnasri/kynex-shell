@@ -4,6 +4,7 @@
 #include <cstdint>
 
 void kynex_register_core_types();
+void kynex_load_bundled_fonts();
 
 void kynex_set_style_tokens(
     rust::Str surface,

@@ -5,7 +5,7 @@ import Kynex.Style
 Rectangle {
     id: root
     width: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
-    height: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
+    height: Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel
     color: Style.colors.surface
 
     Column {
@@ -80,6 +80,20 @@ Rectangle {
         KynexTooltip {
             text: "KynexTooltip preview overlay"
             visible: true
+        }
+
+        Column {
+            spacing: Style.spacing.small
+            width: parent.width - Style.spacing.medium - Style.spacing.medium
+
+            KynexSearchField {
+                width: parent.width
+                placeholderText: "Search applications..."
+            }
+            KynexSearchField {
+                width: parent.width
+                text: "Active Search Query"
+            }
         }
 
         Column {

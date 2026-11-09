@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["target", "build", "dev/tmp", "dev/logs"]
+extend-exclude = ["target", "build", "dev/tmp", "dev/logs", "crates/kynex-apps-index/fuzz/corpus/**"]
 
 [default.extend-words]
 INVOKABLE = "INVOKABLE"

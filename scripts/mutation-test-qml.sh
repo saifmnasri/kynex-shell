@@ -15,7 +15,7 @@ import sys
 keywords = ["enabled", "disabled", "activeFocus", "focus", "Accessible.", "LayoutMirroring"]
 comp_ops = ["===", "!==", "<=", ">=", "==", "!=", "<", ">"]
 
-files = sorted(glob.glob("crates/kynex-shell/qml/Kynex/Controls/*.qml"))
+files = sorted(glob.glob("crates/kynex-shell/qml/Kynex/Controls/*.qml")) + ["styles/default/Launcher.qml"]
 
 mutations = []
 for fpath in files:
@@ -82,6 +82,9 @@ EQUIVALENT_JUSTIFICATIONS = {
     ),
     ("KynexSwitch.qml", "Accessible.focusable: true", "delete"): (
         "Qt Quick QQuickAccessibleAttached::role() for Accessible.CheckBox with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
+    ),
+    ("KynexSearchField.qml", "Accessible.focusable: true", "delete"): (
+        "Qt Quick QQuickAccessibleAttached::role() for Accessible.EditableText with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
     ),
 }
 

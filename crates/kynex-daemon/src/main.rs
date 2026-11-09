@@ -7,13 +7,17 @@ use std::sync::Arc;
 use kynex_daemon::services::apps::{setup_apps_watcher, AppsServer, AppsSharedState};
 use kynex_daemon::services::network::{run_network_service, NetworkServer};
 use kynex_daemon::services::power::{run_power_service, PowerServer};
+use kynex_daemon::services::shell::{
+    run_shell_kwin_watcher, ShellFeedServer, ShellServer, ShellSharedState,
+};
 use kynex_daemon::services::windows::{
     run_kwin_watcher, AllowAllSenderPolicy, KWinSenderPolicy, SenderPolicy, WindowsFeedServer,
     WindowsServer, WindowsSharedState,
 };
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
-    apps::APPS_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH, WINDOWS_PATH,
+    apps::APPS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH,
+    WINDOWS_PATH,
 };
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
@@ -45,9 +49,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else {
             Arc::new(KWinSenderPolicy::new())
         };
-    let windows_shared = Arc::new(WindowsSharedState::new(sender_policy));
+    let windows_shared = Arc::new(WindowsSharedState::new(Arc::clone(&sender_policy)));
     let windows_server = WindowsServer::new(Arc::clone(&windows_shared));
     let windows_feed_server = WindowsFeedServer::new(Arc::clone(&windows_shared));
+
+    let shell_shared = Arc::new(ShellSharedState::new(sender_policy));
+    let shell_server = ShellServer::new(Arc::clone(&shell_shared));
+    let shell_feed_server = ShellFeedServer::new(Arc::clone(&shell_shared));
 
     let app_dirs = kynex_apps_index::AppsIndex::standard_app_dirs();
     let current_desktop =
@@ -63,6 +71,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(NETWORK_PATH, network_server.clone())
         .serve_at(WINDOWS_PATH, windows_server.clone())
         .serve_at(WINDOWS_PATH, windows_feed_server.clone())
+        .serve_at(SHELL_PATH, shell_server.clone())
+        .serve_at(SHELL_PATH, shell_feed_server.clone())
         .serve_at(APPS_PATH, apps_server)
         .build()
         .await?;
@@ -88,6 +98,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ));
     } else {
         warn!("Failed to create SignalEmitter for Windows1");
+    }
+
+    // Create emitter for shell shortcut and toggle signals on session bus
+    if let Ok(shell_emitter) = SignalEmitter::new(&session_conn, SHELL_PATH) {
+        shell_feed_server.set_emitter(shell_emitter).await;
+        tokio::spawn(run_shell_kwin_watcher(
+            session_conn.clone(),
+            Arc::clone(&shell_shared),
+        ));
+    } else {
+        warn!("Failed to create SignalEmitter for Shell1");
     }
 
     // Set up application index directory watcher and signal emitter

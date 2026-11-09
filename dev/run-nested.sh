@@ -106,7 +106,8 @@ cleanup_outer() {
       kill -KILL "$p" 2>/dev/null || true
     fi
   done
-  rm -f "$TMP_DIR/dbus-session-bus-address" "$TMP_DIR/dbus-address" "$TMP_DIR/bus.sock"
+  rm -f "$TMP_DIR/dbus-session-bus-address" "$TMP_DIR/dbus-address" "$TMP_DIR/bus.sock" "$TMP_DIR/wayland-display"
+  rm -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/wayland-[1-9]*
   exit 0
 }
 trap cleanup_outer EXIT INT TERM HUP
@@ -129,6 +130,11 @@ set -euo pipefail
 set +m
 
 echo "\$\$ session-wrapper" >> "$PID_FILE"
+echo "\$WAYLAND_DISPLAY" > "$TMP_DIR/wayland-display"
+
+if [[ -f "$TMP_DIR/dbus-session-bus-address" ]]; then
+  export DBUS_SESSION_BUS_ADDRESS="\$(cat "$TMP_DIR/dbus-session-bus-address")"
+fi
 
 # Start dev fake UPower service if enabled (default 1)
 FAKE_PID=""
@@ -152,7 +158,7 @@ BUSCTL_PID=\$!
 echo "\$BUSCTL_PID busctl-monitor" >> "$PID_FILE"
 
 # Start daemon in background with pdeathsig SIGKILL
-KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session \
+KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session KYNEX_ALLOW_TEST_FEEDER="${KYNEX_ALLOW_TEST_FEEDER:-0}" \
   setpriv --pdeathsig SIGKILL "$BIN_DIR/kynex-daemon" > "$DAEMON_LOG" 2>&1 &
 DAEMON_PID=\$!
 echo "\$DAEMON_PID kynex-daemon" >> "$PID_FILE"
@@ -175,6 +181,13 @@ echo "\$SHELL_PID kynex-shell" >> "$PID_FILE"
     SCRIPT_ID=\$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "\$SCRIPT_PATH" "kynex-windows" 2>/dev/null | awk '{print \$2}')
     if [[ -n "\$SCRIPT_ID" && "\$SCRIPT_ID" != "-1" ]]; then
       busctl --user call org.kde.KWin "/Scripting/Script\$SCRIPT_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
+    fi
+  fi
+  LAUNCHER_SCRIPT_PATH="$ROOT_DIR/kwin-scripts/kynex-launcher/contents/code/main.js"
+  if [[ -f "\$LAUNCHER_SCRIPT_PATH" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
+    LAUNCHER_SCRIPT_ID=\$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "\$LAUNCHER_SCRIPT_PATH" "kynex-launcher" 2>/dev/null | awk '{print \$2}')
+    if [[ -n "\$LAUNCHER_SCRIPT_ID" && "\$LAUNCHER_SCRIPT_ID" != "-1" ]]; then
+      busctl --user call org.kde.KWin "/Scripting/Script\$LAUNCHER_SCRIPT_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
     fi
   fi
 ) &
@@ -200,19 +213,25 @@ trap cleanup EXIT INT TERM HUP
 
 # Optional auto-exit timeout for automated testing
 if [[ -n "\${KYNEX_TIMEOUT:-}" ]]; then
-  ( sleep "\$KYNEX_TIMEOUT"; kill -TERM "\$SHELL_PID" 2>/dev/null || true ) &
+  ( sleep "\${KYNEX_TIMEOUT}"; kill -TERM "\$SHELL_PID" 2>/dev/null || true ) &
 fi
 
 # Optional extra dev client (e.g. dev/test-windows)
 if [[ -n "\${KYNEX_EXTRA_CLIENT:-}" ]]; then
   (
     sleep 1.5
-    eval "\$KYNEX_EXTRA_CLIENT"
+    \${KYNEX_EXTRA_CLIENT}
   ) &
 fi
 
 # Wait for shell
-wait "\$SHELL_PID" || true
+if [[ "\${KYNEX_KEEP_SESSION_ALIVE:-0}" == "1" ]]; then
+  while true; do
+    sleep 1
+  done
+else
+  wait "\$SHELL_PID" || true
+fi
 cleanup
 EOF
 chmod +x "$WRAPPER"
@@ -222,7 +241,7 @@ export XDG_CONFIG_HOME="$TMP_DIR/config"
 export XDG_DATA_HOME="$TMP_DIR/data"
 export XDG_CACHE_HOME="$TMP_DIR/cache"
 export XDG_STATE_HOME="$TMP_DIR/state"
-mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME/applications" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
 
 export QT_QPA_PLATFORM=wayland
 export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
