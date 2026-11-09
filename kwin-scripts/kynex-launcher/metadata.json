@@ -1,0 +1,21 @@
+{
+    "KPlugin": {
+        "Name": "Kynex Launcher",
+        "Description": "Global shortcut feeder for Kynex Launcher",
+        "Id": "kynex-launcher",
+        "Version": "1.0",
+        "Authors": [
+            {
+                "Name": "Saifeddine Mnasri",
+                "Email": "saif.mnasri@gmail.com"
+            }
+        ],
+        "License": "GPL-3.0-or-later",
+        "ServiceTypes": [
+            "KWin/Script"
+        ]
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}
+

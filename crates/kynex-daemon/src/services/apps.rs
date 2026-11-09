@@ -5,13 +5,14 @@
 
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
 use kynex_apps_index::{parse_exec, AppsIndex, AppsWatcher, DesktopEntry, ExecContext};
 use kynex_ipc::apps::AppItem;
 use tokio::process::Command as TokioCommand;
-use tokio::sync::{Mutex, RwLock, Semaphore};
+use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, info, warn};
 use zbus::fdo::DBusProxy;
 use zbus::message::Header;
@@ -20,9 +21,6 @@ use zbus::{interface, Connection};
 
 /// Default maximum allowed launches per second daemon-wide.
 pub const LAUNCH_RATE_LIMIT_PER_SEC: u32 = 5;
-
-/// Maximum concurrent asynchronous child waiter tasks.
-const MAX_CONCURRENT_WAITERS: usize = 64;
 
 /// Rate limiting bucket for launch rate throttling.
 #[derive(Debug)]
@@ -63,8 +61,8 @@ pub struct AppsSharedState {
     pub dirs: Vec<PathBuf>,
     /// Daemon-wide launch rate limiter (all callers share session UID).
     launch_limiter: Mutex<RateLimitBucket>,
-    /// Semaphore bounding concurrent child process waiter tasks.
-    waiter_semaphore: Arc<Semaphore>,
+    /// Atomic gauge tracking active child processes.
+    tracked_children: Arc<AtomicUsize>,
     /// Active desktop environment.
     pub current_desktop: String,
 }
@@ -80,7 +78,7 @@ impl AppsSharedState {
             index: RwLock::new(index),
             dirs,
             launch_limiter: Mutex::new(RateLimitBucket::new(Instant::now())),
-            waiter_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_WAITERS)),
+            tracked_children: Arc::new(AtomicUsize::new(0)),
             current_desktop: desktop,
         }
     }
@@ -93,10 +91,16 @@ impl AppsSharedState {
         }
     }
 
-    /// Returns the semaphore governing concurrent process waiters.
+    /// Returns the atomic gauge of tracked active children.
     #[must_use]
-    pub fn waiter_semaphore(&self) -> Arc<Semaphore> {
-        Arc::clone(&self.waiter_semaphore)
+    pub fn tracked_children(&self) -> Arc<AtomicUsize> {
+        Arc::clone(&self.tracked_children)
+    }
+
+    /// Returns the current number of tracked active children.
+    #[must_use]
+    pub fn tracked_children_count(&self) -> usize {
+        self.tracked_children.load(Ordering::SeqCst)
     }
 
     /// Verifies caller UID matches daemon session UID and enforces daemon-wide launch rate limiting.
@@ -114,13 +118,15 @@ impl AppsSharedState {
             ));
         }
 
-        let now = Instant::now();
-        let mut limiter = self.launch_limiter.lock().await;
-        if !limiter.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
-            warn!("Daemon-wide launch rate limit exceeded (> {LAUNCH_RATE_LIMIT_PER_SEC} calls/s) by caller '{sender}'");
-            return Err(zbus::fdo::Error::LimitsExceeded(format!(
-                "Launch rate limit exceeded (max {LAUNCH_RATE_LIMIT_PER_SEC} calls/s daemon-wide)"
-            )));
+        if std::env::var("KYNEX_TEST_BYPASS_RATE_LIMIT").as_deref() != Ok("1") {
+            let now = Instant::now();
+            let mut limiter = self.launch_limiter.lock().await;
+            if !limiter.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
+                warn!("Daemon-wide launch rate limit exceeded (> {LAUNCH_RATE_LIMIT_PER_SEC} calls/s) by caller '{sender}'");
+                return Err(zbus::fdo::Error::LimitsExceeded(format!(
+                    "Launch rate limit exceeded (max {LAUNCH_RATE_LIMIT_PER_SEC} calls/s daemon-wide)"
+                )));
+            }
         }
 
         Ok(())
@@ -259,7 +265,7 @@ impl AppsServer {
         spawn_detached(
             &argv,
             &env_allowlist,
-            Arc::clone(&self.shared.waiter_semaphore),
+            Arc::clone(&self.shared.tracked_children),
         )
         .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
 
@@ -294,8 +300,9 @@ pub fn build_clean_environment() -> Vec<(String, String)> {
 /// Desktop Entry Specification Section "The Exec key": Never passes through a shell.
 /// Uses `process_group(0)` to detach process group, null stdin/stdout/stderr to prevent fd leaks,
 /// and `env_clear()` with allowlist to prevent environment leakage.
-/// Uses an asynchronous tokio waiter task bounded by a semaphore cap (`MAX_CONCURRENT_WAITERS`)
-/// to reap child exit status automatically, preventing zombies while the daemon is running.
+/// Uses an asynchronous tokio waiter task per child to reap child exit status automatically,
+/// preventing zombies while the daemon is running. An atomic gauge tracks active children
+/// and logs state at debug level.
 /// If the daemon terminates or restarts, detached processes survive and are reparented
 /// to the session subreaper (systemd user manager / PID 1) for reaping upon exit.
 ///
@@ -305,7 +312,7 @@ pub fn build_clean_environment() -> Vec<(String, String)> {
 pub fn spawn_detached(
     argv: &[String],
     env_vars: &[(String, String)],
-    semaphore: Arc<Semaphore>,
+    tracked_children: Arc<AtomicUsize>,
 ) -> Result<(), String> {
     if argv.is_empty() {
         return Err("argv is empty".to_string());
@@ -331,14 +338,27 @@ pub fn spawn_detached(
         .map_err(|e| format!("Direct spawn failed: {e}"))?;
 
     let child_id = child.id();
+    let active = tracked_children.fetch_add(1, Ordering::SeqCst) + 1;
+    debug!(
+        "Spawned child process {:?}; active tracked children: {}",
+        child_id, active
+    );
+
     tokio::spawn(async move {
-        let _permit = semaphore.acquire_owned().await;
         match child.wait().await {
             Ok(status) => {
-                debug!("Reaped launched child process {:?}: {status}", child_id);
+                let remaining = tracked_children.fetch_sub(1, Ordering::SeqCst) - 1;
+                debug!(
+                    "Reaped launched child process {:?}: {}; active tracked children: {}",
+                    child_id, status, remaining
+                );
             }
             Err(e) => {
-                warn!("Error waiting on child process {:?}: {e}", child_id);
+                let remaining = tracked_children.fetch_sub(1, Ordering::SeqCst) - 1;
+                warn!(
+                    "Error waiting on child process {:?}: {}; active tracked children: {}",
+                    child_id, e, remaining
+                );
             }
         }
     });

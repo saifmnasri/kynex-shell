@@ -43,6 +43,7 @@ zbus = { version = "6", default-features = false, features = ["tokio", "proxy", 
 
 kynex-common = { path = "crates/kynex-common", version = "0.1.0" }
 kynex-ipc = { path = "crates/kynex-ipc", version = "0.1.0" }
+kynex-shell-core = { path = "crates/kynex-shell-core", version = "0.1.0" }
 kynex-style = { path = "crates/kynex-style", version = "0.1.0" }
 
 [profile.release]

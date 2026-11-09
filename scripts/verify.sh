@@ -64,7 +64,7 @@ if ((${#QMLFILES[@]})); then
   fi
 fi
 
-mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) 2>/dev/null)
+mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
 have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true
 
 mapfile -t DESKTOP < <(find packaging -name '*.desktop' 2>/dev/null)

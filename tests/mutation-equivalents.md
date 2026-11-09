@@ -4,9 +4,9 @@ This document catalogs every mutant designated as mathematically or semantically
 
 ---
 
-## 1. Verified Mathematically Equivalent Mutants (2 Total)
+## 1. Verified Mathematically Equivalent Mutants (3 Total)
 
-Following the Stage K2 audit remediation (AUD-K-04), all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring` and `test_controls_token_bindings` in `tests/qml_tests/tst_controls.qml`).
+Following the Stage K2 audit remediation (AUD-K-04) and Stage L2 remediation (AUD-L-01), all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring`, `test_controls_token_bindings`, and `tst_launcher.qml`).
 
 Only mutants with a rigorous one-line proof of equivalence are retained:
 
@@ -14,6 +14,7 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 |---|---|---|---|---|
 | 1 | `crates/kynex-shell/qml/Kynex/Controls/KynexButton.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.Button` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 2 | `crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.CheckBox` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
+| 3 | `crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.EditableText` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 
 ---
 
@@ -33,9 +34,9 @@ In Stage K (PR #18), 17 mutants were misclassified as equivalent. In Stage K2 (A
 
 ## 3. Summary Statistics
 
-- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` (5 files)
-- **Total Mutants Generated**: 180
-- **Mutants Killed**: 178 / 180 (**98.9%**)
-- **Truly Equivalent Survivors**: 2 / 180 (**1.1%**)
+- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/Launcher.qml` (7 files)
+- **Total Mutants Generated**: 226
+- **Mutants Killed**: 223 / 226 (**98.7%**)
+- **Truly Equivalent Survivors**: 3 / 226 (**1.3%**)
 - **Unjustified Survivors**: 0
 - **Status**: 100% of non-equivalent mutants killed.

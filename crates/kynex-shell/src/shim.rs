@@ -18,6 +18,9 @@ pub mod ffi {
         /// Registers `LayerSurface` in `Kynex.Shell` and `Style` in `Kynex.Style`.
         fn kynex_register_core_types();
 
+        /// Loads bundled fonts into QFontDatabase.
+        fn kynex_load_bundled_fonts();
+
         /// Updates the `Style` singleton with parsed design tokens.
         #[allow(clippy::too_many_arguments)]
         fn kynex_set_style_tokens(
@@ -55,6 +58,11 @@ pub mod ffi {
 /// Registers the C++ `LayerSurface` QML type in `Kynex.Shell` and `Style` singleton in `Kynex.Style`.
 pub fn register_types() {
     ffi::kynex_register_core_types();
+}
+
+/// Loads bundled application fonts into the Qt font database.
+pub fn load_bundled_fonts() {
+    ffi::kynex_load_bundled_fonts();
 }
 
 /// Initializes the C++ `Style` singleton from a parsed [`TokensManifest`].

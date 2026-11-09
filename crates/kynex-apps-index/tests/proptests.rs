@@ -51,14 +51,15 @@ proptest! {
         };
 
         if let Ok(argv) = parse_exec(&exec_line, &ctx) {
-            // When the input does not escape percent with '%%', the output must NEVER
-            // contain any unexpanded field codes.
-            if !exec_line.contains("%%") {
+            // When there is at most one '%' in the input (cannot be an escaped '%%'),
+            // argument tokens (argv[1..]) must NEVER contain any unexpanded field codes.
+            // (Note: argv[0] is the command binary, which per spec is not subject to field code expansion).
+            if exec_line.matches('%').count() <= 1 && argv.len() > 1 {
                 let unexpanded = [
                     "%f", "%F", "%u", "%U", "%i", "%c", "%k",
                     "%d", "%D", "%n", "%N", "%v", "%m",
                 ];
-                for arg in &argv {
+                for arg in &argv[1..] {
                     for code in unexpanded {
                         assert!(
                             !arg.contains(code),

@@ -882,12 +882,22 @@ dependencies = [
  "futures-util",
  "kynex-common",
  "kynex-ipc",
+ "kynex-shell-core",
  "kynex-style",
  "pkg-config",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "zbus",
+]
+
+[[package]]
+name = "kynex-shell-core"
+version = "0.1.0"
+dependencies = [
+ "kynex-common",
+ "kynex-ipc",
+ "tracing",
 ]
 
 [[package]]

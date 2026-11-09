@@ -3,6 +3,8 @@
 //! Hosts the Wayland layer-shell presentation layer driven by swappable style packs.
 
 pub mod clock;
+pub mod launcher;
+pub mod launcher_logic;
 pub mod network;
 pub mod power;
 pub mod shim;
@@ -79,6 +81,9 @@ fn main() {
     let shell_qml_path = canonical_style_dir.join(&manifest.entry.shell);
 
     let mut app = QGuiApplication::new();
+
+    // Load bundled application fonts
+    shim::load_bundled_fonts();
 
     // Register C++ LayerSurface and Style singleton into Kynex.Shell and Kynex.Style
     shim::register_types();

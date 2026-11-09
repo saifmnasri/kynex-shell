@@ -33,6 +33,7 @@ cxx-qt-lib = { workspace = true }
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 kynex-common = { workspace = true }
 kynex-ipc = { workspace = true }
+kynex-shell-core = { workspace = true }
 kynex-style = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
