@@ -421,6 +421,7 @@ Item {
             verify(listItem.Accessible.focusable);
             compare(listItem.textFormat, Text.PlainText);
             compare(listItem.secondaryTextFormat, Text.PlainText);
+            compare(listItem.badgeTextFormat, Text.PlainText);
             verify(listItem.activeFocusOnTab);
             verify(listItem.LayoutMirroring.childrenInherit);
             compare(listItem.LayoutMirroring.enabled, Qt.locale().textDirection === Qt.RightToLeft);
@@ -534,16 +535,22 @@ Item {
         }
 
         function test_searchfield_clear_button() {
+            button.forceActiveFocus();
+            verify(!searchField.inputActiveFocus);
+
             searchField.text = "something";
+            wait(20);
             verify(searchField.hasText);
             verify(searchField.clearButtonVisible);
 
             searchFieldClearedSpy.clear();
-            searchField.clear();
+            mouseClick(searchField.clearMouseItem);
+            wait(20);
             compare(searchField.text, "");
             verify(!searchField.hasText);
             verify(!searchField.clearButtonVisible);
             compare(searchFieldClearedSpy.count, 1);
+            verify(searchField.inputActiveFocus);
         }
 
         function test_searchfield_focus_ring() {

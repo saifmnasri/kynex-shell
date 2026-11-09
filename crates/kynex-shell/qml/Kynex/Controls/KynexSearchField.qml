@@ -19,6 +19,9 @@ FocusScope {
     readonly property bool inputEnabled: textInput.enabled
     readonly property var clearAccessibleRole: clearMouse.Accessible.role
     readonly property string clearAccessibleName: clearMouse.Accessible.name
+    readonly property Item clearButtonItem: clearBtn
+    readonly property Item clearMouseItem: clearMouse
+    readonly property bool inputActiveFocus: textInput.activeFocus
 
     signal accepted()
     signal cleared()

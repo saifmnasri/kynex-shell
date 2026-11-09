@@ -19,6 +19,7 @@ FocusScope {
     readonly property bool secondaryLabelVisible: subLabel.visible
     readonly property int textFormat: label.textFormat
     readonly property int secondaryTextFormat: subLabel.textFormat
+    readonly property int badgeTextFormat: badgeText.textFormat
     readonly property int cursorShape: mouseArea.cursorShape
     readonly property color backgroundColor: bg.color
     readonly property color textColor: label.color
@@ -116,6 +117,7 @@ FocusScope {
             anchors.verticalCenter: parent.verticalCenter
 
             Text {
+                id: badgeText
                 anchors.centerIn: parent
                 text: root.letterBadge
                 textFormat: Text.PlainText
