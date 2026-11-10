@@ -3,6 +3,7 @@
 pub mod apps;
 pub mod daemon;
 pub mod network;
+pub mod notifications;
 pub mod pins;
 pub mod power;
 pub mod service;
@@ -14,6 +15,11 @@ pub use daemon::{
     Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
 };
 pub use network::{Network1Proxy, NetworkKind, NetworkState, NETWORK_INTERFACE, NETWORK_PATH};
+pub use notifications::{
+    NotificationHistoryItem, Notifications1Proxy, FDO_NOTIFICATIONS_DESTINATION,
+    FDO_NOTIFICATIONS_INTERFACE, FDO_NOTIFICATIONS_PATH, NOTIFICATIONS_INTERFACE,
+    NOTIFICATIONS_PATH,
+};
 pub use pins::{Pins1Proxy, PINS_INTERFACE, PINS_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};

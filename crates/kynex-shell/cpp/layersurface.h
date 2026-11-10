@@ -16,6 +16,7 @@ class LayerSurface : public QQuickWindow {
     Q_PROPERTY(int bottomMargin READ bottomMargin WRITE setBottomMargin NOTIFY marginsChanged)
     Q_PROPERTY(KeyboardInteractivity keyboardInteractivity READ keyboardInteractivity WRITE setKeyboardInteractivity NOTIFY keyboardInteractivityChanged)
     Q_PROPERTY(QString scope READ scope WRITE setScope NOTIFY scopeChanged)
+    Q_PROPERTY(bool hasInputMask READ hasInputMask NOTIFY inputMaskChanged)
 
 public:
     enum Layer {
@@ -75,6 +76,11 @@ public:
     QString scope() const { return m_scope; }
     void setScope(const QString &scope);
 
+    bool hasInputMask() const { return m_hasInputMask; }
+
+    Q_INVOKABLE void setInputMask(int x, int y, int width, int height);
+    Q_INVOKABLE void clearInputMask();
+
 Q_SIGNALS:
     void layerChanged();
     void anchorsChanged();
@@ -82,6 +88,7 @@ Q_SIGNALS:
     void marginsChanged();
     void keyboardInteractivityChanged();
     void scopeChanged();
+    void inputMaskChanged();
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -96,5 +103,6 @@ private:
     QMargins m_margins;
     KeyboardInteractivity m_keyboardInteractivity = KeyboardInteractivityNone;
     QString m_scope;
+    bool m_hasInputMask = false;
 };
 

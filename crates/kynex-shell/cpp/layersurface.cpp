@@ -128,6 +128,25 @@ void LayerSurface::setScope(const QString &scope)
     }
 }
 
+void LayerSurface::setInputMask(int x, int y, int width, int height)
+{
+    if (width <= 0 || height <= 0) {
+        setMask(QRegion());
+        m_hasInputMask = false;
+    } else {
+        setMask(QRegion(x, y, width, height));
+        m_hasInputMask = true;
+    }
+    Q_EMIT inputMaskChanged();
+}
+
+void LayerSurface::clearInputMask()
+{
+    setMask(QRegion());
+    m_hasInputMask = false;
+    Q_EMIT inputMaskChanged();
+}
+
 void LayerSurface::showEvent(QShowEvent *event)
 {
     applyLayerShellSettings();

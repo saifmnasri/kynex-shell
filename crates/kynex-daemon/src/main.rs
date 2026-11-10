@@ -6,6 +6,10 @@ use std::sync::Arc;
 
 use kynex_daemon::services::apps::{setup_apps_watcher, AppsServer, AppsSharedState};
 use kynex_daemon::services::network::{run_network_service, NetworkServer};
+use kynex_daemon::services::notifications::{
+    run_notification_expiry_scheduler, try_acquire_fdo_name, FdoNotificationsServer,
+    NotificationsServer, NotificationsSharedState,
+};
 use kynex_daemon::services::pins::PinsServer;
 use kynex_daemon::services::power::{run_power_service, PowerServer};
 use kynex_daemon::services::shell::{
@@ -17,8 +21,9 @@ use kynex_daemon::services::windows::{
 };
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
-    apps::APPS_PATH, pins::PINS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH,
-    NETWORK_PATH, POWER_PATH, WINDOWS_PATH,
+    apps::APPS_PATH, notifications::FDO_NOTIFICATIONS_PATH, notifications::NOTIFICATIONS_PATH,
+    pins::PINS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH,
+    WINDOWS_PATH,
 };
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
@@ -66,6 +71,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let pins_server = PinsServer::new_default();
 
+    let notif_shared = Arc::new(NotificationsSharedState::new(Some(Arc::clone(
+        &apps_shared,
+    ))));
+    let fdo_notif_server = FdoNotificationsServer::new(Arc::clone(&notif_shared));
+    let notif_server = NotificationsServer::new(Arc::clone(&notif_shared));
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -78,6 +89,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(SHELL_PATH, shell_feed_server.clone())
         .serve_at(APPS_PATH, apps_server)
         .serve_at(PINS_PATH, pins_server.clone())
+        .serve_at(NOTIFICATIONS_PATH, notif_server.clone())
+        .serve_at(FDO_NOTIFICATIONS_PATH, fdo_notif_server.clone())
         .build()
         .await?;
 
@@ -121,6 +134,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else {
         warn!("Failed to create SignalEmitter for Pins1");
     }
+
+    // Set up notifications emitters, background expiry scheduler, and well-known name acquisition
+    notif_shared.set_connection(session_conn.clone()).await;
+    if let Ok(notif1_emitter) = SignalEmitter::new(&session_conn, NOTIFICATIONS_PATH) {
+        notif_server.set_emitter(notif1_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for Notifications1");
+    }
+    if let Ok(fdo_emitter) = SignalEmitter::new(&session_conn, FDO_NOTIFICATIONS_PATH) {
+        fdo_notif_server.set_emitter(fdo_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for org.freedesktop.Notifications");
+    }
+
+    let fdo_claimed = try_acquire_fdo_name(&session_conn).await;
+    notif_shared
+        .fdo_name_acquired
+        .store(fdo_claimed, Ordering::SeqCst);
+
+    tokio::spawn(run_notification_expiry_scheduler(
+        Arc::clone(&notif_shared),
+        session_conn.clone(),
+    ));
 
     // Set up application index directory watcher and signal emitter
     let _apps_watcher = if let Ok(apps_emitter) = SignalEmitter::new(&session_conn, APPS_PATH) {
