@@ -1,0 +1,38 @@
+=== COMMAND ===
+./scripts/mutation-test-qml.sh
+=== TIMESTAMP: 2026-11-10T18:18:54Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+=== Automatic QML Mutation Testing ===
+Target files: 9 files
+Total mutations generated: 289
+------------------------------------------------------------
+Mutants Killed   : 284/289 (98.3%)
+Mutants Survived : 5
+------------------------------------------------------------
+Survivor Details & Justifications:
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexButton.qml:65 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.Button with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml:50 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.EditableText with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml:35 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.CheckBox with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] styles/default/Shell.qml:87 [delete]
+    Original : when: launcherLoader.status === Loader.Ready
+    Mutant   : 
+    Reason   : Qt Quick Binding evaluates target property assignment only when target is non-null; since launcherLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: launcherLoader.status === Loader.Ready semantically equivalent to unconditional binding.
+  [EQUIVALENT MUTANT] styles/default/Shell.qml:116 [delete]
+    Original : when: notificationLoader.status === Loader.Ready
+    Mutant   : 
+    Reason   : Qt Quick Binding evaluates target property assignment only when target is non-null; since notificationLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: notificationLoader.status === Loader.Ready semantically equivalent to unconditional binding.
+------------------------------------------------------------
+Final Kill Ratio : 98.3%
+Equivalent Valid : 5
+Unjustified Gaps : 0
+SUCCESS: All non-equivalent mutants killed; 5 surviving mutants verified equivalent.

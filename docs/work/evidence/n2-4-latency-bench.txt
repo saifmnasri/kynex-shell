@@ -1,0 +1,216 @@
+=== COMMAND ===
+python3 dev/bench/measure_stage_n.py
+=== TIMESTAMP: 2026-11-10T18:30:13Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+Benchmark File: /home/saif/Kynex-Shell/dev/bench/stage_n_perf.json
+Git SHA: unknown (Profile: unknown)
+
+Metric                                        Status          Measured                           
+-------------------------------------------------------------------------------------------------
+Complete session idle memory (PSS)            NOT MET         200.8 MB PSS (kwin_wayland 96.0    
+Idle CPU (60 s average)                       MET             ~0.00% CPU (kwin_wayland 0.00%,    
+Time from compositor ready to first shell frameMET             ~210 ms                            
+Launcher: key press -> first visible frame (cold)UNMEASURABLE    Unimplemented                      
+Launcher: key press -> first visible frame (warm)MET             3.5 ms (p50), 4.3 ms (p95)         
+Search results update per keystroke           MET             1.8 ms (p50), 3.1 ms (p99)         
+Apps index cold scan (5,000 entries)          MET             ~29.2 ms                           
+Apps index incremental update                 MET             0.004 ms (p50), 0.088 ms (p99)     
+Daemon PSS with 5,000 entries                 MET             11.9 MB PSS (+5.3 MB growth)       
+Taskbar update after window open/close        UNMEASURABLE    Slice 1 read-only tracking activ   
+UI frame time in our windows                  UNMEASURABLE    Unmeasured on physical GPU         
+Notification popup: D-Bus call -> visible     NOT MET         34.4 ms (p50), 50.3 ms (p95)       
+Notification popup latency (warm)             MET             3.6 ms (p50), 8.4 ms (p95)         
+Daemon PSS with 200 notifications history     MET             7.3 MB PSS                         
+Notifications flood CPU                       MET             8.5% CPU                           
+Daemon resident memory                        MET             7.2 MB PSS, 10.8 MB RSS            
+Icon lookup latency (cold)                    MET             2.07 ms (p50), 5.97 ms (p95)       
+Icon lookup latency (warm / cached)           MET             0.00 ms (p50), 0.00 ms (p95)       
+Binary/install size of shell                  MET             kynex-shell ~2.8 MB, kynex-daemo   
+=== Stage N Desktop Notifications Performance Measurement ===
+Starting nested session...
+Session Bus: unix:path=/home/saif/Kynex-Shell/dev/tmp/bus.sock
+Wayland: wayland-1
+Daemon PID: 80885
+
+--- Measuring 30 COLD notification latency samples ---
+  Cold sample  1/30: e2e =  34.04 ms (shell-side =  32.37 ms)
+  Cold sample  2/30: e2e =  32.53 ms (shell-side =  31.91 ms)
+  Cold sample  3/30: e2e =  37.33 ms (shell-side =  36.58 ms)
+  Cold sample  4/30: e2e =  33.18 ms (shell-side =  32.42 ms)
+  Cold sample  5/30: e2e =  44.62 ms (shell-side =  43.26 ms)
+  Cold sample  6/30: e2e =  35.47 ms (shell-side =  34.80 ms)
+  Cold sample  7/30: e2e =  44.30 ms (shell-side =  43.18 ms)
+  Cold sample  8/30: e2e =  34.25 ms (shell-side =  33.32 ms)
+  Cold sample  9/30: e2e =  32.07 ms (shell-side =  31.37 ms)
+  Cold sample 10/30: e2e =  33.94 ms (shell-side =  33.36 ms)
+  Cold sample 11/30: e2e =  31.94 ms (shell-side =  31.17 ms)
+  Cold sample 12/30: e2e =  33.86 ms (shell-side =  33.16 ms)
+  Cold sample 13/30: e2e =  38.01 ms (shell-side =  37.06 ms)
+  Cold sample 14/30: e2e =  50.50 ms (shell-side =  48.42 ms)
+  Cold sample 15/30: e2e =  34.53 ms (shell-side =  33.63 ms)
+  Cold sample 16/30: e2e =  50.00 ms (shell-side =  48.70 ms)
+  Cold sample 17/30: e2e =  34.02 ms (shell-side =  33.32 ms)
+  Cold sample 18/30: e2e =  48.30 ms (shell-side =  46.39 ms)
+  Cold sample 19/30: e2e =  31.70 ms (shell-side =  31.06 ms)
+  Cold sample 20/30: e2e =  32.80 ms (shell-side =  31.99 ms)
+  Cold sample 21/30: e2e =  33.53 ms (shell-side =  32.92 ms)
+  Cold sample 22/30: e2e =  37.37 ms (shell-side =  36.45 ms)
+  Cold sample 23/30: e2e =  41.68 ms (shell-side =  40.68 ms)
+  Cold sample 24/30: e2e =  32.78 ms (shell-side =  32.21 ms)
+  Cold sample 25/30: e2e =  58.94 ms (shell-side =  56.00 ms)
+  Cold sample 26/30: e2e =  32.50 ms (shell-side =  31.68 ms)
+  Cold sample 27/30: e2e =  48.76 ms (shell-side =  47.04 ms)
+  Cold sample 28/30: e2e =  34.72 ms (shell-side =  34.02 ms)
+  Cold sample 29/30: e2e =  43.75 ms (shell-side =  42.37 ms)
+  Cold sample 30/30: e2e =  32.79 ms (shell-side =  32.18 ms)
+
+Long-running Shell PID: 81400
+
+--- Measuring 30 WARM notification latency samples ---
+  Warm sample  1/30: e2e =  42.47 ms (shell-side =  41.47 ms)
+  Warm sample  2/30: e2e =   3.67 ms (shell-side =   2.94 ms)
+  Warm sample  3/30: e2e =   4.22 ms (shell-side =   3.45 ms)
+  Warm sample  4/30: e2e =   8.27 ms (shell-side =   6.65 ms)
+  Warm sample  5/30: e2e =   3.26 ms (shell-side =   2.76 ms)
+  Warm sample  6/30: e2e =   4.02 ms (shell-side =   3.23 ms)
+  Warm sample  7/30: e2e =   4.01 ms (shell-side =   3.33 ms)
+  Warm sample  8/30: e2e =   3.65 ms (shell-side =   2.86 ms)
+  Warm sample  9/30: e2e =   3.07 ms (shell-side =   2.50 ms)
+  Warm sample 10/30: e2e =   4.04 ms (shell-side =   3.02 ms)
+  Warm sample 11/30: e2e =   3.26 ms (shell-side =   2.58 ms)
+  Warm sample 12/30: e2e =   8.51 ms (shell-side =   5.69 ms)
+  Warm sample 13/30: e2e =   3.03 ms (shell-side =   2.39 ms)
+  Warm sample 14/30: e2e =   6.64 ms (shell-side =   4.95 ms)
+  Warm sample 15/30: e2e =   2.62 ms (shell-side =   2.02 ms)
+  Warm sample 16/30: e2e =   2.95 ms (shell-side =   2.33 ms)
+  Warm sample 17/30: e2e =   6.42 ms (shell-side =   4.54 ms)
+  Warm sample 18/30: e2e =   3.05 ms (shell-side =   2.31 ms)
+  Warm sample 19/30: e2e =   3.25 ms (shell-side =   2.57 ms)
+  Warm sample 20/30: e2e =   4.76 ms (shell-side =   3.45 ms)
+  Warm sample 21/30: e2e =   2.73 ms (shell-side =   1.99 ms)
+  Warm sample 22/30: e2e =   2.80 ms (shell-side =   2.30 ms)
+  Warm sample 23/30: e2e =   3.80 ms (shell-side =   2.72 ms)
+  Warm sample 24/30: e2e =   5.96 ms (shell-side =   4.49 ms)
+  Warm sample 25/30: e2e =   2.81 ms (shell-side =   2.18 ms)
+  Warm sample 26/30: e2e =   2.81 ms (shell-side =   2.21 ms)
+  Warm sample 27/30: e2e =   4.17 ms (shell-side =   3.24 ms)
+  Warm sample 28/30: e2e =   3.57 ms (shell-side =   2.72 ms)
+  Warm sample 29/30: e2e =   2.54 ms (shell-side =   1.99 ms)
+  Warm sample 30/30: e2e =   2.73 ms (shell-side =   2.13 ms)
+
+--- Measuring PSS & Memory Plateau ---
+  Idle PSS - Shell: 97.59 MB, Daemon: 7.22 MB
+
+Populating history buffer to capacity (200 notifications)...
+  Daemon PSS with 200 history entries: 7.28 MB
+
+Flooding 1,000 notifications in rapid sequence (flood CPU check)...
+  Flood completed in 0.76 s. Peak daemon CPU: 8.5%
+  After 1,000 flood - Shell: 461.31 MB, Daemon: 7.30 MB
+
+--- Measuring Idle Wakeups via pidstat (10 seconds) ---
+Linux 7.0.0-42-generic (saif-QEMU-Virtual-Machine) 	11/10/2026 	_aarch64_	(6 CPU)
+
+07:31:07 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:08 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:08 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:07 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:08 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:08 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:08 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:09 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:09 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:08 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:09 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:09 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:09 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:10 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:10 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:09 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:10 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:10 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:10 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:11 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:11 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:10 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:11 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:11 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:11 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:12 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:12 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:11 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:12 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:12 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:12 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:13 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:13 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:12 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:13 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:13 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:13 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:14 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:14 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:13 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:14 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:14 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:14 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:15 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:15 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:14 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:15 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:15 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:15 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:16 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:16 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:15 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:16 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:16 PM  1000     81400      0.00      0.00  kynex-shell
+
+07:31:16 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+07:31:17 PM  1000     80885    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon
+07:31:17 PM  1000     81400    0.00    0.00    0.00    0.00    0.00     2  kynex-shell
+
+07:31:16 PM   UID       PID   cswch/s nvcswch/s  Command
+07:31:17 PM  1000     80885      0.00      0.00  kynex-daemon
+07:31:17 PM  1000     81400      0.00      0.00  kynex-shell
+
+Average:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:     1000     80885    0.00    0.00    0.00    0.00    0.00     -  kynex-daemon
+Average:     1000     81400    0.00    0.00    0.00    0.00    0.00     -  kynex-shell
+
+Average:      UID       PID   cswch/s nvcswch/s  Command
+Average:     1000     80885      0.00      0.00  kynex-daemon
+Average:     1000     81400      0.00      0.00  kynex-shell
+
+
+=== Summary Results ===
+  Cold Latency (End-to-End): p50 = 34.39 ms, p95 = 50.27 ms (Target < 50 ms)
+  Cold Latency (Shell-only): p50 = 33.50 ms, p95 = 48.57 ms
+  Warm Latency (End-to-End): p50 = 3.61 ms, p95 = 8.40 ms (Target < 50 ms)
+  Warm Latency (Shell-only): p50 = 2.74 ms, p95 = 6.22 ms
+  Daemon PSS (Idle): 7.22 MB (Target < 10 MB)
+  Daemon PSS (200 hist): 7.28 MB (Target < 15 MB)
+  Flood Peak CPU: 8.5% (Target < 20%)
+
+Saved benchmark metrics to /home/saif/Kynex-Shell/dev/bench/stage_n_perf.json
+
+Evaluating results with budget-check.py...
+Benchmark complete.

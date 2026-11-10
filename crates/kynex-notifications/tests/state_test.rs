@@ -636,7 +636,7 @@ fn test_state_edge_cases_and_accessors() {
     let _ = manager.dismiss_by_user(transient_notif.id);
     assert_eq!(manager.history().len(), 0); // Not recorded in history!
 
-    // Replaces_id for non-existent notification allocates fresh ID
+    // Spec v1.2 §4.1: Replaces_id for non-existent notification returns replaces_id
     let fresh = manager
         .notify(
             ":1.100",
@@ -655,7 +655,7 @@ fn test_state_edge_cases_and_accessors() {
             now,
         )
         .expect("fresh notify");
-    assert_ne!(fresh.id, 99999);
+    assert_eq!(fresh.id, 99999);
 
     // Close non-existent notification returns NotFound
     assert_eq!(

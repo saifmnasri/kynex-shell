@@ -1,7 +1,9 @@
 //! Definitions for `org.kynexos.Daemon.Notifications1` and `org.freedesktop.Notifications`.
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
-use zbus::zvariant::Type;
+use zbus::zvariant::{Type, Variant};
 
 /// Interface name for internal shell notifications interface.
 pub const NOTIFICATIONS_INTERFACE: &str = "org.kynexos.Daemon.Notifications1";
@@ -102,4 +104,43 @@ pub trait Notifications1 {
     /// Signal emitted when a notification popup is closed or removed.
     #[zbus(signal)]
     fn closed(&self, id: u32, reason: u32) -> zbus::Result<()>;
+}
+
+/// Client-side D-Bus proxy for standard Freedesktop `org.freedesktop.Notifications`.
+#[zbus::proxy(
+    interface = "org.freedesktop.Notifications",
+    default_service = "org.freedesktop.Notifications",
+    default_path = "/org/freedesktop/Notifications"
+)]
+pub trait FdoNotifications {
+    /// Queries supported server capabilities.
+    fn get_capabilities(&self) -> zbus::Result<Vec<String>>;
+
+    /// Queries server name, vendor, version, and spec version.
+    fn get_server_information(&self) -> zbus::Result<(String, String, String, String)>;
+
+    /// Sends a desktop notification.
+    #[allow(clippy::too_many_arguments)]
+    fn notify(
+        &self,
+        app_name: &str,
+        replaces_id: u32,
+        app_icon: &str,
+        summary: &str,
+        body: &str,
+        actions: &[&str],
+        hints: &HashMap<&str, Variant<'_>>,
+        expire_timeout: i32,
+    ) -> zbus::Result<u32>;
+
+    /// Closes notification with given ID.
+    fn close_notification(&self, id: u32) -> zbus::Result<()>;
+
+    /// Signal emitted when a notification is closed.
+    #[zbus(signal)]
+    fn notification_closed(&self, id: u32, reason: u32) -> zbus::Result<()>;
+
+    /// Signal emitted when a notification action is invoked.
+    #[zbus(signal)]
+    fn action_invoked(&self, id: u32, action_key: String) -> zbus::Result<()>;
 }

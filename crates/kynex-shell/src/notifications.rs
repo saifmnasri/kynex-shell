@@ -365,14 +365,16 @@ impl NotificationModelRust {
     pub fn record_first_frame(&mut self) -> Option<f64> {
         if self.first_frame_pending {
             self.first_frame_pending = false;
+            let frame_ns = crate::shim::ffi::kynex_steady_clock_ns();
             let elapsed_ms = self
                 .last_shown_time
                 .map_or(0.0, |t| t.elapsed().as_secs_f64() * 1000.0);
             tracing::info!(
                 target: "kynex_perf",
                 event = "notification_first_frame_swapped",
+                frame_ns = frame_ns,
                 latency_ms = elapsed_ms,
-                "Notification first frame swapped"
+                "Notification first frame swapped: frame_ns={frame_ns} shell_latency_ms={elapsed_ms:.2}"
             );
             Some(elapsed_ms)
         } else {

@@ -676,8 +676,10 @@ fn map_notification_error(err: NotificationError) -> zbus::fdo::Error {
         NotificationError::InvalidArgs(msg) | NotificationError::InvalidImageData(msg) => {
             zbus::fdo::Error::InvalidArgs(msg.to_string())
         }
-        NotificationError::NotFound(id) => {
-            zbus::fdo::Error::InvalidArgs(format!("Notification {id} not found"))
+        NotificationError::NotFound(_) => {
+            // FDO Desktop Notifications Spec v1.2 §4.2:
+            // "If the notification no longer exists, an empty D-BUS Error message is sent back."
+            zbus::fdo::Error::InvalidArgs(String::new())
         }
     }
 }
@@ -1079,5 +1081,8 @@ mod tests {
         assert_eq!(name3, "Verified Test App");
         assert!(verified3);
         assert_eq!(icon3, "verified-icon");
+
+        let _ = std::fs::remove_file(&desktop_file);
+        let _ = temp_dir.close();
     }
 }

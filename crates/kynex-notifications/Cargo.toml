@@ -10,9 +10,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
-kynex-common = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
 
 [dev-dependencies]
 proptest = "1"

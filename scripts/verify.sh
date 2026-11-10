@@ -88,6 +88,10 @@ if [[ -f scripts/test-systemd-unit.sh ]] && systemctl --user list-units >/dev/nu
   step "systemd user unit sandbox test" ./scripts/test-systemd-unit.sh
 fi
 
+if [[ -f scripts/check-report.py ]]; then
+  step "work report evidence check" ./scripts/check-report.py
+fi
+
 echo; echo "================ SUMMARY ================"
 printf 'PASSED : %s\n' "${#pass[@]}"; ((${#pass[@]})) && printf '  + %s\n' "${pass[@]}"
 printf 'SKIPPED: %s\n' "${#skipped[@]}"; ((${#skipped[@]})) && printf '  ~ %s\n' "${skipped[@]}"

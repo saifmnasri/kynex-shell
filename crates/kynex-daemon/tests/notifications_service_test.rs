@@ -6,6 +6,7 @@
     clippy::unreadable_literal,
     clippy::doc_markdown,
     clippy::too_many_arguments,
+    clippy::too_many_lines,
     clippy::assert_is_empty
 )]
 
@@ -27,7 +28,11 @@ use kynex_daemon::services::notifications::{
     run_notification_expiry_scheduler, try_acquire_fdo_name, FdoNotificationsServer,
     NotificationsServer, NotificationsSharedState,
 };
-use kynex_ipc::notifications::{Notifications1Proxy, FDO_NOTIFICATIONS_PATH, NOTIFICATIONS_PATH};
+use kynex_ipc::notifications::{
+    FdoNotificationsProxy, Notifications1Proxy, FDO_NOTIFICATIONS_DESTINATION,
+    FDO_NOTIFICATIONS_INTERFACE, FDO_NOTIFICATIONS_PATH, NOTIFICATIONS_INTERFACE,
+    NOTIFICATIONS_PATH,
+};
 use kynex_ipc::DAEMON_DESTINATION;
 use tokio::io::AsyncBufReadExt;
 use zbus::object_server::SignalEmitter;
@@ -71,35 +76,11 @@ impl TestBus {
 impl Drop for TestBus {
     fn drop(&mut self) {
         let _ = self.child.start_kill();
+        if let Some(path) = self.address.strip_prefix("unix:path=") {
+            let socket_path = path.split(',').next().unwrap_or(path);
+            let _ = std::fs::remove_file(socket_path);
+        }
     }
-}
-
-#[zbus::proxy(
-    interface = "org.freedesktop.Notifications",
-    default_service = "org.freedesktop.Notifications",
-    default_path = "/org/freedesktop/Notifications"
-)]
-trait FdoNotifications {
-    fn get_capabilities(&self) -> zbus::Result<Vec<String>>;
-    fn get_server_information(&self) -> zbus::Result<(String, String, String, String)>;
-    fn notify(
-        &self,
-        app_name: &str,
-        replaces_id: u32,
-        app_icon: &str,
-        summary: &str,
-        body: &str,
-        actions: &[&str],
-        hints: &HashMap<&str, Variant<'_>>,
-        expire_timeout: i32,
-    ) -> zbus::Result<u32>;
-    fn close_notification(&self, id: u32) -> zbus::Result<()>;
-
-    #[zbus(signal)]
-    fn notification_closed(&self, id: u32, reason: u32) -> zbus::Result<()>;
-
-    #[zbus(signal)]
-    fn action_invoked(&self, id: u32, action_key: String) -> zbus::Result<()>;
 }
 
 /// Harness setting up the daemon and test connections on the isolated bus.
@@ -232,12 +213,15 @@ async fn test_spec_replaces_id_and_sender_authorization() -> Result<(), Box<dyn 
     let close_hijack = client_b.close_notification(id1).await;
     assert!(close_hijack.is_err());
 
-    // 5. Replaces nonexistent ID returns a newly allocated ID
+    // 5. Replaces nonexistent ID returns replaces_id per FDO Spec v1.2 §4.1
     let id2 = client_a
         .notify("AppA", 999999, "", "New", "Body", &[], &hints, 5000)
         .await?;
-    assert_ne!(id2, 999999);
-    assert_ne!(id2, id1);
+    assert_eq!(id2, 999999);
+
+    // 5b. CloseNotification on nonexistent ID returns empty D-Bus error per FDO Spec v1.2 §4.2
+    let close_nonexistent = client_a.close_notification(888888).await;
+    assert!(close_nonexistent.is_err());
 
     // 6. Original creator can close their notification (Reason 3: Closed by CloseNotification)
     let mut close_stream = client_a.receive_notification_closed().await?;
@@ -564,6 +548,315 @@ async fn test_token_bucket_flood_protection() -> Result<(), Box<dyn Error>> {
     assert!(
         res_b.is_ok(),
         "Client B was incorrectly throttled by Client A"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_kynex_ipc_proxy_traits_and_constants_against_daemon() -> Result<(), Box<dyn Error>> {
+    assert_eq!(NOTIFICATIONS_INTERFACE, "org.kynexos.Daemon.Notifications1");
+    assert_eq!(NOTIFICATIONS_PATH, "/org/kynexos/Daemon/Notifications");
+    assert_eq!(
+        FDO_NOTIFICATIONS_DESTINATION,
+        "org.freedesktop.Notifications"
+    );
+    assert_eq!(FDO_NOTIFICATIONS_INTERFACE, "org.freedesktop.Notifications");
+    assert_eq!(FDO_NOTIFICATIONS_PATH, "/org/freedesktop/Notifications");
+
+    let harness = TestHarness::new().await?;
+    let fdo = harness.fdo_client_a().await?;
+    let shell = harness.shell_client().await?;
+
+    assert_eq!(
+        fdo.inner().path().as_str(),
+        "/org/freedesktop/Notifications"
+    );
+    assert_eq!(
+        fdo.inner().destination().as_str(),
+        "org.freedesktop.Notifications"
+    );
+    assert_eq!(
+        fdo.inner().interface().as_str(),
+        "org.freedesktop.Notifications"
+    );
+    assert_eq!(
+        shell.inner().path().as_str(),
+        "/org/kynexos/Daemon/Notifications"
+    );
+    assert_eq!(shell.inner().destination().as_str(), "org.kynexos.Daemon");
+    assert_eq!(
+        shell.inner().interface().as_str(),
+        "org.kynexos.Daemon.Notifications1"
+    );
+
+    let caps = fdo.get_capabilities().await?;
+    assert!(caps.contains(&"body".to_string()));
+    assert!(caps.contains(&"actions".to_string()));
+
+    let (name, vendor, _ver, spec_ver) = fdo.get_server_information().await?;
+    assert_eq!(name, "kynex-daemon");
+    assert_eq!(vendor, "Kynex Project");
+    assert_eq!(spec_ver, "1.2");
+
+    let mut shown_stream = shell.receive_shown().await?;
+    let mut updated_stream = shell.receive_updated().await?;
+    let mut closed_stream = shell.receive_closed().await?;
+    let mut fdo_closed_stream = fdo.receive_notification_closed().await?;
+    let mut action_stream = fdo.receive_action_invoked().await?;
+
+    let hints = HashMap::new();
+    let actions = ["open", "Open File", "default", "Default Action"];
+
+    // 1. Send notification via FdoNotificationsProxy
+    let notif_id = fdo
+        .notify(
+            "TestApp",
+            0,
+            "test-icon",
+            "Test Summary",
+            "Test Body",
+            &actions,
+            &hints,
+            5000,
+        )
+        .await?;
+    assert!(notif_id > 0);
+
+    let shown_sig = tokio::time::timeout(Duration::from_secs(2), shown_stream.next())
+        .await?
+        .ok_or("No shown signal received")?;
+    let shown_args = shown_sig.args()?;
+    assert_eq!(shown_args.id, notif_id);
+    assert_eq!(shown_args.app_name, "TestApp");
+    assert_eq!(shown_args.summary, "Test Summary");
+    assert_eq!(shown_args.body, "Test Body");
+
+    // 2. Update notification via replaces_id
+    let updated_id = fdo
+        .notify(
+            "TestApp",
+            notif_id,
+            "test-icon",
+            "Updated Summary",
+            "Updated Body",
+            &actions,
+            &hints,
+            5000,
+        )
+        .await?;
+    assert_eq!(updated_id, notif_id);
+
+    let updated_sig = tokio::time::timeout(Duration::from_secs(2), updated_stream.next())
+        .await?
+        .ok_or("No updated signal received")?;
+    let upd_args = updated_sig.args()?;
+    assert_eq!(upd_args.id, notif_id);
+    assert_eq!(upd_args.summary, "Updated Summary");
+    assert_eq!(upd_args.body, "Updated Body");
+
+    // 3. Pause and Resume timeout via Notifications1Proxy
+    shell.pause_timeout(notif_id).await?;
+    shell.resume_timeout(notif_id).await?;
+
+    // 4. DoNotDisturb property get and set via Notifications1Proxy
+    assert!(!shell.do_not_disturb().await?);
+    shell.set_do_not_disturb(true).await?;
+    assert!(shell.do_not_disturb().await?);
+    shell.set_do_not_disturb(false).await?;
+    assert!(!shell.do_not_disturb().await?);
+
+    // 5. Invoke action via Notifications1Proxy -> routes to Fdo client and closes non-resident notification
+    shell.invoke_action(notif_id, "open").await?;
+    let act_sig = tokio::time::timeout(Duration::from_secs(2), action_stream.next())
+        .await?
+        .ok_or("No action_invoked signal received")?;
+    let act_args = act_sig.args()?;
+    assert_eq!(act_args.id, notif_id);
+    assert_eq!(act_args.action_key, "open");
+
+    let closed_sig = tokio::time::timeout(Duration::from_secs(2), closed_stream.next())
+        .await?
+        .ok_or("No closed signal received")?;
+    let cl_args = closed_sig.args()?;
+    assert_eq!(cl_args.id, notif_id);
+
+    let fdo_cl_sig = tokio::time::timeout(Duration::from_secs(2), fdo_closed_stream.next())
+        .await?
+        .ok_or("No fdo notification_closed signal received")?;
+    let fdo_cl_args = fdo_cl_sig.args()?;
+    assert_eq!(fdo_cl_args.id, notif_id);
+
+    // 6. Query history via Notifications1Proxy now that notification was closed
+    let history = shell.get_history().await?;
+    assert!(history
+        .iter()
+        .any(|item| item.id == notif_id && item.summary == "Updated Summary"));
+
+    // 7. Post second notification to test dismiss via Notifications1Proxy
+    let notif2_id = fdo
+        .notify(
+            "TestApp2",
+            0,
+            "",
+            "Second Summary",
+            "Second Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await?;
+    let _ = tokio::time::timeout(Duration::from_secs(2), shown_stream.next()).await?;
+
+    shell.dismiss(notif2_id).await?;
+    let closed2_sig = tokio::time::timeout(Duration::from_secs(2), closed_stream.next())
+        .await?
+        .ok_or("No closed signal received for notif2")?;
+    let cl2_args = closed2_sig.args()?;
+    assert_eq!(cl2_args.id, notif2_id);
+    assert_eq!(cl2_args.reason, 2);
+
+    // 8. CloseNotification via FdoNotificationsProxy on already closed notification returns error
+    let close_err = fdo.close_notification(notif_id).await;
+    assert!(
+        close_err.is_err(),
+        "CloseNotification on non-existent notification must return error"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_id_squatting_and_sender_isolation() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let client_a = harness.fdo_client_a().await?;
+    let client_b = harness.fdo_client_b().await?;
+    let hints = HashMap::new();
+
+    // The next ID that the allocator will hand out is 1.
+    // Client B attempts ID squatting by calling Notify with replaces_id = 1.
+    // Since ID 1 is not currently owned by another sender, it is allocated to Client B.
+    let squat_id = client_b
+        .notify(
+            "SquatterApp",
+            1,
+            "",
+            "Squat Title",
+            "Squat Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await?;
+    assert_eq!(
+        squat_id, 1,
+        "Non-existent replaces_id must return replaces_id (1)"
+    );
+
+    // Client A sends a normal notification with replaces_id = 0.
+    // The allocator MUST skip ID 1 (which is active under Client B) and allocate ID 2.
+    let client_a_id = client_a
+        .notify(
+            "LegitApp",
+            0,
+            "",
+            "Legit Title",
+            "Legit Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await?;
+    assert_ne!(client_a_id, squat_id, "Allocator must skip squatted ID 1");
+    assert_eq!(
+        client_a_id, 2,
+        "Client A must be allocated next available ID (2)"
+    );
+
+    // Client B attempts to replace Client A's notification (ID 2): must fail
+    let hijack_rep = client_b
+        .notify(
+            "SquatterApp",
+            client_a_id,
+            "",
+            "Hijack",
+            "Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await;
+    assert!(
+        hijack_rep.is_err(),
+        "Client B replacing Client A notification must be rejected"
+    );
+
+    // Client A attempts to replace Client B's notification (ID 1): must fail
+    let legit_rep = client_a
+        .notify(
+            "LegitApp",
+            squat_id,
+            "",
+            "Hijack",
+            "Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await;
+    assert!(
+        legit_rep.is_err(),
+        "Client A replacing Client B notification must be rejected"
+    );
+
+    // Client B attempts to close Client A's notification (ID 2): must fail
+    let hijack_close = client_b.close_notification(client_a_id).await;
+    assert!(
+        hijack_close.is_err(),
+        "Client B closing Client A notification must be rejected"
+    );
+
+    // Client A attempts to close Client B's notification (ID 1): must fail
+    let legit_close = client_a.close_notification(squat_id).await;
+    assert!(
+        legit_close.is_err(),
+        "Client A closing Client B notification must be rejected"
+    );
+
+    // Per-sender rate limit / quota still strictly applies to squatter (Client B):
+    // Client B already sent 2 requests (squat_id and the rejected hijack). Send 8 more requests to exhaust the burst of 10.
+    for i in 1..=8 {
+        let res = client_b
+            .notify("SquatterApp", 0, "", "Squat", "Body", &[], &hints, 5000)
+            .await;
+        assert!(res.is_ok(), "Call {i} within burst limit failed");
+    }
+
+    // 11th call by Client B must be rejected with rate limit error
+    let res_quota = client_b
+        .notify("SquatterApp", 0, "", "Exceed", "Body", &[], &hints, 5000)
+        .await;
+    assert!(
+        res_quota.is_err(),
+        "Client B exceeded per-sender quota but was not rate limited"
+    );
+
+    // Client A's quota is isolated and Client A can still send notifications
+    let client_a_id2 = client_a
+        .notify(
+            "LegitApp",
+            0,
+            "",
+            "Still Working",
+            "Body",
+            &[],
+            &hints,
+            5000,
+        )
+        .await;
+    assert!(
+        client_a_id2.is_ok(),
+        "Client A was throttled by Client B's activity"
     );
 
     Ok(())

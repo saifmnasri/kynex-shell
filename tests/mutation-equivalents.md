@@ -37,9 +37,9 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 
 ## 3. Summary Statistics
 
-- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/*.qml` (8 files)
-- **Total Mutants Generated**: 261
-- **Mutants Killed**: 257 / 261 (**98.5%**)
-- **Truly Equivalent Survivors**: 4 / 261 (**1.5%**)
+- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/*.qml` (9 files)
+- **Total Mutants Generated**: 289
+- **Mutants Killed**: 284 / 289 (**98.3%**)
+- **Truly Equivalent Survivors**: 5 / 289 (**1.7%**)
 - **Unjustified Survivors**: 0
 - **Status**: 100% of non-equivalent mutants killed.

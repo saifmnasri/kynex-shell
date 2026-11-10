@@ -68,9 +68,32 @@ fn test_valid_rgba_image_with_padded_rowstride() {
 
 #[test]
 fn test_reject_dimensions_exceeding_max_256() {
-    let dummy_data = vec![0u8; 100];
-    assert!(validate_image_data(257, 10, 257 * 3, false, 8, 3, &dummy_data).is_err());
-    assert!(validate_image_data(10, 257, 10 * 3, false, 8, 3, &dummy_data).is_err());
+    // Width 256 within bound passes
+    let valid_width_buffer = vec![0u8; 256 * 10 * 3];
+    assert!(
+        validate_image_data(256, 10, 256 * 3, false, 8, 3, &valid_width_buffer).is_ok(),
+        "Width 256 with exact-sized buffer must pass"
+    );
+
+    // Width 257 exceeds max width (256): must fail even with exact buffer
+    let oversized_width_buffer = vec![0u8; 257 * 10 * 3];
+    assert_eq!(
+        validate_image_data(257, 10, 257 * 3, false, 8, 3, &oversized_width_buffer),
+        Err(NotificationError::InvalidImageData(
+            "Width must be between 1 and 256"
+        )),
+        "Width 257 must be rejected independently of buffer length"
+    );
+
+    // Height 257 exceeds max height (256): must fail even with exact buffer
+    let oversized_height_buffer = vec![0u8; 10 * 257 * 3];
+    assert_eq!(
+        validate_image_data(10, 257, 10 * 3, false, 8, 3, &oversized_height_buffer),
+        Err(NotificationError::InvalidImageData(
+            "Height must be between 1 and 256"
+        )),
+        "Height 257 must be rejected independently of buffer length"
+    );
 }
 
 #[test]

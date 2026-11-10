@@ -40,3 +40,5 @@ void kynex_set_style_tokens(
     double opacity_pressed,
     double opacity_focus
 );
+
+uint64_t kynex_steady_clock_ns();

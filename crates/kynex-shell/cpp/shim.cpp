@@ -1,4 +1,5 @@
 #include "shim.h"
+#include <chrono>
 #include "iconprovider.h"
 #include "layersurface.h"
 #include "style.h"
@@ -144,4 +145,10 @@ void kynex_set_style_tokens(
         opacity_pressed,
         opacity_focus
     );
+}
+
+uint64_t kynex_steady_clock_ns()
+{
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }

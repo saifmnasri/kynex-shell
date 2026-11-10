@@ -194,5 +194,16 @@ Item {
             compare(mockModel.lastDismissedId, 50);
             compare(mockModel.count, 0);
         }
+
+        function test_text_plain_text_format_enforcement() {
+            mockModel.addNotification(60, "MaliciousApp<b>", "Summary<script>", "Body<i>text</i>", 1);
+            tryVerify(function() { return popup.popupRepeater.count === 1; });
+            let card = popup.popupRepeater.itemAt(0);
+            verify(card !== null);
+
+            compare(card.appNameText.textFormat, Text.PlainText, "App name must enforce Text.PlainText");
+            compare(card.summaryText.textFormat, Text.PlainText, "Summary must enforce Text.PlainText");
+            compare(card.bodyText.textFormat, Text.PlainText, "Body must enforce Text.PlainText");
+        }
     }
 }

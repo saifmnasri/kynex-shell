@@ -1,0 +1,8 @@
+=== COMMAND ===
+cargo machete crates/kynex-notifications
+=== TIMESTAMP: 2026-11-10T18:20:49Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+Analyzing dependencies of crates in crates/kynex-notifications...
+cargo-machete didn't find any unused dependencies in crates/kynex-notifications. Good job!
+Done!

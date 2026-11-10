@@ -258,8 +258,17 @@ impl NotificationManager {
                 }
                 (replaces_id, true)
             } else {
-                // If replaces_id is not found, allocate a fresh ID
-                (self.allocate_id(), false)
+                // Check if the id is currently owned by another sender in history
+                if let Some(hist) = self.history.iter().find(|n| n.id == replaces_id) {
+                    if hist.sender != sender {
+                        return Err(NotificationError::SenderMismatch);
+                    }
+                    // If previously owned by same sender, remove from history and recreate
+                    self.history_ids.remove(&replaces_id);
+                    self.history.retain(|n| n.id != replaces_id);
+                }
+                // Spec v1.2 §4.1: If replaces_id is not 0, the returned value is the same value as replaces_id.
+                (replaces_id, false)
             }
         } else {
             (self.allocate_id(), false)
