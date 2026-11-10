@@ -1,0 +1,18 @@
+[Icon Theme]
+Namicolor
+Directories=48x48/apps,scalable/apps
+
+[pps
+
+[48x48/apps]
+Size=48
+e/a=
+MinSize=l
+2
+]
+ld=2
+
+[scalable/apps]
+Size=128
+Scale=1
+MinSize=CTho

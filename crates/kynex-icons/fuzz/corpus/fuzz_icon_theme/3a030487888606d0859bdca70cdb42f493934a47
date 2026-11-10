@@ -1,0 +1,16 @@
+[Icon Theme]
+Name=SeedHicolor
+Comment=Fallback icon theme
+In=stiherhicolor
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+Scale=1
+Context=Applications
+Type=Threshold
+Thresholdheme]
+Name=Se[Icon [Icon Theme]
+IIIIIIIIIIIIIIIIIIIIIIIIIII
+Context=Applications
+Type=Scalable

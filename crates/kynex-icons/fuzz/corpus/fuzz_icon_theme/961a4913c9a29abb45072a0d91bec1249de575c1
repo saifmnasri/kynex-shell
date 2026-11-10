@@ -1,0 +1,10 @@
+[Icon Theme]
+color
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+
+[scalable/apps]
+Size=12
+Sca

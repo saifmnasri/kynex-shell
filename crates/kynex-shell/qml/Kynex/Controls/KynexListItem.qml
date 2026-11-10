@@ -8,6 +8,7 @@ FocusScope {
     property string secondaryText: ""
     property url iconSource: ""
     property string letterBadge: ""
+    property bool pinned: false
     property bool selected: false
     property bool spaceDown: false
 
@@ -25,6 +26,9 @@ FocusScope {
     readonly property color textColor: label.color
     readonly property real iconX: iconImage.x
     readonly property real labelX: textColumn.x
+    readonly property bool iconVisible: iconImage.visible
+    readonly property real iconWidth: iconImage.width
+    readonly property real iconHeight: iconImage.height
     readonly property bool badgeVisible: badgeRect.visible
 
     signal clicked()
@@ -92,24 +96,25 @@ FocusScope {
         id: contentRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.right: parent.right
+        anchors.right: pinBadge.visible ? pinBadge.left : parent.right
         anchors.leftMargin: Style.spacing.medium
         anchors.rightMargin: Style.spacing.medium
         spacing: Style.spacing.medium
 
         Image {
             id: iconImage
-            visible: source.toString() !== ""
+            visible: source.toString() !== "" && status === Image.Ready
             source: root.iconSource
             anchors.verticalCenter: parent.verticalCenter
-            width: visible ? Style.typography.basePx + Style.spacing.unit : 0
-            height: visible ? Style.typography.basePx + Style.spacing.unit : 0
+            width: (source.toString() !== "") ? Style.typography.basePx + Style.spacing.unit : 0
+            height: (source.toString() !== "") ? Style.typography.basePx + Style.spacing.unit : 0
             fillMode: Image.PreserveAspectFit
+            asynchronous: true
         }
 
         Rectangle {
             id: badgeRect
-            visible: root.letterBadge.length > 0 && iconImage.source.toString() === ""
+            visible: root.letterBadge.length > 0 && (!iconImage.visible || iconImage.status === Image.Error || iconImage.status === Image.Null)
             width: Style.typography.basePx + Style.spacing.unit + Style.spacing.unit
             height: Style.typography.basePx + Style.spacing.unit + Style.spacing.unit
             radius: Style.radius.small
@@ -152,6 +157,26 @@ FocusScope {
                 font.pixelSize: Style.typography.basePx - Style.spacing.unit
                 color: Style.colors.textMuted
             }
+        }
+    }
+
+    Rectangle {
+        id: pinBadge
+        visible: root.pinned
+        anchors.right: parent.right
+        anchors.rightMargin: Style.spacing.medium
+        anchors.verticalCenter: parent.verticalCenter
+        width: pinText.implicitWidth + Style.spacing.unit + Style.spacing.unit
+        height: pinText.implicitHeight + Style.spacing.unit
+        radius: Style.radius.small
+        color: root.selected ? Style.colors.accent : Style.colors.surfaceRaised
+
+        Text {
+            id: pinText
+            anchors.centerIn: parent
+            text: "📌"
+            font.family: Style.typography.family
+            font.pixelSize: Style.typography.basePx - Style.spacing.unit
         }
     }
 

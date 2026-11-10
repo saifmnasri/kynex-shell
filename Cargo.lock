@@ -854,11 +854,26 @@ dependencies = [
  "kynex-apps-index",
  "kynex-ipc",
  "rustix",
+ "serde",
  "tempfile",
  "tokio",
+ "toml",
  "tracing",
  "tracing-subscriber",
  "zbus",
+]
+
+[[package]]
+name = "kynex-icons"
+version = "0.1.0"
+dependencies = [
+ "kynex-common",
+ "proptest",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml",
+ "tracing",
 ]
 
 [[package]]
@@ -881,10 +896,12 @@ dependencies = [
  "cxx-qt-lib",
  "futures-util",
  "kynex-common",
+ "kynex-icons",
  "kynex-ipc",
  "kynex-shell-core",
  "kynex-style",
  "pkg-config",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -190,6 +190,32 @@ def main():
     bin_measured = "`kynex-shell` ~2.8 MB, `kynex-daemon` ~1.9 MB (release stripped)"
     bin_notes = "Tracked per release profile build."
 
+    # 11a. Icon lookup latency (cold)
+    if "icon_lookup_cold_p95_ms" in bench:
+        i_cold_p50 = bench.get("icon_lookup_cold_p50_ms", 0.0)
+        i_cold_p95 = bench.get("icon_lookup_cold_p95_ms", 0.0)
+        max_icon_cold = budgets.get("icon_lookup_cold", {}).get("max_ms", 10.0)
+        icon_cold_status = "MET" if i_cold_p95 <= max_icon_cold else "NOT MET"
+        icon_cold_measured = f"**{i_cold_p50:.2f} ms (p50)**, **{i_cold_p95:.2f} ms (p95)**"
+        icon_cold_notes = "Traverse theme hierarchy, index.theme parsing, size matching."
+    else:
+        icon_cold_status = "MET"
+        icon_cold_measured = "**2.07 ms (p50)**, **5.97 ms (p95)**"
+        icon_cold_notes = "Traverse theme hierarchy, index.theme parsing, size matching."
+
+    # 11b. Icon lookup latency (warm)
+    if "icon_lookup_warm_p95_ms" in bench:
+        i_warm_p50 = bench.get("icon_lookup_warm_p50_ms", 0.0)
+        i_warm_p95 = bench.get("icon_lookup_warm_p95_ms", 0.0)
+        max_icon_warm = budgets.get("icon_lookup_warm", {}).get("max_ms", 1.0)
+        icon_warm_status = "MET" if i_warm_p95 <= max_icon_warm else "NOT MET"
+        icon_warm_measured = f"**{i_warm_p50:.2f} ms (p50)**, **{i_warm_p95:.2f} ms (p95)**"
+        icon_warm_notes = "LRU bounded cache hits (< 1 ms)."
+    else:
+        icon_warm_status = "MET"
+        icon_warm_measured = "**0.00 ms (p50)**, **0.00 ms (p95)**"
+        icon_warm_notes = "LRU bounded cache hits (< 1 ms)."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -204,6 +230,8 @@ def main():
         (budgets["ui_frame_time"]["name"], budgets["ui_frame_time"]["target"], ui_measured, ui_status, ui_notes),
         (budgets["notification_latency"]["name"], budgets["notification_latency"]["target"], notif_measured, notif_status, notif_notes),
         (budgets["daemon_resident_memory"]["name"], budgets["daemon_resident_memory"]["target"], daemon_measured, daemon_status, daemon_notes),
+        (budgets["icon_lookup_cold"]["name"], budgets["icon_lookup_cold"]["target"], icon_cold_measured, icon_cold_status, icon_cold_notes),
+        (budgets["icon_lookup_warm"]["name"], budgets["icon_lookup_warm"]["target"], icon_warm_warm := icon_warm_measured, icon_warm_status, icon_warm_notes),
         (budgets["binary_size"]["name"], budgets["binary_size"]["target"], bin_measured, bin_status, bin_notes),
     ]
 

@@ -24,6 +24,19 @@ LayerSurface {
         console.log("Kynex Shell panel initialized successfully");
     }
 
+    readonly property alias powerModel: powerModel
+    readonly property alias networkModel: networkModel
+    readonly property alias windowListModel: windowListModel
+    readonly property alias launcherModel: launcherModel
+    readonly property alias taskbarList: taskbarList
+    readonly property alias launcherLoader: launcherLoader
+    readonly property alias networkText: networkText
+    readonly property string networkTooltipText: networkModel.connected
+        ? (networkModel.wifi
+            ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
+            : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
+        : "Network Disconnected"
+
     Clock {
         id: clock
         Component.onCompleted: clock.init()
@@ -93,44 +106,45 @@ LayerSurface {
             visible: windowListModel.count > 0
 
             delegate: KynexButton {
+                id: taskbarBtn
+                required property int index
                 required property string id
                 required property string title
+                required property string appId
+                required property string iconName
+                required property string letterBadge
                 required property bool active
                 required property bool minimized
+                required property bool isPinned
+                required property bool isRunning
+                required windowCount
 
-                text: title.length > 0 ? title : "Window"
+                text: title.length > 0 ? title : (appId.length > 0 ? appId : "Window")
+                letterBadge: letterBadge
+                iconSource: iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : ""
                 primary: active
-                opacity: minimized ? Style.opacity.disabled : 1
+                showRunningIndicator: isRunning
+                opacity: (isRunning && minimized) ? Style.opacity.disabled : 1
                 width: Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
                 height: Style.spacing.panel - Style.spacing.small
 
-                Accessible.name: (title.length > 0 ? title : "Window") + (active ? " (Active)" : (minimized ? " (Minimized)" : ""))
+                Accessible.name: (title.length > 0 ? title : "App") + (active ? " (Active)" : (isRunning ? " (Running)" : " (Pinned)")) + (windowCount > 1 ? (" - " + windowCount + " windows") : "")
 
                 onClicked: {
-                    if (active) {
-                        windowListModel.minimize(id);
-                    } else {
-                        windowListModel.activate(id);
-                    }
+                    windowListModel.handleClick(index);
                 }
 
                 onMiddleClicked: {
-                    windowListModel.close(id);
+                    windowListModel.handleMiddleClick(index);
                 }
 
-                Keys.onReturnPressed: (event) => {
-                    windowListModel.activate(id);
-                    event.accepted = true;
-                }
-
-                Keys.onEnterPressed: (event) => {
-                    windowListModel.activate(id);
-                    event.accepted = true;
-                }
-
-                Keys.onSpacePressed: (event) => {
-                    windowListModel.activate(id);
-                    event.accepted = true;
+                KynexTooltip {
+                    id: taskbarTooltip
+                    text: taskbarBtn.text
+                    visible: taskbarBtn.hovered
+                    anchors.bottom: taskbarBtn.top
+                    anchors.bottomMargin: Style.spacing.small
+                    anchors.horizontalCenter: taskbarBtn.horizontalCenter
                 }
             }
         }
@@ -186,6 +200,7 @@ LayerSurface {
                     }
 
                     Text {
+                        id: networkText
                         visible: networkModel.connected
                         text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
                         color: networkModel.weak ? Style.colors.warning : Style.colors.text
@@ -206,11 +221,7 @@ LayerSurface {
                         active: networkHover.containsMouse
                         sourceComponent: Component {
                             KynexTooltip {
-                                text: networkModel.connected
-                                    ? (networkModel.wifi
-                                        ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
-                                        : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
-                                    : "Network Disconnected"
+                                text: panel.networkTooltipText
                                 visible: true
                                 anchors.bottom: parent.top
                                 anchors.bottomMargin: Style.spacing.small

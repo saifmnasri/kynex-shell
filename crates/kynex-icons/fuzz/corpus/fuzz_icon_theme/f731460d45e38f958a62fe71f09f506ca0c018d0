@@ -1,0 +1,37 @@
+[Ico///n Theme]
+Name=Seolor
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps],scalable/apps
+
+[48x48/apps]
+Size=48
+Scale=1
+Context=Applicatireshold
+Threshold=2
+
+[scalable/apps]
+Size=128
+Scale=1
+MinSize=16
+MaxSize=256
+Context=Application=12 8
+Scale=1
+MinSize=16
+MaxSize
+Size=48
+Scale=1/n Theme]
+Name=Seolor
+old
+Threshold=2
+
+[scalable/apps]
+Size=128
+Scale=1
+MinSize=16
+MaxSize=256
+Context=Application=12 8
+Scale=1
+MinSize=16
+MaxSize=256
+Con

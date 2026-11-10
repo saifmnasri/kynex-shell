@@ -3,16 +3,18 @@
 pub mod apps;
 pub mod daemon;
 pub mod network;
+pub mod pins;
 pub mod power;
 pub mod service;
 pub mod shell;
 pub mod windows;
 
-pub use apps::{AppItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
+pub use apps::{AppItem, AppMappingItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
 pub use daemon::{
     Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
 };
 pub use network::{Network1Proxy, NetworkKind, NetworkState, NETWORK_INTERFACE, NETWORK_PATH};
+pub use pins::{Pins1Proxy, PINS_INTERFACE, PINS_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};
 pub use shell::{Shell1Proxy, ShellFeed1Proxy, SHELL_FEED_INTERFACE, SHELL_INTERFACE, SHELL_PATH};

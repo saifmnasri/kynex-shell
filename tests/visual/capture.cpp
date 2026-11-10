@@ -3,6 +3,8 @@
 #include <QQmlEngine>
 #include <QQuickView>
 #include <QQuickItem>
+#include <QQuickImageProvider>
+#include <QPixmap>
 #include <QImage>
 #include <QUrl>
 #include <QString>
@@ -34,6 +36,19 @@ static void setLightTokens() {
     Style::instance()->typography()->setTypography("Inter", "sans-serif", 14);
     Style::instance()->opacity()->setOpacity(0.38, 0.08, 0.16, 1.0);
 }
+
+class DummyIconProvider : public QQuickImageProvider {
+public:
+    DummyIconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+    QPixmap requestPixmap(const QString &, QSize *size, const QSize &requestedSize) override {
+        int w = requestedSize.width() > 0 ? requestedSize.width() : 24;
+        int h = requestedSize.height() > 0 ? requestedSize.height() : 24;
+        if (size) *size = QSize(w, h);
+        QPixmap pm(w, h);
+        pm.fill(Qt::transparent);
+        return pm;
+    }
+};
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -147,6 +162,7 @@ int main(int argc, char *argv[]) {
     qmlRegisterSingletonInstance("Kynex.Style", 1, 0, "Style", Style::instance());
 
     QQuickView view;
+    view.engine()->addImageProvider(QStringLiteral("kynex-icon"), new DummyIconProvider());
     view.engine()->addImportPath("crates/kynex-shell/qml");
 
     QString qmlFile = "tests/visual/Gallery.qml";

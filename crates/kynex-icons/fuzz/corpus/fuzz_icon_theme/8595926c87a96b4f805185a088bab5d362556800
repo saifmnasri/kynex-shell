@@ -1,0 +1,9 @@
+[Icon Theme]
+Name=hicolor
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+Scale=1
+Context=Apcatirkshold
+Threshop1=Scalable

@@ -2,13 +2,7 @@
 //!
 //! Hosts the Wayland layer-shell presentation layer driven by swappable style packs.
 
-pub mod clock;
-pub mod launcher;
-pub mod launcher_logic;
-pub mod network;
-pub mod power;
-pub mod shim;
-pub mod windows;
+use kynex_shell::shim;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
 use std::path::{Path, PathBuf};
@@ -97,6 +91,8 @@ fn main() {
 
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
+        shim::register_image_provider(engine.as_mut());
+
         let style_components_dir = canonical_style_dir.join("components");
         if style_components_dir.is_dir() {
             let comp_str = style_components_dir.to_string_lossy();
@@ -118,9 +114,54 @@ fn main() {
         let qurl_str = format!("file://{}", shell_qml_path.to_string_lossy());
         info!("Loading style shell from {qurl_str}");
         engine.as_mut().load(&QUrl::from(&qurl_str));
+
+        if let Ok(count_str) = std::env::var("KYNEX_BENCH_LOAD_ICONS") {
+            if let Ok(count) = count_str.parse::<usize>() {
+                let loaded = load_bench_icons(count);
+                info!("Preloaded {loaded} icons for benchmark measurement");
+            }
+        }
     }
 
     if let Some(app) = app.as_mut() {
         app.exec();
     }
+}
+
+fn load_bench_icons(target: usize) -> usize {
+    let mut loaded = 0;
+    let roots = kynex_icons::IconRoots::from_env();
+    let mut dirs_to_visit = Vec::new();
+    for root in &roots.theme_roots {
+        let hicolor = root.join("hicolor");
+        if hicolor.is_dir() {
+            dirs_to_visit.push(hicolor);
+        }
+    }
+    while let Some(dir) = dirs_to_visit.pop() {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                dirs_to_visit.push(path);
+            } else if path.is_file() {
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if ext == "png" || ext == "svg" {
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            let _ = kynex_icons::lookup_icon(stem, 24, 1, Some("hicolor"));
+                            if shim::test_decode_icon(&path.to_string_lossy(), 24, 24, 1) {
+                                loaded += 1;
+                                if loaded >= target {
+                                    return loaded;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    loaded
 }

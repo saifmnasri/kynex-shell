@@ -1,10 +1,15 @@
 #pragma once
 
 #include "rust/cxx.h"
+#include <QtQml/QQmlApplicationEngine>
 #include <cstdint>
 
 void kynex_register_core_types();
 void kynex_load_bundled_fonts();
+void kynex_init_security_limits();
+void kynex_register_image_provider(QQmlApplicationEngine &engine);
+bool kynex_is_svg_safe_slice(rust::Slice<const uint8_t> data);
+bool kynex_test_decode_icon(rust::Str path, int32_t width, int32_t height, int32_t scale);
 
 void kynex_set_style_tokens(
     rust::Str surface,

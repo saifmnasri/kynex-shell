@@ -1,0 +1,17 @@
+[Icon Theme]
+Naiso
+Directories=48x48/apps,scalable/apps
+
+[48x]
+Size=Se=2
+
+[scalable/apps]
+Size=129
+Scale=+
+Min
+[48x48/apps]
+Size=96
+Scalet=Ap
+Scale=+
+M=ziients.
+[

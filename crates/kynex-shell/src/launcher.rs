@@ -29,6 +29,10 @@ pub const ROLE_GENERIC_NAME: i32 = 259;
 pub const ROLE_COMMENT: i32 = 260;
 /// Role ID for single-character placeholder badge.
 pub const ROLE_LETTER_BADGE: i32 = 261;
+/// Role ID for icon name or path.
+pub const ROLE_ICON_NAME: i32 = 262;
+/// Role ID for pinned status.
+pub const ROLE_IS_PINNED: i32 = 263;
 
 /// CXX-Qt bridge module for `LauncherModel`.
 #[cxx_qt::bridge]
@@ -124,6 +128,11 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "toggleVisible"]
         fn toggle_visible(self: Pin<&mut Self>);
+
+        /// Toggles pinned status of currently selected application.
+        #[qinvokable]
+        #[cxx_name = "togglePinSelected"]
+        fn toggle_pin_selected(self: Pin<&mut Self>);
     }
 
     unsafe extern "RustQt" {
@@ -196,6 +205,8 @@ impl qobject::LauncherModel {
             ROLE_GENERIC_NAME => QVariant::from(&QString::from(&item.generic_name)),
             ROLE_COMMENT => QVariant::from(&QString::from(&item.comment)),
             ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
+            ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
+            ROLE_IS_PINNED => QVariant::from(&item.is_pinned),
             _ => QVariant::default(),
         }
     }
@@ -209,6 +220,8 @@ impl qobject::LauncherModel {
         roles.insert(ROLE_GENERIC_NAME, QByteArray::from("genericName"));
         roles.insert(ROLE_COMMENT, QByteArray::from("comment"));
         roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
+        roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
+        roles.insert(ROLE_IS_PINNED, QByteArray::from("isPinned"));
         roles
     }
 
@@ -304,6 +317,27 @@ impl qobject::LauncherModel {
             }
         }
     }
+
+    /// Toggles pinned status of the selected application.
+    pub fn toggle_pin_selected(mut self: Pin<&mut Self>) {
+        let toggled = self.as_mut().rust_mut().core.toggle_pin_selected();
+        if let Some((app_id, will_pin)) = toggled {
+            self.as_mut().begin_reset_model();
+            self.as_mut().end_reset_model();
+
+            tokio::spawn(async move {
+                if let Ok(conn) = zbus::connection::Builder::session().build().await {
+                    if let Ok(proxy) = kynex_ipc::pins::Pins1Proxy::new(&conn).await {
+                        if will_pin {
+                            let _ = proxy.pin(&app_id).await;
+                        } else {
+                            let _ = proxy.unpin(&app_id).await;
+                        }
+                    }
+                }
+            });
+        }
+    }
 }
 
 /// Dispatches search results to the Qt main thread subject to sequence verification.
@@ -370,6 +404,22 @@ async fn run_launcher_service(
 
     let mut apps_proxy = Apps1Proxy::builder(&session_conn).build().await.ok();
     let mut changed_stream = match apps_proxy {
+        Some(ref p) => p.receive_changed().await.ok(),
+        None => None,
+    };
+
+    let pins_proxy = kynex_ipc::pins::Pins1Proxy::builder(&session_conn)
+        .build()
+        .await
+        .ok();
+    if let Some(ref p) = pins_proxy {
+        if let Ok(pins) = p.get().await {
+            let _ = qt_thread.queue(move |mut qobj| {
+                qobj.as_mut().rust_mut().core.set_pinned_ids(pins);
+            });
+        }
+    }
+    let mut pins_changed_stream = match pins_proxy {
         Some(ref p) => p.receive_changed().await.ok(),
         None => None,
     };
@@ -450,6 +500,25 @@ async fn run_launcher_service(
                                 qobj.as_mut().set_count(count);
                                 qobj.as_mut().set_selected_index(selected);
                             }
+                        });
+                    }
+                }
+            }
+
+            // Pinned applications changed
+            Some(_) = async {
+                match &mut pins_changed_stream {
+                    Some(s) => s.next().await,
+                    None => futures_util::future::pending().await,
+                }
+            } => {
+                info!("Pins changed; refreshing launcher pinned status");
+                if let Ok(proxy) = kynex_ipc::pins::Pins1Proxy::builder(&session_conn).build().await {
+                    if let Ok(pins) = proxy.get().await {
+                        let _ = qt_thread.queue(move |mut qobj| {
+                            qobj.as_mut().begin_reset_model();
+                            qobj.as_mut().rust_mut().core.set_pinned_ids(pins);
+                            qobj.as_mut().end_reset_model();
                         });
                     }
                 }

@@ -32,6 +32,7 @@ cxx-qt = { workspace = true }
 cxx-qt-lib = { workspace = true }
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
 kynex-common = { workspace = true }
+kynex-icons = { workspace = true }
 kynex-ipc = { workspace = true }
 kynex-shell-core = { workspace = true }
 kynex-style = { workspace = true }
@@ -43,3 +44,6 @@ zbus = { workspace = true }
 [build-dependencies]
 cxx-qt-build = { workspace = true }
 pkg-config = "0.3"
+
+[dev-dependencies]
+tempfile = "3"

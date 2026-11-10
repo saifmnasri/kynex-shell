@@ -4,9 +4,9 @@ This document catalogs every mutant designated as mathematically or semantically
 
 ---
 
-## 1. Verified Mathematically Equivalent Mutants (3 Total)
+## 1. Verified Mathematically Equivalent Mutants (4 Total)
 
-Following Stage K2 (AUD-K-04), Stage L2 (AUD-L-01), and Stage L3 (AUD-L2-01, AUD-L2-02) remediations, all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring`, `test_controls_token_bindings`, `test_searchfield_clear_button`, `test_listitem_defaults_and_a11y`, and `tst_launcher.qml`).
+Following Stage K2 (AUD-K-04), Stage L2 (AUD-L-01), Stage L3 (AUD-L2-01, AUD-L2-02), and Stage M2 (AUD-M-03, AUD-M-04) remediations, all non-equivalent mutants have been killed by the test suite (`test_controls_rtl_layout_mirroring`, `test_controls_token_bindings`, `test_searchfield_clear_button`, `test_listitem_defaults_and_a11y`, `tst_launcher.qml`, and `tst_shell.qml`).
 
 Only mutants with a rigorous one-line proof of equivalence are retained:
 
@@ -15,6 +15,7 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 | 1 | `crates/kynex-shell/qml/Kynex/Controls/KynexButton.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.Button` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 2 | `crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.CheckBox` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 3 | `crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.EditableText` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
+| 4 | `styles/default/Shell.qml` | `when: launcherLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `launcherLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: launcherLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
 
 ---
 
@@ -28,16 +29,16 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
    - **Resolution**: `tests/qml_tests/tst_controls.qml` runs `test_controls_rtl_layout_mirroring()` with `LayoutHelper.setRtl(true)` and `LayoutHelper.setRtl(false)`, asserting mirrored element ordering (`iconX > labelX` in RTL vs `iconX < labelX` in LTR). Both `delete` and `negate` mutants are killed.
 3. **Token Binding & Primary State Mutants (killed)**:
    - Button primary background (`Style.colors.accent`), non-primary background (`Style.colors.surfaceRaised`), switch indicator colors, and slider track/handle colors are asserted in `test_controls_token_bindings()`.
-4. **Surface Shell Scope (14 eliminated)**:
-   - `styles/default/Shell.qml` panel surface mutants were purged from the base controls mutation harness (`scripts/mutation-test-qml.sh`), matching the verification gate definition (`adversarial mutation test (qml controls)`).
+4. **Shell Surface Scope Added (AUD-M-04)**:
+   - `styles/default/Shell.qml` was brought under mutation testing in Stage M2 per AUD-M-04. 14 of 15 mutants are killed directly by `tests/qml_tests/tst_shell.qml` (count badges, fallback labels, network tooltip bindings, icon URLs, accessibility strings). The single surviving mutant (line 85, deletion of `when: launcherLoader.status === Loader.Ready`) is mathematically equivalent due to Qt Quick `Binding` null-target semantics.
 
 ---
 
 ## 3. Summary Statistics
 
-- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/Launcher.qml` (7 files)
-- **Total Mutants Generated**: 230
-- **Mutants Killed**: 227 / 230 (**98.7%**)
-- **Truly Equivalent Survivors**: 3 / 230 (**1.3%**)
+- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/*.qml` (8 files)
+- **Total Mutants Generated**: 261
+- **Mutants Killed**: 257 / 261 (**98.5%**)
+- **Truly Equivalent Survivors**: 4 / 261 (**1.5%**)
 - **Unjustified Survivors**: 0
 - **Status**: 100% of non-equivalent mutants killed.

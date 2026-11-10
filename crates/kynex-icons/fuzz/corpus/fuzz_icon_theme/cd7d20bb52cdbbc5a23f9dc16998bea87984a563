@@ -1,0 +1,8 @@
+[Icon Theme]
+Name=Sal
+Directories=48x48/apps,eps
+
+[48x48/apps]
+Size=48
+Scnex
+Threshold=2*n 

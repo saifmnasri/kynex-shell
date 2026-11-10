@@ -13,6 +13,8 @@ fn main() {
             "src/windows.rs",
         ])
         .cpp_files([
+            "cpp/iconprovider.cpp",
+            "cpp/iconprovider.h",
             "cpp/layersurface.cpp",
             "cpp/layersurface.h",
             "cpp/style.cpp",
@@ -25,6 +27,7 @@ fn main() {
         .qt_module("Quick")
         .qt_module("Gui")
         .qt_module("Core")
+        .qt_module("Svg")
         .build();
 
     println!("cargo:rustc-link-lib=LayerShellQtInterface");

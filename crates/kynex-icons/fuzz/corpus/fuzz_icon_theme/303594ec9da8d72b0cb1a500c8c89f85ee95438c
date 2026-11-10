@@ -1,0 +1,9 @@
+[Icon Theme]
+Naeelgr
+Directories=48x48/apps,scaps
+
+[48x48/apps]
+Size=48
+Scd
+Threshold=2*le/apps
+S

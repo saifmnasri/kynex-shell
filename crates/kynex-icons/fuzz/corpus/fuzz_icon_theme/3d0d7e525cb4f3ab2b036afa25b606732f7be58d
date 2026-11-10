@@ -1,0 +1,15 @@
+[Icon Theme]
+Name=SeedHicor%tr
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=24
+Scale=1
+Context=Applicatireshsld
+Tdresholf=2
+
+[scalable/apps]
+Size=128
+Scale=1
+Lxt=Applications
+Type=Scale

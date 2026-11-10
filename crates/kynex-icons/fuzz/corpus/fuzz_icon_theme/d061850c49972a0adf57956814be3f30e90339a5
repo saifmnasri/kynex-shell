@@ -1,0 +1,14 @@
+[Icon Theme]
+Name=SeedHicolbarits=hicolor
+Directories=48x48/apps,scalablE/apps
+
+[48x4shold
+Threshold=2
+
+[scalable/apps]
+Size=128
+Scale=1
+MinSize=
+M16axSize=256
+Context=Applications
+Type=Scalable

@@ -1,0 +1,21 @@
+[Icon Theme]
+Name=SeedHico48
+SlorName=SeedHiczolor
+Comment=Fallback icon theme
+Inherits=xicolor
+Directories=48x48/apps,lable/apps
+
+[48x48/apps]
+Size=48
+S=128
+Scale=1
+MinSize=
+M16axSize=(56
+Context=Appli[ations
+Type=Scalable
+
+MaxSize=2
+
+[48x4shocale=reshold=1
+
+[saalable/ape/

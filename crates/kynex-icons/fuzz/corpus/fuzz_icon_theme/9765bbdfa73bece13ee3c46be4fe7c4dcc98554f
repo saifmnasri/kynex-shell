@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=Sor
+tr
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+Scale=1Treshold=2
+
+[scalable/apps]
+Size=128
+Scale=1Minize=25le

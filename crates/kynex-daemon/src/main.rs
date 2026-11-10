@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use kynex_daemon::services::apps::{setup_apps_watcher, AppsServer, AppsSharedState};
 use kynex_daemon::services::network::{run_network_service, NetworkServer};
+use kynex_daemon::services::pins::PinsServer;
 use kynex_daemon::services::power::{run_power_service, PowerServer};
 use kynex_daemon::services::shell::{
     run_shell_kwin_watcher, ShellFeedServer, ShellServer, ShellSharedState,
@@ -16,8 +17,8 @@ use kynex_daemon::services::windows::{
 };
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
-    apps::APPS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH,
-    WINDOWS_PATH,
+    apps::APPS_PATH, pins::PINS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH,
+    NETWORK_PATH, POWER_PATH, WINDOWS_PATH,
 };
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
@@ -63,6 +64,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let apps_shared = Arc::new(AppsSharedState::new(app_dirs, current_desktop));
     let apps_server = AppsServer::new(Arc::clone(&apps_shared));
 
+    let pins_server = PinsServer::new_default();
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -74,6 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(SHELL_PATH, shell_server.clone())
         .serve_at(SHELL_PATH, shell_feed_server.clone())
         .serve_at(APPS_PATH, apps_server)
+        .serve_at(PINS_PATH, pins_server.clone())
         .build()
         .await?;
 
@@ -109,6 +113,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ));
     } else {
         warn!("Failed to create SignalEmitter for Shell1");
+    }
+
+    // Create emitter for pins change signals on session bus
+    if let Ok(pins_emitter) = SignalEmitter::new(&session_conn, PINS_PATH) {
+        pins_server.set_emitter(pins_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for Pins1");
     }
 
     // Set up application index directory watcher and signal emitter
