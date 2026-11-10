@@ -180,7 +180,7 @@ Pinned application management and configuration persistence service. Tracks the 
   - Atomic persistence: Writes to a temporary file in the same directory (`.pinned.toml.tmp.<uuid>`) with mode `0600`, calls `sync_all()`, and atomically renames over the target path.
   - Hard caps: File size <= 64 KiB, <= 128 pins. Rejects pin additions beyond 128 entries.
   - Unknown application IDs: Kept in list across saves but flagged as missing in runtime models.
-  - Corrupt file handling: If `pinned.toml` is malformed, oversized, or unparseable, the daemon safely renames the file to `pinned.toml.bad` and initializes with an empty pin list without panicking.
+  - Corrupt file handling: If `pinned.toml` is malformed, oversized, or unparsable, the daemon safely renames the file to `pinned.toml.bad` and initializes with an empty pin list without panicking.
   - Mutation rate limiting: Global 10 mutations/s across all D-Bus connections. Excess calls rejected with `org.freedesktop.DBus.Error.LimitsExceeded`.
   - Caller authorization: Verifies caller UID matches daemon session UID via `GetConnectionCredentials`.
   - Residual Risk: All local processes running under the same user UID on the session bus can read and mutate pinned applications.
