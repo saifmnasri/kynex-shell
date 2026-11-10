@@ -1,6 +1,8 @@
 //! Pure-Rust logic for the launcher overlay: selection, sequence-based latest-wins,
 //! untrusted display text sanitization, and state management.
 
+use std::collections::HashSet;
+
 use kynex_ipc::apps::AppItem;
 
 /// Maximum character length for application display name.
@@ -25,8 +27,12 @@ pub struct AppDisplayItem {
     pub generic_name: String,
     /// Sanitized comment description.
     pub comment: String,
+    /// Sanitized icon name or path.
+    pub icon_name: String,
     /// Single-character placeholder badge for icon-free rendering.
     pub letter_badge: String,
+    /// Whether the application is currently pinned in the user's pins list.
+    pub is_pinned: bool,
 }
 
 /// Sanitizes untrusted display strings from external `.desktop` files.
@@ -83,6 +89,7 @@ pub fn sanitize_app_item(item: &AppItem) -> AppDisplayItem {
     let mut name = sanitize_display_text(&item.name, MAX_NAME_LEN);
     let generic_name = sanitize_display_text(&item.generic_name, MAX_GENERIC_NAME_LEN);
     let comment = sanitize_display_text(&item.comment, MAX_COMMENT_LEN);
+    let icon_name = sanitize_display_text(&item.icon_name, MAX_NAME_LEN);
 
     // Fallback if name is empty after sanitization
     if name.is_empty() {
@@ -100,7 +107,9 @@ pub fn sanitize_app_item(item: &AppItem) -> AppDisplayItem {
         name,
         generic_name,
         comment,
+        icon_name,
         letter_badge,
+        is_pinned: false,
     }
 }
 
@@ -186,6 +195,7 @@ impl LatestWinsTracker {
 #[derive(Debug, Clone)]
 pub struct LauncherCore {
     items: Vec<AppDisplayItem>,
+    pinned_ids: HashSet<String>,
     selected_index: i32,
     query: String,
     tracker: LatestWinsTracker,
@@ -195,6 +205,7 @@ impl Default for LauncherCore {
     fn default() -> Self {
         Self {
             items: Vec::new(),
+            pinned_ids: HashSet::new(),
             selected_index: -1,
             query: String::new(),
             tracker: LatestWinsTracker::default(),
@@ -271,13 +282,45 @@ impl LauncherCore {
             return false;
         }
 
-        self.items = raw_items.iter().map(sanitize_app_item).collect();
+        self.items = raw_items
+            .iter()
+            .map(|item| {
+                let mut display = sanitize_app_item(item);
+                display.is_pinned = self.pinned_ids.contains(&display.id);
+                display
+            })
+            .collect();
         if self.items.is_empty() {
             self.selected_index = -1;
         } else {
             self.selected_index = 0;
         }
         true
+    }
+
+    /// Updates the pinned applications set and refreshes `is_pinned` flags on active results.
+    pub fn set_pinned_ids(&mut self, ids: Vec<String>) {
+        self.pinned_ids = ids.into_iter().collect();
+        for item in &mut self.items {
+            item.is_pinned = self.pinned_ids.contains(&item.id);
+        }
+    }
+
+    /// Toggles the pinned status of the currently selected application.
+    ///
+    /// Returns `Some((app_id, will_pin))` where `will_pin` is `true` if newly pinned, or `None` if no selection.
+    pub fn toggle_pin_selected(&mut self) -> Option<(String, bool)> {
+        let u = usize::try_from(self.selected_index).ok()?;
+        let item = self.items.get_mut(u)?;
+        let app_id = item.id.clone();
+        let will_pin = !item.is_pinned;
+        item.is_pinned = will_pin;
+        if will_pin {
+            self.pinned_ids.insert(app_id.clone());
+        } else {
+            self.pinned_ids.remove(&app_id);
+        }
+        Some((app_id, will_pin))
     }
 
     /// Moves selection down with wrap-around, returning the new selected index.

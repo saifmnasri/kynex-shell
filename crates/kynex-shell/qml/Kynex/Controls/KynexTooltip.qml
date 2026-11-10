@@ -9,6 +9,7 @@ Item {
 
     readonly property color backgroundColor: bg.color
     readonly property color textColor: tooltipLabel.color
+    readonly property int textFormat: tooltipLabel.textFormat
 
     Accessible.role: Accessible.ToolTip
     Accessible.name: text
@@ -40,6 +41,7 @@ Item {
             id: tooltipLabel
             anchors.centerIn: parent
             text: root.text
+            textFormat: Text.PlainText
             font.family: Style.typography.family
             font.pixelSize: Style.typography.basePx
             color: Style.colors.text

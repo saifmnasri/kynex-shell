@@ -90,6 +90,20 @@ max_pss_mb = 10.0
 max_rss_mb = 40.0
 unit = "MB"
 
+[icon_lookup_cold]
+name = "Icon lookup latency (cold)"
+target = "< 10 ms (p95)"
+max_ms = 10.0
+unit = "ms"
+phase = "Phase 4"
+
+[icon_lookup_warm]
+name = "Icon lookup latency (warm / cached)"
+target = "< 1 ms (p95)"
+max_ms = 1.0
+unit = "ms"
+phase = "Phase 4"
+
 [binary_size]
 name = "Binary/install size of shell"
 target = "Track per release, no unexplained growth > 10%"

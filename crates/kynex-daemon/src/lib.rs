@@ -5,4 +5,5 @@ pub mod services;
 pub mod window_state;
 
 pub use server::DaemonServer;
+pub use services::pins::PinsServer;
 pub use services::power::{PowerServer, PowerSnapshot};

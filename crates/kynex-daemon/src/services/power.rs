@@ -297,33 +297,37 @@ pub async fn run_power_service(
     loop {
         tokio::select! {
             // Signal from UPower device
-            Some(Ok(signal)) = async {
+            res = async {
                 if let Some(ref mut s) = device_signal_stream {
                     s.next().await
                 } else {
                     std::future::pending().await
                 }
             } => {
-                let header = signal.header();
-                let member = header.member();
-                let member_str = member.map_or("", zbus::names::MemberName::as_str);
-                if member_str == "PropertiesChanged" || member_str == "Changed" {
-                    debug!("Received UPower signal: {member_str}");
-                    if let Some(ref proxy) = device_proxy {
-                        let snap = read_device_snapshot(proxy).await;
-                        server.update(snap, emitter.as_ref()).await;
+                let Some(signal_res) = res else { break };
+                if let Ok(signal) = signal_res {
+                    let header = signal.header();
+                    let member = header.member();
+                    let member_str = member.map_or("", zbus::names::MemberName::as_str);
+                    if member_str == "PropertiesChanged" || member_str == "Changed" {
+                        debug!("Received UPower signal: {member_str}");
+                        if let Some(ref proxy) = device_proxy {
+                            let snap = read_device_snapshot(proxy).await;
+                            server.update(snap, emitter.as_ref()).await;
+                        }
                     }
                 }
             }
 
             // NameOwnerChanged event
-            Some(name_event) = async {
+            res = async {
                 if let Some(ref mut s) = name_owner_stream {
                     s.next().await
                 } else {
                     std::future::pending().await
                 }
             } => {
+                let Some(name_event) = res else { break };
                 if let Ok(args) = name_event.args() {
                     let new_owner = args.new_owner();
                     if new_owner.as_ref().is_none_or(|o| o.as_str().is_empty()) {

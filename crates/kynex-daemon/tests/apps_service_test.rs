@@ -357,7 +357,7 @@ async fn test_child_process_zombie_reaping_regression() {
     fs::write(&script, "#!/bin/sh\nexit 0\n").unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
 
-    let argv = vec![script.to_string_lossy().to_string()];
+    let argv = vec!["/bin/sh".to_string(), script.to_string_lossy().to_string()];
     for _ in 0..50 {
         spawn_detached(&argv, &env_allowlist, shared.tracked_children()).expect("spawn child");
     }
@@ -414,7 +414,7 @@ exit 0
     fs::write(&script, script_content).unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
 
-    let argv = vec![script.to_string_lossy().to_string()];
+    let argv = vec!["/bin/sh".to_string(), script.to_string_lossy().to_string()];
     for _ in 0..200 {
         spawn_detached(&argv, &env_allowlist, shared.tracked_children()).expect("spawn child");
     }

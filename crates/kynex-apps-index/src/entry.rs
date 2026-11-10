@@ -282,6 +282,8 @@ pub struct DesktopEntry {
     pub no_display: bool,
     /// Whether application requires running inside a terminal window.
     pub terminal: bool,
+    /// `StartupWMClass` for window management grouping and matching.
+    pub startup_wm_class: Option<String>,
 }
 
 impl DesktopEntry {
@@ -458,6 +460,11 @@ impl DesktopEntry {
             .map(|s| parse_string_list(s))
             .unwrap_or_default();
 
+        let startup_wm_class = desktop_group
+            .get("StartupWMClass")
+            .map(|s| decode_escapes(s).trim().to_string())
+            .filter(|s| !s.is_empty());
+
         Ok(Self {
             id: id.to_string(),
             path: path.to_string_lossy().to_string(),
@@ -474,6 +481,7 @@ impl DesktopEntry {
             hidden,
             no_display,
             terminal,
+            startup_wm_class,
         })
     }
 }

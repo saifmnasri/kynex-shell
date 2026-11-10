@@ -1,0 +1,12 @@
+[Icon Theme]
+Name@r
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+Scali
+Scale=.$zps=0
+
+[scalable/apps]
+Size=128
+Scale=.1

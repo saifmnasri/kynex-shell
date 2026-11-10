@@ -1,0 +1,15 @@
+[Icon Theme]
+N
+Directories=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=48
+Seshold
+Threshold=2
+
+[scalable/apps]
+Size=128
+Scaid
+Threshold=2
+
+[i

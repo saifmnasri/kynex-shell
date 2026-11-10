@@ -1,4 +1,5 @@
 #include "shim.h"
+#include "iconprovider.h"
 #include "layersurface.h"
 #include "style.h"
 #include "kynex-shell/src/clock.cxxqt.h"
@@ -19,7 +20,27 @@ void kynex_register_core_types()
     qmlRegisterType<PowerModel>("Kynex.Shell", 1, 0, "PowerModel");
     qmlRegisterType<NetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
+    qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "TaskbarModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
+}
+
+void kynex_register_image_provider(QQmlApplicationEngine &engine)
+{
+    kynex_register_image_provider_app(engine);
+}
+
+bool kynex_is_svg_safe_slice(rust::Slice<const uint8_t> data)
+{
+    QByteArray bytes(reinterpret_cast<const char *>(data.data()), static_cast<qsizetype>(data.size()));
+    return kynex_is_svg_safe(bytes);
+}
+
+bool kynex_test_decode_icon(rust::Str path, int32_t width, int32_t height, int32_t scale)
+{
+    QString qpath = QString::fromUtf8(path.data(), static_cast<qsizetype>(path.size()));
+    QSize size(width, height);
+    QImage img = kynex_decode_icon(qpath, size, scale);
+    return !img.isNull();
 }
 
 void kynex_load_bundled_fonts()

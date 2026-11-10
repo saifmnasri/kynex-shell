@@ -1,0 +1,10 @@
+[Icon Theme]
+NameSeelnr
+Directories=48x48/apps,s
+
+[48x48/apps]
+Size=48
+ScalenSize=16
+MaxSize=256
+Contt=Applications
+Type=Scalale

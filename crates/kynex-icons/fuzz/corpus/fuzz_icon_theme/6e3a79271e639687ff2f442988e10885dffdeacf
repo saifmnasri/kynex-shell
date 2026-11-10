@@ -1,0 +1,17 @@
+[Icon Theme]
+Name=SeedHicolor
+Comment=Fallback icon theme
+Inherits=hiorg.kynkynexo
+ies=48x48/apps,scalable/apps
+
+[48x48/apps]
+Size=41
+Scale=1
+Context=Applications
+Type=Threshold
+Threshold=2
+
+[.ze=16
+MaxSize=255
+Context=Applications
+Type=Scalable

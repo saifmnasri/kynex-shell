@@ -439,13 +439,14 @@ pub async fn run_network_service(
 
     loop {
         tokio::select! {
-            Some(name_event) = async {
+            res = async {
                 if let Some(ref mut s) = name_owner_stream {
                     s.next().await
                 } else {
                     std::future::pending().await
                 }
             } => {
+                let Some(name_event) = res else { break };
                 if let Ok(args) = name_event.args() {
                     let new_owner = args.new_owner();
                     if new_owner.as_ref().is_none_or(|o| o.as_str().is_empty()) {
@@ -458,16 +459,19 @@ pub async fn run_network_service(
                     }
                 }
             }
-            Some(Ok(_signal)) = async {
+            res = async {
                 if let Some(ref mut s) = nm_stream {
                     s.next().await
                 } else {
                     std::future::pending().await
                 }
             } => {
-                debug!("NetworkManager change signal received; refreshing snapshot");
-                let snapshot = read_network_snapshot(&nm_conn, &service_name).await;
-                server.update(snapshot, emitter.as_ref()).await;
+                let Some(signal_res) = res else { break };
+                if signal_res.is_ok() {
+                    debug!("NetworkManager change signal received; refreshing snapshot");
+                    let snapshot = read_network_snapshot(&nm_conn, &service_name).await;
+                    server.update(snapshot, emitter.as_ref()).await;
+                }
             }
         }
     }
