@@ -21,6 +21,10 @@ pub mod ffi {
         /// Initializes global Qt security limits (16 MB allocation limit).
         fn kynex_init_security_limits();
 
+        /// Returns current time in nanoseconds from std::chrono::steady_clock.
+        #[must_use]
+        fn kynex_steady_clock_ns() -> u64;
+
         /// Registers KynexIconProvider into the QML engine.
         fn kynex_register_image_provider(engine: Pin<&mut QQmlApplicationEngine>);
 

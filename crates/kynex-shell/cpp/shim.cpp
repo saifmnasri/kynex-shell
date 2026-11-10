@@ -1,10 +1,12 @@
 #include "shim.h"
+#include <chrono>
 #include "iconprovider.h"
 #include "layersurface.h"
 #include "style.h"
 #include "kynex-shell/src/clock.cxxqt.h"
 #include "kynex-shell/src/launcher.cxxqt.h"
 #include "kynex-shell/src/network.cxxqt.h"
+#include "kynex-shell/src/notifications.cxxqt.h"
 #include "kynex-shell/src/power.cxxqt.h"
 #include "kynex-shell/src/windows.cxxqt.h"
 #include <QtQml>
@@ -19,6 +21,7 @@ void kynex_register_core_types()
     qmlRegisterType<LauncherModel>("Kynex.Shell", 1, 0, "LauncherModel");
     qmlRegisterType<PowerModel>("Kynex.Shell", 1, 0, "PowerModel");
     qmlRegisterType<NetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
+    qmlRegisterType<NotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "TaskbarModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
@@ -142,4 +145,10 @@ void kynex_set_style_tokens(
         opacity_pressed,
         opacity_focus
     );
+}
+
+uint64_t kynex_steady_clock_ns()
+{
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }

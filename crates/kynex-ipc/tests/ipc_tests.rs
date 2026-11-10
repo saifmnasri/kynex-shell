@@ -55,3 +55,36 @@ fn test_service_health_states() {
     assert_ne!(ServiceHealth::Healthy, ServiceHealth::Degraded);
     assert_ne!(ServiceHealth::Healthy, ServiceHealth::Stopped);
 }
+
+#[test]
+fn test_notification_ipc_constants_and_types() {
+    use kynex_ipc::notifications::{
+        NotificationHistoryItem, FDO_NOTIFICATIONS_DESTINATION, FDO_NOTIFICATIONS_INTERFACE,
+        FDO_NOTIFICATIONS_PATH, NOTIFICATIONS_INTERFACE, NOTIFICATIONS_PATH,
+    };
+
+    assert_eq!(
+        FDO_NOTIFICATIONS_DESTINATION,
+        "org.freedesktop.Notifications"
+    );
+    assert_eq!(FDO_NOTIFICATIONS_INTERFACE, "org.freedesktop.Notifications");
+    assert_eq!(FDO_NOTIFICATIONS_PATH, "/org/freedesktop/Notifications");
+    assert_eq!(NOTIFICATIONS_INTERFACE, "org.kynexos.Daemon.Notifications1");
+    assert_eq!(NOTIFICATIONS_PATH, "/org/kynexos/Daemon/Notifications");
+
+    let item = NotificationHistoryItem {
+        id: 42,
+        app_name: "TestApp".to_string(),
+        app_icon: "test-icon".to_string(),
+        summary: "Summary".to_string(),
+        body: "Body".to_string(),
+        actions: vec!["act1".to_string(), "Label".to_string()],
+        app_name_verified: true,
+        urgency: 1,
+    };
+
+    let cloned = item.clone();
+    assert_eq!(item, cloned);
+    assert_eq!(cloned.id, 42);
+    assert_eq!(cloned.app_name, "TestApp");
+}

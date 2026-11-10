@@ -28,8 +28,10 @@ LayerSurface {
     readonly property alias networkModel: networkModel
     readonly property alias windowListModel: windowListModel
     readonly property alias launcherModel: launcherModel
+    readonly property alias notificationModel: notificationModel
     readonly property alias taskbarList: taskbarList
     readonly property alias launcherLoader: launcherLoader
+    readonly property alias notificationLoader: notificationLoader
     readonly property alias networkText: networkText
     readonly property string networkTooltipText: networkModel.connected
         ? (networkModel.wifi
@@ -83,6 +85,35 @@ LayerSurface {
             property: "launcherModel"
             value: launcherModel
             when: launcherLoader.status === Loader.Ready
+        }
+    }
+
+    NotificationModel {
+        id: notificationModel
+        Component.onCompleted: notificationModel.init()
+    }
+
+    property bool notificationPopupLoaded: false
+
+    Connections {
+        target: notificationModel
+        function onCountChanged(): void {
+            if (notificationModel.count > 0) {
+                panel.notificationPopupLoaded = true;
+            }
+        }
+    }
+
+    Loader {
+        id: notificationLoader
+        active: panel.notificationPopupLoaded
+        source: "NotificationPopup.qml"
+
+        Binding {
+            target: notificationLoader.item
+            property: "notificationModel"
+            value: notificationModel
+            when: notificationLoader.status === Loader.Ready
         }
     }
 

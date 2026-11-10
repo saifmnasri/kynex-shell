@@ -1,0 +1,31 @@
+[package]
+name = "kynex-notifications-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.kynex-notifications]
+path = ".."
+
+[[bin]]
+name = "fuzz_markup_stripper"
+path = "fuzz_targets/fuzz_markup_stripper.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_image_data"
+path = "fuzz_targets/fuzz_image_data.rs"
+test = false
+doc = false
+bench = false
+

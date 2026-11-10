@@ -89,6 +89,9 @@ EQUIVALENT_JUSTIFICATIONS = {
     ("Shell.qml", "when: launcherLoader.status === Loader.Ready", "delete"): (
         "Qt Quick Binding evaluates target property assignment only when target is non-null; since launcherLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: launcherLoader.status === Loader.Ready semantically equivalent to unconditional binding."
     ),
+    ("Shell.qml", "when: notificationLoader.status === Loader.Ready", "delete"): (
+        "Qt Quick Binding evaluates target property assignment only when target is non-null; since notificationLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: notificationLoader.status === Loader.Ready semantically equivalent to unconditional binding."
+    ),
 }
 
 killed = 0

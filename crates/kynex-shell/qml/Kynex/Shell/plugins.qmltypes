@@ -47,6 +47,17 @@ Module {
         Property { name: "bottomMargin"; type: "int"; read: "bottomMargin"; write: "setBottomMargin"; notify: "marginsChanged" }
         Property { name: "keyboardInteractivity"; type: "KeyboardInteractivity"; read: "keyboardInteractivity"; write: "setKeyboardInteractivity"; notify: "keyboardInteractivityChanged" }
         Property { name: "scope"; type: "QString"; read: "scope"; write: "setScope"; notify: "scopeChanged" }
+        Property { name: "hasInputMask"; type: "bool"; read: "hasInputMask"; notify: "inputMaskChanged"; isReadonly: true }
+        Method {
+            name: "setInputMask"
+            Parameter { name: "x"; type: "int" }
+            Parameter { name: "y"; type: "int" }
+            Parameter { name: "width"; type: "int" }
+            Parameter { name: "height"; type: "int" }
+        }
+        Method {
+            name: "clearInputMask"
+        }
     }
     Component {
         file: "src/clock.rs"
@@ -176,6 +187,38 @@ Module {
         }
         Method {
             name: "togglePinSelected"
+        }
+    }
+    Component {
+        file: "src/notifications.rs"
+        name: "NotificationModel"
+        accessSemantics: "reference"
+        prototype: "QAbstractListModel"
+        exports: ["Kynex.Shell/NotificationModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "dismiss"
+            Parameter { name: "id"; type: "uint" }
+        }
+        Method {
+            name: "invokeAction"
+            Parameter { name: "id"; type: "uint" }
+            Parameter { name: "key"; type: "QString" }
+        }
+        Method {
+            name: "pause"
+            Parameter { name: "id"; type: "uint" }
+        }
+        Method {
+            name: "resume"
+            Parameter { name: "id"; type: "uint" }
+        }
+        Method {
+            name: "recordFirstFrame"
         }
     }
 }

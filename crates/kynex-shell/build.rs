@@ -8,6 +8,7 @@ fn main() {
             "src/clock.rs",
             "src/launcher.rs",
             "src/network.rs",
+            "src/notifications.rs",
             "src/power.rs",
             "src/shim.rs",
             "src/windows.rs",

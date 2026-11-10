@@ -83,6 +83,27 @@ max_ms = 50.0
 unit = "ms"
 phase = "Phase 5"
 
+[notification_latency_warm]
+name = "Notification popup latency (warm)"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[notifications_history_daemon_pss]
+name = "Daemon PSS with 200 notifications history"
+target = "< 15 MB PSS"
+max_pss_mb = 15.0
+unit = "MB"
+phase = "Phase 5"
+
+[notifications_flood_cpu]
+name = "Notifications flood CPU"
+target = "< 20% during flood"
+max_cpu_pct = 20.0
+unit = "%"
+phase = "Phase 5"
+
 [daemon_resident_memory]
 name = "Daemon resident memory"
 target = "< 10 MB PSS (< 40 MB RSS)"
