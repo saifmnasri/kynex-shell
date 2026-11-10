@@ -29,9 +29,12 @@ LayerSurface {
     readonly property alias windowListModel: windowListModel
     readonly property alias launcherModel: launcherModel
     readonly property alias notificationModel: notificationModel
+    readonly property alias trayModel: trayModel
     readonly property alias taskbarList: taskbarList
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
+    readonly property alias trayArea: trayArea
+    readonly property alias trayRepeater: trayRepeater
     readonly property alias networkText: networkText
     readonly property string networkTooltipText: networkModel.connected
         ? (networkModel.wifi
@@ -114,6 +117,18 @@ LayerSurface {
             property: "notificationModel"
             value: notificationModel
             when: notificationLoader.status === Loader.Ready
+        }
+    }
+
+    TrayModel {
+        id: trayModel
+        Component.onCompleted: trayModel.init()
+    }
+
+    Connections {
+        target: panel
+        function onFrameSwapped(): void {
+            trayModel.recordFirstFrame();
         }
     }
 
@@ -200,6 +215,141 @@ LayerSurface {
                 font.pixelSize: Style.typography.basePx + 1
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Row {
+            id: trayArea
+            anchors.right: statusArea.left
+            anchors.rightMargin: Style.spacing.medium
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.spacing.small
+            visible: trayModel.count > 0
+
+            Repeater {
+                id: trayRepeater
+                model: trayModel
+
+                delegate: Rectangle {
+                    id: trayBtn
+                    required property int index
+                    required property string id
+                    required property string title
+                    required property string status
+                    required property string iconName
+                    required property bool hasPixmap
+                    required property string pixmapId
+                    required property string tooltipTitle
+                    required property string tooltipText
+                    required property bool isAttention
+                    required property string letterBadge
+                    required property bool isMenu
+                    required property int windowId
+
+                    readonly property alias mouseArea: trayMouseArea
+                    readonly property alias iconImage: trayIconImage
+                    readonly property alias badgeText: trayBadgeText
+                    readonly property alias attentionIndicator: attentionDot
+                    readonly property alias tooltipLoader: trayTooltipLoader
+
+                    width: Style.spacing.panel - Style.spacing.small
+                    height: Style.spacing.panel - Style.spacing.small
+                    radius: Style.radius.small
+                    color: trayMouseArea.pressed
+                        ? Style.colors.surfaceRaised
+                        : (trayMouseArea.containsMouse ? Style.colors.surface : "transparent")
+                    border.color: isAttention ? Style.colors.warning : "transparent"
+                    border.width: isAttention ? 1 : 0
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: title.length > 0 ? title : id
+                    Accessible.focusable: true
+
+                    Image {
+                        id: trayIconImage
+                        anchors.centerIn: parent
+                        width: Style.spacing.large
+                        height: Style.spacing.large
+                        source: hasPixmap
+                            ? ("image://kynex-tray/" + pixmapId)
+                            : (iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : "")
+                        fillMode: Image.PreserveAspectFit
+                        visible: status === Image.Ready && source.toString().length > 0
+                        asynchronous: false
+                    }
+
+                    Text {
+                        id: trayBadgeText
+                        anchors.centerIn: parent
+                        text: letterBadge
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        font.bold: true
+                        color: Style.colors.text
+                        textFormat: Text.PlainText
+                        visible: !trayIconImage.visible
+                    }
+
+                    Rectangle {
+                        id: attentionDot
+                        visible: isAttention
+                        width: Style.spacing.small
+                        height: Style.spacing.small
+                        radius: Style.spacing.small / 2
+                        color: Style.colors.warning
+                        anchors.top: parent.top
+                        anchors.topMargin: Style.spacing.unit
+                        anchors.right: parent.right
+                        anchors.rightMargin: Style.spacing.unit
+                    }
+
+                    MouseArea {
+                        id: trayMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+                        onClicked: function(mouse) {
+                            if (mouse.button === Qt.LeftButton) {
+                                trayModel.activate(id, mouse.x, mouse.y);
+                            } else if (mouse.button === Qt.MiddleButton) {
+                                trayModel.secondaryActivate(id, mouse.x, mouse.y);
+                            } else if (mouse.button === Qt.RightButton) {
+                                trayModel.contextMenu(id, mouse.x, mouse.y);
+                            }
+                        }
+
+                        onWheel: function(wheel) {
+                            var delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
+                            var orient = wheel.angleDelta.y !== 0 ? "vertical" : "horizontal";
+                            trayModel.scroll(id, delta, orient);
+                        }
+
+                        Loader {
+                            id: trayTooltipLoader
+                            active: trayMouseArea.containsMouse
+                            sourceComponent: Component {
+                                KynexTooltip {
+                                    text: {
+                                        if (tooltipTitle.length > 0 && tooltipText.length > 0) {
+                                            return tooltipTitle + "\n" + tooltipText;
+                                        } else if (tooltipTitle.length > 0) {
+                                            return tooltipTitle;
+                                        } else if (tooltipText.length > 0) {
+                                            return tooltipText;
+                                        } else {
+                                            return title.length > 0 ? title : id;
+                                        }
+                                    }
+                                    visible: true
+                                    anchors.bottom: parent.top
+                                    anchors.bottomMargin: Style.spacing.small
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

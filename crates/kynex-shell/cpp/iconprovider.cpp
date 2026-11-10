@@ -242,11 +242,43 @@ QQuickImageResponse *KynexIconProvider::requestImageResponse(const QString &id, 
     return response;
 }
 
+extern "C" size_t kynex_get_tray_pixmap(const char *id, int32_t *out_width, int32_t *out_height, uint8_t *out_buf, size_t max_buf_len);
+
+KynexTrayImageProvider::KynexTrayImageProvider()
+    : QQuickImageProvider(QQuickImageProvider::Image)
+{
+}
+
+KynexTrayImageProvider::~KynexTrayImageProvider() = default;
+
+QImage KynexTrayImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
+{
+    QByteArray idUtf8 = id.toUtf8();
+    int32_t width = 0;
+    int32_t height = 0;
+    uint8_t buffer[65536];
+
+    size_t copied = kynex_get_tray_pixmap(idUtf8.constData(), &width, &height, buffer, sizeof(buffer));
+    if (copied == 0 || width <= 0 || height <= 0 || width > 64 || height > 64) {
+        if (size) *size = QSize(0, 0);
+        return QImage();
+    }
+
+    if (size) *size = QSize(width, height);
+    QImage img(buffer, width, height, width * 4, QImage::Format_RGBA8888);
+    QImage result = img.copy();
+    if (requestedSize.isValid() && requestedSize.width() > 0 && requestedSize.height() > 0) {
+        result = result.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    return result;
+}
+
 void kynex_register_image_provider(QQmlEngine *engine)
 {
     if (engine) {
         kynex_init_security_limits();
         engine->addImageProvider(QStringLiteral("kynex-icon"), new KynexIconProvider());
+        engine->addImageProvider(QStringLiteral("kynex-tray"), new KynexTrayImageProvider());
     }
 }
 

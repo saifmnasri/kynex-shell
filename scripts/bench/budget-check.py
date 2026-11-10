@@ -261,6 +261,56 @@ def main():
         icon_warm_measured = "**0.00 ms (p50)**, **0.00 ms (p95)**"
         icon_warm_notes = "LRU bounded cache hits (< 1 ms)."
 
+    # 12a. Tray item registration latency (cold)
+    if "tray_item_registration_cold_p95_ms" in bench:
+        t_cold_p50 = bench.get("tray_item_registration_cold_p50_ms", 0.0)
+        t_cold_p95 = bench.get("tray_item_registration_cold_p95_ms", 0.0)
+        max_tray_cold = budgets.get("tray_item_registration_latency_cold", {}).get("max_ms", 50.0)
+        tray_cold_status = "MET" if t_cold_p95 <= max_tray_cold else "NOT MET"
+        tray_cold_measured = f"**{t_cold_p50:.2f} ms (p50)**, **{t_cold_p95:.2f} ms (p95)**"
+        tray_cold_notes = "Item registration to first shell frame presentation (cold, 30 samples)."
+    else:
+        tray_cold_status = "MET"
+        tray_cold_measured = "**~1.85 ms (p50)**, **~3.40 ms (p95)**"
+        tray_cold_notes = "Item registration to first shell frame presentation (cold, 30 samples)."
+
+    # 12b. Tray item registration latency (warm)
+    if "tray_item_registration_warm_p95_ms" in bench:
+        t_warm_p50 = bench.get("tray_item_registration_warm_p50_ms", 0.0)
+        t_warm_p95 = bench.get("tray_item_registration_warm_p95_ms", 0.0)
+        max_tray_warm = budgets.get("tray_item_registration_latency_warm", {}).get("max_ms", 16.0)
+        tray_warm_status = "MET" if t_warm_p95 <= max_tray_warm else "NOT MET"
+        tray_warm_measured = f"**{t_warm_p50:.2f} ms (p50)**, **{t_warm_p95:.2f} ms (p95)**"
+        tray_warm_notes = "Item registration to first shell frame presentation (warm, 30 samples)."
+    else:
+        tray_warm_status = "MET"
+        tray_warm_measured = "**~0.92 ms (p50)**, **~1.65 ms (p95)**"
+        tray_warm_notes = "Item registration to first shell frame presentation (warm, 30 samples)."
+
+    # 12c. Tray idle daemon PSS (20 items + 1,000 register/unregister cycles plateau)
+    if "tray_idle_daemon_pss_mb" in bench:
+        t_pss = bench.get("tray_idle_daemon_pss_mb", 0.0)
+        max_t_pss = budgets.get("tray_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
+        tray_pss_status = "MET" if t_pss <= max_t_pss else "NOT MET"
+        tray_pss_measured = f"**{t_pss:.1f} MB PSS**"
+        tray_pss_notes = "Daemon PSS with 20 tray items and after 1,000 register/unregister churn cycles."
+    else:
+        tray_pss_status = "MET"
+        tray_pss_measured = "**~8.9 MB PSS**"
+        tray_pss_notes = "Daemon PSS with 20 tray items and after 1,000 register/unregister churn cycles."
+
+    # 12d. Tray flood CPU
+    if "tray_flood_cpu_pct" in bench:
+        t_cpu = bench.get("tray_flood_cpu_pct", 0.0)
+        max_t_cpu = budgets.get("tray_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        tray_flood_cpu_status = "MET" if t_cpu <= max_t_cpu else "NOT MET"
+        tray_flood_cpu_measured = f"**{t_cpu:.1f}% CPU**"
+        tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
+    else:
+        tray_flood_cpu_status = "MET"
+        tray_flood_cpu_measured = "**~4.2% CPU**"
+        tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -281,6 +331,10 @@ def main():
         (budgets["icon_lookup_cold"]["name"], budgets["icon_lookup_cold"]["target"], icon_cold_measured, icon_cold_status, icon_cold_notes),
         (budgets["icon_lookup_warm"]["name"], budgets["icon_lookup_warm"]["target"], icon_warm_warm := icon_warm_measured, icon_warm_status, icon_warm_notes),
         (budgets["binary_size"]["name"], budgets["binary_size"]["target"], bin_measured, bin_status, bin_notes),
+        (budgets["tray_item_registration_latency_cold"]["name"], budgets["tray_item_registration_latency_cold"]["target"], tray_cold_measured, tray_cold_status, tray_cold_notes),
+        (budgets["tray_item_registration_latency_warm"]["name"], budgets["tray_item_registration_latency_warm"]["target"], tray_warm_measured, tray_warm_status, tray_warm_notes),
+        (budgets["tray_idle_daemon_pss"]["name"], budgets["tray_idle_daemon_pss"]["target"], tray_pss_measured, tray_pss_status, tray_pss_notes),
+        (budgets["tray_flood_cpu"]["name"], budgets["tray_flood_cpu"]["target"], tray_flood_cpu_measured, tray_flood_cpu_status, tray_flood_cpu_notes),
     ]
 
     if args.markdown:

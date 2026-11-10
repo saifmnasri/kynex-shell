@@ -7,4 +7,5 @@ pub mod network;
 pub mod notifications;
 pub mod power;
 pub mod shim;
+pub mod tray;
 pub mod windows;

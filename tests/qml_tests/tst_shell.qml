@@ -28,6 +28,9 @@ Item {
             shell.contentItem.width = shell.width;
             shell.contentItem.height = shell.height;
             shell.windowListModel.clear();
+            if (shell.trayModel) {
+                shell.trayModel.clear();
+            }
         }
 
         function cleanup() {
@@ -198,6 +201,179 @@ Item {
             });
             verify(shell.notificationLoader.item !== null);
             compare(shell.notificationLoader.item.notificationModel, shell.notificationModel);
+        }
+
+        function test_tray_initial_state() {
+            compare(shell.trayModel.count, 0);
+            compare(shell.trayArea.visible, false, "Tray area should be hidden when count is 0");
+        }
+
+        function test_tray_items_presentation() {
+            compare(shell.trayModel.count, 0);
+            compare(shell.trayArea.visible, false);
+
+            // Item 1: Normal active item
+            shell.trayModel.addItem(
+                "item1",
+                "Wi-Fi",
+                "Active",
+                "nm-device-wireless",
+                false,
+                "",
+                "Network",
+                "Connected to Wi-Fi",
+                false,
+                "W",
+                false,
+                0
+            );
+
+            // Item 2: Needs attention with pixmap
+            shell.trayModel.addItem(
+                "item2",
+                "Chat",
+                "NeedsAttention",
+                "",
+                true,
+                "item2",
+                "Messages",
+                "3 new alerts",
+                true,
+                "C",
+                false,
+                0
+            );
+
+            // Item 3: Badge fallback
+            shell.trayModel.addItem(
+                "item3",
+                "",
+                "Active",
+                "",
+                false,
+                "",
+                "",
+                "",
+                false,
+                "M",
+                false,
+                0
+            );
+
+            compare(shell.trayModel.count, 3);
+            compare(shell.trayArea.visible, true, "Tray area should be visible when count > 0");
+            compare(shell.trayRepeater.count, 3);
+
+            let btn0 = shell.trayRepeater.itemAt(0);
+            verify(btn0 !== null, "Delegate 0 must be created");
+            compare(btn0.id, "item1");
+            compare(btn0.title, "Wi-Fi");
+            compare(btn0.border.width, 0);
+            compare(btn0.Accessible.role, Accessible.Button);
+            compare(btn0.Accessible.focusable, true);
+            compare(btn0.Accessible.name, "Wi-Fi");
+            compare(btn0.iconImage.source.toString(), "image://kynex-icon/nm-device-wireless?size=24&scale=1");
+            tryVerify(function() { return btn0.iconImage.status === Image.Ready && !btn0.badgeText.visible; });
+            compare(btn0.badgeText.visible, false);
+            LayoutHelper.sendMouseMove(btn0.mouseArea, btn0.width / 2, btn0.height / 2);
+            tryVerify(function() { return btn0.tooltipLoader.item !== null; });
+            compare(btn0.tooltipLoader.item.text, "Network\nConnected to Wi-Fi");
+
+            let btn1 = shell.trayRepeater.itemAt(1);
+            verify(btn1 !== null, "Delegate 1 must be created");
+            compare(btn1.id, "item2");
+            compare(btn1.isAttention, true);
+            compare(btn1.border.color, Style.colors.warning);
+            compare(btn1.border.width, 1);
+            compare(btn1.Accessible.name, "Chat");
+            compare(btn1.iconImage.source.toString(), "image://kynex-tray/item2");
+            compare(btn1.attentionIndicator.visible, true);
+
+            let btn2 = shell.trayRepeater.itemAt(2);
+            verify(btn2 !== null, "Delegate 2 must be created");
+            compare(btn2.id, "item3");
+            compare(btn2.letterBadge, "M");
+            compare(btn2.Accessible.name, "item3");
+            compare(btn2.iconImage.source.toString(), "");
+            compare(btn2.badgeText.visible, true);
+            compare(btn2.badgeText.text, "M");
+            LayoutHelper.sendMouseMove(btn2.mouseArea, btn2.width / 2, btn2.height / 2);
+            tryVerify(function() { return btn2.tooltipLoader.item !== null; });
+            compare(btn2.tooltipLoader.item.text, "item3");
+        }
+
+        function test_tray_tooltip_branches() {
+            // Title only in tooltip
+            shell.trayModel.addItem("tip1", "App1", "Active", "", false, "", "OnlyTitle", "", false, "1", false, 0);
+            // Text only in tooltip
+            shell.trayModel.addItem("tip2", "App2", "Active", "", false, "", "", "OnlyText", false, "2", false, 0);
+            // Title in app only
+            shell.trayModel.addItem("tip3", "AppTitleOnly", "Active", "", false, "", "", "", false, "3", false, 0);
+
+            compare(shell.trayRepeater.count, 3);
+            let b0 = shell.trayRepeater.itemAt(0);
+            let b1 = shell.trayRepeater.itemAt(1);
+            let b2 = shell.trayRepeater.itemAt(2);
+
+            LayoutHelper.sendMouseMove(b0.mouseArea, b0.width / 2, b0.height / 2);
+            tryVerify(function() { return b0.tooltipLoader.item !== null; });
+            compare(b0.tooltipLoader.item.text, "OnlyTitle");
+
+            LayoutHelper.sendMouseMove(b1.mouseArea, b1.width / 2, b1.height / 2);
+            tryVerify(function() { return b1.tooltipLoader.item !== null; });
+            compare(b1.tooltipLoader.item.text, "OnlyText");
+
+            LayoutHelper.sendMouseMove(b2.mouseArea, b2.width / 2, b2.height / 2);
+            tryVerify(function() { return b2.tooltipLoader.item !== null; });
+            compare(b2.tooltipLoader.item.text, "AppTitleOnly");
+        }
+
+        function test_tray_click_and_scroll_interactions() {
+            shell.trayModel.addItem(
+                "test-tray-id",
+                "Test App",
+                "Active",
+                "test-icon",
+                false,
+                "",
+                "Test Headline",
+                "Test Description",
+                false,
+                "T",
+                false,
+                0
+            );
+
+            compare(shell.trayRepeater.count, 1);
+            let btn = shell.trayRepeater.itemAt(0);
+            verify(btn !== null);
+            verify(btn.mouseArea !== null);
+
+            // Initially no actions recorded
+            compare(shell.trayModel.lastActivatedId, "");
+            compare(shell.trayModel.lastSecondaryActivatedId, "");
+            compare(shell.trayModel.lastContextMenuId, "");
+
+            // Left click -> activate
+            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.LeftButton);
+            compare(shell.trayModel.lastActivatedId, "test-tray-id");
+            compare(shell.trayModel.lastSecondaryActivatedId, "");
+            compare(shell.trayModel.lastContextMenuId, "");
+
+            // Middle click -> secondaryActivate
+            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.MiddleButton);
+            compare(shell.trayModel.lastSecondaryActivatedId, "test-tray-id");
+            compare(shell.trayModel.lastContextMenuId, "");
+
+            // Right click -> contextMenu
+            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.RightButton);
+            compare(shell.trayModel.lastContextMenuId, "test-tray-id");
+
+            // Wheel scroll
+            LayoutHelper.sendWheel(btn.mouseArea, btn.width / 2, btn.height / 2, 120, 0);
+            compare(shell.trayModel.lastScrolledId, "test-tray-id");
+            compare(shell.trayModel.lastScrollDelta, 120);
+            compare(shell.trayModel.lastScrollOrientation, "vertical");
         }
     }
 }

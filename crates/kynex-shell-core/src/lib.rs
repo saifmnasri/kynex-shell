@@ -5,6 +5,7 @@
 pub mod launcher;
 pub mod matching;
 pub mod taskbar;
+pub mod tray;
 
 pub use launcher::{
     compute_letter_badge, sanitize_app_item, sanitize_display_text, sanitize_query, AppDisplayItem,
@@ -16,3 +17,4 @@ pub use matching::{
     AppCandidate,
 };
 pub use taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
+pub use tray::{compute_letter_badge as compute_tray_letter_badge, TrayUiItem, TrayUiState};

@@ -15,6 +15,10 @@ use kynex_daemon::services::power::{run_power_service, PowerServer};
 use kynex_daemon::services::shell::{
     run_shell_kwin_watcher, ShellFeedServer, ShellServer, ShellSharedState,
 };
+use kynex_daemon::services::tray::{
+    run_tray_dbus_name_watcher, try_acquire_watcher_names, FdoStatusNotifierWatcherServer,
+    StatusNotifierWatcherServer, TrayServer, TraySharedState,
+};
 use kynex_daemon::services::windows::{
     run_kwin_watcher, AllowAllSenderPolicy, KWinSenderPolicy, SenderPolicy, WindowsFeedServer,
     WindowsServer, WindowsSharedState,
@@ -22,8 +26,8 @@ use kynex_daemon::services::windows::{
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
     apps::APPS_PATH, notifications::FDO_NOTIFICATIONS_PATH, notifications::NOTIFICATIONS_PATH,
-    pins::PINS_PATH, shell::SHELL_PATH, DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH,
-    WINDOWS_PATH,
+    pins::PINS_PATH, shell::SHELL_PATH, tray::STATUS_NOTIFIER_WATCHER_PATH, tray::TRAY_PATH,
+    DAEMON_DESTINATION, DAEMON_PATH, NETWORK_PATH, POWER_PATH, WINDOWS_PATH,
 };
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{info, warn};
@@ -77,6 +81,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let fdo_notif_server = FdoNotificationsServer::new(Arc::clone(&notif_shared));
     let notif_server = NotificationsServer::new(Arc::clone(&notif_shared));
 
+    let tray_shared = Arc::new(TraySharedState::new());
+    let kde_watcher_server = StatusNotifierWatcherServer::new(Arc::clone(&tray_shared));
+    let fdo_watcher_server = FdoStatusNotifierWatcherServer::new(Arc::clone(&tray_shared));
+    let tray_server = TrayServer::new(Arc::clone(&tray_shared));
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -91,6 +100,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(PINS_PATH, pins_server.clone())
         .serve_at(NOTIFICATIONS_PATH, notif_server.clone())
         .serve_at(FDO_NOTIFICATIONS_PATH, fdo_notif_server.clone())
+        .serve_at(STATUS_NOTIFIER_WATCHER_PATH, kde_watcher_server.clone())
+        .serve_at(STATUS_NOTIFIER_WATCHER_PATH, fdo_watcher_server.clone())
+        .serve_at(TRAY_PATH, tray_server.clone())
         .build()
         .await?;
 
@@ -155,6 +167,38 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tokio::spawn(run_notification_expiry_scheduler(
         Arc::clone(&notif_shared),
+        session_conn.clone(),
+    ));
+
+    // Set up tray emitters, name acquisition, and NameOwnerChanged listener
+    tray_shared.set_connection(session_conn.clone()).await;
+    if let Ok(kde_emitter) = SignalEmitter::new(&session_conn, STATUS_NOTIFIER_WATCHER_PATH) {
+        kde_watcher_server.set_emitter(kde_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for org.kde.StatusNotifierWatcher");
+    }
+    if let Ok(fdo_watcher_emitter) = SignalEmitter::new(&session_conn, STATUS_NOTIFIER_WATCHER_PATH)
+    {
+        fdo_watcher_server.set_emitter(fdo_watcher_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for org.freedesktop.StatusNotifierWatcher");
+    }
+    if let Ok(tray_emitter) = SignalEmitter::new(&session_conn, TRAY_PATH) {
+        tray_server.set_emitter(tray_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for Tray1");
+    }
+
+    let (kde_claimed, fdo_watcher_claimed) = try_acquire_watcher_names(&session_conn).await;
+    tray_shared
+        .kde_name_acquired
+        .store(kde_claimed, Ordering::SeqCst);
+    tray_shared
+        .fdo_name_acquired
+        .store(fdo_watcher_claimed, Ordering::SeqCst);
+
+    tokio::spawn(run_tray_dbus_name_watcher(
+        Arc::clone(&tray_shared),
         session_conn.clone(),
     ));
 

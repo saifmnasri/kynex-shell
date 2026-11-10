@@ -8,6 +8,7 @@ pub mod pins;
 pub mod power;
 pub mod service;
 pub mod shell;
+pub mod tray;
 pub mod windows;
 
 pub use apps::{AppItem, AppMappingItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
@@ -24,6 +25,14 @@ pub use pins::{Pins1Proxy, PINS_INTERFACE, PINS_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};
 pub use shell::{Shell1Proxy, ShellFeed1Proxy, SHELL_FEED_INTERFACE, SHELL_INTERFACE, SHELL_PATH};
+pub use tray::{
+    fdo::FdoStatusNotifierWatcherProxy, StatusNotifierItemProxy, StatusNotifierWatcherProxy,
+    Tray1Proxy, TrayItemInfo, STATUS_NOTIFIER_ITEM_DEFAULT_PATH,
+    STATUS_NOTIFIER_ITEM_FDO_INTERFACE, STATUS_NOTIFIER_ITEM_INTERFACE,
+    STATUS_NOTIFIER_WATCHER_DESTINATION_FDO, STATUS_NOTIFIER_WATCHER_DESTINATION_KDE,
+    STATUS_NOTIFIER_WATCHER_FDO_INTERFACE, STATUS_NOTIFIER_WATCHER_INTERFACE,
+    STATUS_NOTIFIER_WATCHER_PATH, TRAY_INTERFACE, TRAY_PATH,
+};
 pub use windows::{
     WindowItem, Windows1Proxy, WindowsFeed1Proxy, WINDOWS_FEED_INTERFACE, WINDOWS_INTERFACE,
     WINDOWS_PATH,

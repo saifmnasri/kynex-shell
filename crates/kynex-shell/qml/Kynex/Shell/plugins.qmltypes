@@ -221,4 +221,44 @@ Module {
             name: "recordFirstFrame"
         }
     }
+    Component {
+        file: "src/tray.rs"
+        name: "TrayModel"
+        accessSemantics: "reference"
+        prototype: "QAbstractListModel"
+        exports: ["Kynex.Shell/TrayModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Property { name: "hasItems"; type: "bool"; read: "hasItems"; notify: "hasItemsChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "activate"
+            Parameter { name: "id"; type: "QString" }
+            Parameter { name: "x"; type: "int" }
+            Parameter { name: "y"; type: "int" }
+        }
+        Method {
+            name: "secondaryActivate"
+            Parameter { name: "id"; type: "QString" }
+            Parameter { name: "x"; type: "int" }
+            Parameter { name: "y"; type: "int" }
+        }
+        Method {
+            name: "contextMenu"
+            Parameter { name: "id"; type: "QString" }
+            Parameter { name: "x"; type: "int" }
+            Parameter { name: "y"; type: "int" }
+        }
+        Method {
+            name: "scroll"
+            Parameter { name: "id"; type: "QString" }
+            Parameter { name: "delta"; type: "int" }
+            Parameter { name: "orientation"; type: "QString" }
+        }
+        Method {
+            name: "recordFirstFrame"
+        }
+    }
 }

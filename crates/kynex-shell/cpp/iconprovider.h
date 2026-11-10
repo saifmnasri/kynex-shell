@@ -54,7 +54,17 @@ public:
     QQuickImageResponse *requestImageResponse(const QString &id, const QSize &requestedSize) override;
 };
 
-/// Registers KynexIconProvider into the QML engine.
+/// Synchronous in-memory image provider for "image://kynex-tray/<id>".
+class KynexTrayImageProvider : public QQuickImageProvider
+{
+public:
+    KynexTrayImageProvider();
+    ~KynexTrayImageProvider() override;
+
+    QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
+};
+
+/// Registers KynexIconProvider and KynexTrayImageProvider into the QML engine.
 void kynex_register_image_provider(QQmlEngine *engine);
 void kynex_register_image_provider_app(QQmlApplicationEngine &engine);
 

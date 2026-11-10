@@ -11,6 +11,7 @@ fn main() {
             "src/notifications.rs",
             "src/power.rs",
             "src/shim.rs",
+            "src/tray.rs",
             "src/windows.rs",
         ])
         .cpp_files([

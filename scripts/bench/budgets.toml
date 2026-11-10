@@ -131,3 +131,31 @@ target = "Track per release, no unexplained growth > 10%"
 unit = "MB"
 max_growth_pct = 10.0
 
+[tray_item_registration_latency_cold]
+name = "Tray: item registration -> first visible frame (cold)"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[tray_item_registration_latency_warm]
+name = "Tray: item registration -> first visible frame (warm)"
+target = "< 16 ms (p95)"
+max_ms = 16.0
+unit = "ms"
+phase = "Phase 5"
+
+[tray_idle_daemon_pss]
+name = "Daemon PSS with 20 tray items and 1,000 register/unregister plateau"
+target = "< 15 MB PSS"
+max_pss_mb = 15.0
+unit = "MB"
+phase = "Phase 5"
+
+[tray_flood_cpu]
+name = "Tray: 10,000-signal flood CPU"
+target = "< 20% during flood"
+max_cpu_pct = 20.0
+unit = "%"
+phase = "Phase 5"
+

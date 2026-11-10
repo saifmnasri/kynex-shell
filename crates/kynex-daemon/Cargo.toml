@@ -14,6 +14,7 @@ futures-util = { version = "0.3", default-features = false, features = ["alloc"]
 kynex-apps-index = { path = "../kynex-apps-index", version = "0.1.0" }
 kynex-ipc = { workspace = true }
 kynex-notifications = { path = "../kynex-notifications", version = "0.1.0" }
+kynex-tray = { path = "../kynex-tray", version = "0.1.0" }
 rustix = { version = "1", default-features = false, features = ["process"] }
 serde = { workspace = true }
 tokio = { workspace = true }
