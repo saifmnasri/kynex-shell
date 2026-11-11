@@ -1,0 +1,5 @@
+=== COMMAND ===
+python3 scripts/check-style-tokens.py styles
+=== TIMESTAMP: 2026-11-10T22:16:03Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===

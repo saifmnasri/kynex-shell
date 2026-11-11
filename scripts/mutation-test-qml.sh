@@ -86,6 +86,9 @@ EQUIVALENT_JUSTIFICATIONS = {
     ("KynexSearchField.qml", "Accessible.focusable: true", "delete"): (
         "Qt Quick QQuickAccessibleAttached::role() for Accessible.EditableText with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
     ),
+    ("Shell.qml", "Accessible.focusable: true", "delete"): (
+        "Qt Quick QQuickAccessibleAttached::role() for Accessible.Button automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge."
+    ),
     ("Shell.qml", "when: launcherLoader.status === Loader.Ready", "delete"): (
         "Qt Quick Binding evaluates target property assignment only when target is non-null; since launcherLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: launcherLoader.status === Loader.Ready semantically equivalent to unconditional binding."
     ),

@@ -1,0 +1,5 @@
+=== COMMAND ===
+/usr/lib/qt6/bin/qmllint -I crates/kynex-shell/qml --compiler warning --max-warnings 0 styles/default/Shell.qml crates/kynex-shell/qml/Kynex/Controls/KynexButton.qml crates/kynex-shell/qml/Kynex/Controls/KynexListItem.qml crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml crates/kynex-shell/qml/Kynex/Controls/KynexSlider.qml crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml crates/kynex-shell/qml/Kynex/Controls/KynexTooltip.qml
+=== TIMESTAMP: 2026-11-11T06:21:47Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===

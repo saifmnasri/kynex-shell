@@ -34,13 +34,30 @@ public:
         QKeyEvent release(QEvent::KeyRelease, key, static_cast<Qt::KeyboardModifiers>(modifiers));
         QCoreApplication::sendEvent(item, &release);
     }
-    Q_INVOKABLE void sendMouseClick(QQuickItem *item, qreal x, qreal y) {
+    Q_INVOKABLE void sendMouseClick(QQuickItem *item, qreal x, qreal y, int button = Qt::LeftButton) {
         if (!item) return;
         QPointF pos(x, y);
-        QMouseEvent press(QEvent::MouseButtonPress, pos, pos, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        auto btn = static_cast<Qt::MouseButton>(button);
+        QMouseEvent press(QEvent::MouseButtonPress, pos, pos, btn, btn, Qt::NoModifier);
         QCoreApplication::sendEvent(item, &press);
-        QMouseEvent release(QEvent::MouseButtonRelease, pos, pos, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+        QMouseEvent release(QEvent::MouseButtonRelease, pos, pos, btn, Qt::NoButton, Qt::NoModifier);
         QCoreApplication::sendEvent(item, &release);
+    }
+    Q_INVOKABLE void sendMouseMove(QQuickItem *item, qreal x, qreal y) {
+        if (!item) return;
+        QPointF pos(x, y);
+        QEnterEvent enter(pos, pos, pos);
+        QCoreApplication::sendEvent(item, &enter);
+        QMouseEvent move(QEvent::MouseMove, pos, pos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(item, &move);
+    }
+    Q_INVOKABLE void sendWheel(QQuickItem *item, qreal x, qreal y, int deltaY, int deltaX = 0) {
+        if (!item) return;
+        QPointF pos(x, y);
+        QPoint pixelDelta;
+        QPoint angleDelta(deltaX, deltaY);
+        QWheelEvent wheel(pos, pos, pixelDelta, angleDelta, Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QCoreApplication::sendEvent(item, &wheel);
     }
 };
 
@@ -709,6 +726,247 @@ private:
     QString m_lastInvokedKey;
 };
 
+struct TrayItemTest {
+    QString id;
+    QString title;
+    QString status;
+    QString iconName;
+    bool hasPixmap;
+    QString pixmapId;
+    QString tooltipTitle;
+    QString tooltipText;
+    bool isAttention;
+    QString letterBadge;
+    bool isMenu;
+    int windowId;
+};
+
+class MockTrayModel : public QAbstractListModel {
+    Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool hasItems READ hasItems NOTIFY countChanged)
+    Q_PROPERTY(QString lastActivatedId READ lastActivatedId NOTIFY interactionChanged)
+    Q_PROPERTY(int lastActivatedX READ lastActivatedX NOTIFY interactionChanged)
+    Q_PROPERTY(int lastActivatedY READ lastActivatedY NOTIFY interactionChanged)
+    Q_PROPERTY(QString lastSecondaryActivatedId READ lastSecondaryActivatedId NOTIFY interactionChanged)
+    Q_PROPERTY(QString lastContextMenuId READ lastContextMenuId NOTIFY interactionChanged)
+    Q_PROPERTY(int lastContextMenuX READ lastContextMenuX NOTIFY interactionChanged)
+    Q_PROPERTY(int lastContextMenuY READ lastContextMenuY NOTIFY interactionChanged)
+    Q_PROPERTY(QString lastScrolledId READ lastScrolledId NOTIFY interactionChanged)
+    Q_PROPERTY(int lastScrollDelta READ lastScrollDelta NOTIFY interactionChanged)
+    Q_PROPERTY(QString lastScrollOrientation READ lastScrollOrientation NOTIFY interactionChanged)
+    Q_PROPERTY(int recordFirstFrameCount READ recordFirstFrameCount NOTIFY interactionChanged)
+    Q_PROPERTY(double lastScreenX READ lastScreenX NOTIFY interactionChanged)
+    Q_PROPERTY(double lastScreenY READ lastScreenY NOTIFY interactionChanged)
+    Q_PROPERTY(double lastScreenWidth READ lastScreenWidth NOTIFY interactionChanged)
+    Q_PROPERTY(double lastScreenHeight READ lastScreenHeight NOTIFY interactionChanged)
+    Q_PROPERTY(double lastDevicePixelRatio READ lastDevicePixelRatio NOTIFY interactionChanged)
+    Q_PROPERTY(double lastPanelHeight READ lastPanelHeight NOTIFY interactionChanged)
+
+public:
+    enum Roles {
+        IdRole = Qt::UserRole + 1,
+        TitleRole,
+        StatusRole,
+        IconNameRole,
+        HasPixmapRole,
+        PixmapIdRole,
+        TooltipTitleRole,
+        TooltipTextRole,
+        IsAttentionRole,
+        LetterBadgeRole,
+        IsMenuRole,
+        WindowIdRole
+    };
+
+    explicit MockTrayModel(QObject *parent = nullptr)
+        : QAbstractListModel(parent), m_lastActivatedX(0), m_lastActivatedY(0),
+          m_lastContextMenuX(0), m_lastContextMenuY(0), m_lastScrollDelta(0),
+          m_recordFirstFrameCount(0), m_lastScreenX(0.0), m_lastScreenY(0.0),
+          m_lastScreenWidth(1920.0), m_lastScreenHeight(1080.0),
+          m_lastDevicePixelRatio(1.0), m_lastPanelHeight(40.0) {}
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+        if (parent.isValid()) return 0;
+        return m_items.size();
+    }
+
+    QVariant data(const QModelIndex &index, int role) const override {
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
+            return QVariant();
+        const auto &item = m_items.at(index.row());
+        switch (role) {
+            case IdRole: return item.id;
+            case TitleRole: return item.title;
+            case StatusRole: return item.status;
+            case IconNameRole: return item.iconName;
+            case HasPixmapRole: return item.hasPixmap;
+            case PixmapIdRole: return item.pixmapId;
+            case TooltipTitleRole: return item.tooltipTitle;
+            case TooltipTextRole: return item.tooltipText;
+            case IsAttentionRole: return item.isAttention;
+            case LetterBadgeRole: return item.letterBadge;
+            case IsMenuRole: return item.isMenu;
+            case WindowIdRole: return item.windowId;
+            default: return QVariant();
+        }
+    }
+
+    QHash<int, QByteArray> roleNames() const override {
+        QHash<int, QByteArray> roles;
+        roles[IdRole] = "id";
+        roles[TitleRole] = "title";
+        roles[StatusRole] = "status";
+        roles[IconNameRole] = "iconName";
+        roles[HasPixmapRole] = "hasPixmap";
+        roles[PixmapIdRole] = "pixmapId";
+        roles[TooltipTitleRole] = "tooltipTitle";
+        roles[TooltipTextRole] = "tooltipText";
+        roles[IsAttentionRole] = "isAttention";
+        roles[LetterBadgeRole] = "letterBadge";
+        roles[IsMenuRole] = "isMenu";
+        roles[WindowIdRole] = "windowId";
+        return roles;
+    }
+
+    int count() const { return m_items.size(); }
+    bool hasItems() const { return !m_items.isEmpty(); }
+
+    QString lastActivatedId() const { return m_lastActivatedId; }
+    int lastActivatedX() const { return m_lastActivatedX; }
+    int lastActivatedY() const { return m_lastActivatedY; }
+    QString lastSecondaryActivatedId() const { return m_lastSecondaryActivatedId; }
+    QString lastContextMenuId() const { return m_lastContextMenuId; }
+    int lastContextMenuX() const { return m_lastContextMenuX; }
+    int lastContextMenuY() const { return m_lastContextMenuY; }
+    QString lastScrolledId() const { return m_lastScrolledId; }
+    int lastScrollDelta() const { return m_lastScrollDelta; }
+    QString lastScrollOrientation() const { return m_lastScrollOrientation; }
+    int recordFirstFrameCount() const { return m_recordFirstFrameCount; }
+    double lastScreenX() const { return m_lastScreenX; }
+    double lastScreenY() const { return m_lastScreenY; }
+    double lastScreenWidth() const { return m_lastScreenWidth; }
+    double lastScreenHeight() const { return m_lastScreenHeight; }
+    double lastDevicePixelRatio() const { return m_lastDevicePixelRatio; }
+    double lastPanelHeight() const { return m_lastPanelHeight; }
+
+    Q_INVOKABLE void init() {}
+    Q_INVOKABLE void clear() {
+        beginResetModel();
+        m_items.clear();
+        endResetModel();
+        m_lastActivatedId.clear();
+        m_lastActivatedX = 0;
+        m_lastActivatedY = 0;
+        m_lastSecondaryActivatedId.clear();
+        m_lastContextMenuId.clear();
+        m_lastContextMenuX = 0;
+        m_lastContextMenuY = 0;
+        m_lastScreenX = 0.0;
+        m_lastScreenY = 0.0;
+        m_lastScreenWidth = 0.0;
+        m_lastScreenHeight = 0.0;
+        m_lastDevicePixelRatio = 0.0;
+        m_lastPanelHeight = 0.0;
+        Q_EMIT countChanged();
+        Q_EMIT interactionChanged();
+    }
+
+    Q_INVOKABLE void addItem(const QString &id, const QString &title, const QString &status,
+                             const QString &iconName, bool hasPixmap, const QString &pixmapId,
+                             const QString &tooltipTitle, const QString &tooltipText,
+                             bool isAttention, const QString &letterBadge, bool isMenu, int windowId) {
+        beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
+        m_items.append({id, title, status, iconName, hasPixmap, pixmapId, tooltipTitle, tooltipText, isAttention, letterBadge, isMenu, windowId});
+        endInsertRows();
+        Q_EMIT countChanged();
+    }
+
+    Q_INVOKABLE void activate(const QString &id, int x, int y,
+                              double screenX = 0.0, double screenY = 0.0,
+                              double screenWidth = 1920.0, double screenHeight = 1080.0,
+                              double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+        m_lastActivatedId = id;
+        m_lastActivatedX = x;
+        m_lastActivatedY = y;
+        m_lastScreenX = screenX;
+        m_lastScreenY = screenY;
+        m_lastScreenWidth = screenWidth;
+        m_lastScreenHeight = screenHeight;
+        m_lastDevicePixelRatio = devicePixelRatio;
+        m_lastPanelHeight = panelHeight;
+        Q_EMIT interactionChanged();
+    }
+
+    Q_INVOKABLE void secondaryActivate(const QString &id, int x, int y,
+                                       double screenX = 0.0, double screenY = 0.0,
+                                       double screenWidth = 1920.0, double screenHeight = 1080.0,
+                                       double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+        m_lastSecondaryActivatedId = id;
+        m_lastActivatedX = x;
+        m_lastActivatedY = y;
+        m_lastScreenX = screenX;
+        m_lastScreenY = screenY;
+        m_lastScreenWidth = screenWidth;
+        m_lastScreenHeight = screenHeight;
+        m_lastDevicePixelRatio = devicePixelRatio;
+        m_lastPanelHeight = panelHeight;
+        Q_EMIT interactionChanged();
+    }
+
+    Q_INVOKABLE void contextMenu(const QString &id, int x, int y,
+                                 double screenX = 0.0, double screenY = 0.0,
+                                 double screenWidth = 1920.0, double screenHeight = 1080.0,
+                                 double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+        m_lastContextMenuId = id;
+        m_lastContextMenuX = x;
+        m_lastContextMenuY = y;
+        m_lastScreenX = screenX;
+        m_lastScreenY = screenY;
+        m_lastScreenWidth = screenWidth;
+        m_lastScreenHeight = screenHeight;
+        m_lastDevicePixelRatio = devicePixelRatio;
+        m_lastPanelHeight = panelHeight;
+        Q_EMIT interactionChanged();
+    }
+
+    Q_INVOKABLE void scroll(const QString &id, int delta, const QString &orientation) {
+        m_lastScrolledId = id;
+        m_lastScrollDelta = delta;
+        m_lastScrollOrientation = orientation;
+        Q_EMIT interactionChanged();
+    }
+
+    Q_INVOKABLE void recordFirstFrame() {
+        m_recordFirstFrameCount++;
+        Q_EMIT interactionChanged();
+    }
+
+Q_SIGNALS:
+    void countChanged();
+    void interactionChanged();
+
+private:
+    QList<TrayItemTest> m_items;
+    QString m_lastActivatedId;
+    int m_lastActivatedX;
+    int m_lastActivatedY;
+    QString m_lastSecondaryActivatedId;
+    QString m_lastContextMenuId;
+    int m_lastContextMenuX;
+    int m_lastContextMenuY;
+    QString m_lastScrolledId;
+    int m_lastScrollDelta;
+    QString m_lastScrollOrientation;
+    int m_recordFirstFrameCount;
+    double m_lastScreenX = 0.0;
+    double m_lastScreenY = 0.0;
+    double m_lastScreenWidth = 1920.0;
+    double m_lastScreenHeight = 1080.0;
+    double m_lastDevicePixelRatio = 1.0;
+    double m_lastPanelHeight = 40.0;
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
@@ -716,6 +974,7 @@ public:
 public slots:
     void qmlEngineAvailable(QQmlEngine *engine) {
         engine->addImageProvider(QStringLiteral("kynex-icon"), new DummyIconProvider());
+        engine->addImageProvider(QStringLiteral("kynex-tray"), new DummyIconProvider());
         QDir fontsDir("assets/fonts");
         if (fontsDir.exists()) {
             const QStringList fontFiles = fontsDir.entryList(QStringList() << "*.ttf" << "*.otf", QDir::Files);
@@ -740,6 +999,7 @@ public slots:
         qmlRegisterType<MockNetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
         qmlRegisterType<MockWindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
         qmlRegisterType<MockNotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
+        qmlRegisterType<MockTrayModel>("Kynex.Shell", 1, 0, "TrayModel");
         engine->addImportPath("crates/kynex-shell/qml");
         engine->rootContext()->setContextProperty("LayoutHelper", new LayoutHelper(engine));
     }

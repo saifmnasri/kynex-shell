@@ -10,6 +10,12 @@ LayerSurface {
     width: Screen.width
     height: Style.spacing.panel
 
+    property real screenVirtualX: Screen.virtualX
+    property real screenVirtualY: Screen.virtualY
+    property real screenWidth: Screen.width
+    property real screenHeight: Screen.height
+    property real screenDevicePixelRatio: Screen.devicePixelRatio
+
     layer: LayerSurface.LayerTop
     anchors: LayerSurface.AnchorBottom + LayerSurface.AnchorLeft + LayerSurface.AnchorRight
     exclusiveZone: Style.spacing.panel
@@ -29,9 +35,12 @@ LayerSurface {
     readonly property alias windowListModel: windowListModel
     readonly property alias launcherModel: launcherModel
     readonly property alias notificationModel: notificationModel
+    readonly property alias trayModel: trayModel
     readonly property alias taskbarList: taskbarList
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
+    readonly property alias trayArea: trayArea
+    readonly property alias trayRepeater: trayRepeater
     readonly property alias networkText: networkText
     readonly property string networkTooltipText: networkModel.connected
         ? (networkModel.wifi
@@ -114,6 +123,18 @@ LayerSurface {
             property: "notificationModel"
             value: notificationModel
             when: notificationLoader.status === Loader.Ready
+        }
+    }
+
+    TrayModel {
+        id: trayModel
+        Component.onCompleted: trayModel.init()
+    }
+
+    Connections {
+        target: panel
+        function onFrameSwapped(): void {
+            trayModel.recordFirstFrame();
         }
     }
 
@@ -200,6 +221,162 @@ LayerSurface {
                 font.pixelSize: Style.typography.basePx + 1
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Row {
+            id: trayArea
+            anchors.right: statusArea.left
+            anchors.rightMargin: Style.spacing.medium
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.spacing.small
+            visible: trayModel.count > 0
+
+            Repeater {
+                id: trayRepeater
+                model: trayModel
+
+                delegate: Rectangle {
+                    id: trayBtn
+                    required property int index
+                    required property string id
+                    required property string title
+                    required property string status
+                    required property string iconName
+                    required property bool hasPixmap
+                    required property string pixmapId
+                    required property string tooltipTitle
+                    required property string tooltipText
+                    required property bool isAttention
+                    required property string letterBadge
+                    required property bool isMenu
+                    required property int windowId
+
+                    readonly property alias mouseArea: trayMouseArea
+                    readonly property alias iconImage: trayIconImage
+                    readonly property alias badgeText: trayBadgeText
+                    readonly property alias attentionIndicator: attentionDot
+                    readonly property alias tooltipLoader: trayTooltipLoader
+
+                    width: Style.spacing.panel - Style.spacing.small
+                    height: Style.spacing.panel - Style.spacing.small
+                    radius: Style.radius.small
+                    color: trayMouseArea.pressed
+                        ? Style.colors.surfaceRaised
+                        : (trayMouseArea.containsMouse ? Style.colors.surface : "transparent")
+                    border.color: trayBtn.isAttention ? Style.colors.warning : "transparent"
+                    border.width: trayBtn.isAttention ? 1 : 0
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: trayBtn.title.length > 0 ? trayBtn.title : trayBtn.id
+                    Accessible.focusable: true
+
+                    Image {
+                        id: trayIconImage
+                        anchors.centerIn: parent
+                        width: Style.spacing.large
+                        height: Style.spacing.large
+                        source: trayBtn.hasPixmap
+                            ? ("image://kynex-tray/" + trayBtn.pixmapId)
+                            : (trayBtn.iconName.length > 0 ? ("image://kynex-icon/" + trayBtn.iconName + "?size=24&scale=1") : "")
+                        fillMode: Image.PreserveAspectFit
+                        visible: status === Image.Ready && source.toString().length > 0
+                        asynchronous: false
+                    }
+
+                    Text {
+                        id: trayBadgeText
+                        anchors.centerIn: parent
+                        text: trayBtn.letterBadge
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        font.bold: true
+                        color: Style.colors.text
+                        textFormat: Text.PlainText
+                        visible: !trayIconImage.visible
+                    }
+
+                    Rectangle {
+                        id: attentionDot
+                        visible: trayBtn.isAttention
+                        width: Style.spacing.small
+                        height: Style.spacing.small
+                        radius: Style.radius.small
+                        color: Style.colors.warning
+                        anchors.top: parent.top
+                        anchors.topMargin: Style.spacing.unit
+                        anchors.right: parent.right
+                        anchors.rightMargin: Style.spacing.unit
+                    }
+
+                    MouseArea {
+                        id: trayMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+                        onClicked: function(mouse) {
+                            var globalPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
+                            var gx = Math.round(globalPos.x);
+                            var gy = Math.round(globalPos.y);
+                            if (mouse.button === Qt.LeftButton) {
+                                trayModel.activate(trayBtn.id, gx, gy,
+                                                   panel.screenVirtualX,
+                                                   panel.screenVirtualY,
+                                                   panel.screenWidth,
+                                                   panel.screenHeight,
+                                                   panel.screenDevicePixelRatio,
+                                                   panel.height);
+                            } else if (mouse.button === Qt.MiddleButton) {
+                                trayModel.secondaryActivate(trayBtn.id, gx, gy,
+                                                            panel.screenVirtualX,
+                                                            panel.screenVirtualY,
+                                                            panel.screenWidth,
+                                                            panel.screenHeight,
+                                                            panel.screenDevicePixelRatio,
+                                                            panel.height);
+                            } else if (mouse.button === Qt.RightButton) {
+                                trayModel.contextMenu(trayBtn.id, gx, gy,
+                                                      panel.screenVirtualX,
+                                                      panel.screenVirtualY,
+                                                      panel.screenWidth,
+                                                      panel.screenHeight,
+                                                      panel.screenDevicePixelRatio,
+                                                      panel.height);
+                            }
+                        }
+
+                        onWheel: function(wheel) {
+                            var delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
+                            var orient = wheel.angleDelta.y !== 0 ? "vertical" : "horizontal";
+                            trayModel.scroll(trayBtn.id, delta, orient);
+                        }
+
+                        Loader {
+                            id: trayTooltipLoader
+                            active: trayMouseArea.containsMouse
+                            sourceComponent: Component {
+                                KynexTooltip {
+                                    text: {
+                                        if (trayBtn.tooltipTitle.length > 0 && trayBtn.tooltipText.length > 0) {
+                                            return trayBtn.tooltipTitle + "\n" + trayBtn.tooltipText;
+                                        } else if (trayBtn.tooltipTitle.length > 0) {
+                                            return trayBtn.tooltipTitle;
+                                        } else if (trayBtn.tooltipText.length > 0) {
+                                            return trayBtn.tooltipText;
+                                        } else {
+                                            return trayBtn.title.length > 0 ? trayBtn.title : trayBtn.id;
+                                        }
+                                    }
+                                    visible: true
+                                    anchors.bottom: parent.top
+                                    anchors.bottomMargin: Style.spacing.small
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

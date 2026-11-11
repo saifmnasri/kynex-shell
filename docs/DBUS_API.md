@@ -22,7 +22,9 @@ Rules: version every interface (`...1`), use signals for changes, never break an
 | `org.kynexos.Daemon.Style1` | active style, list styles, switch, per-style KWin settings | planned |
 | `org.freedesktop.Notifications` | desktop notification server (standard v1.2) | active |
 | `org.kynexos.Daemon.Notifications1` | internal notification model interface for shell (Stage N / Phase 5) | active |
-| `org.kde.StatusNotifierWatcher` | tray (standard) | planned |
+| `org.kde.StatusNotifierWatcher` | tray watcher service (standard SNI) | active |
+| `org.freedesktop.StatusNotifierWatcher` | tray watcher service (freedesktop SNI alias) | active |
+| `org.kynexos.Daemon.Tray1` | internal tray model and interaction interface for shell (Stage O / Phase 5) | active |
 
 ## Interface Details
 
@@ -273,6 +275,52 @@ Internal notification presentation and model interface for `kynex-shell`. Bound 
   busctl --user get-property org.kynexos.Daemon /org/kynexos/Daemon/Notifications org.kynexos.Daemon.Notifications1 DoNotDisturb
   busctl --user set-property org.kynexos.Daemon /org/kynexos/Daemon/Notifications org.kynexos.Daemon.Notifications1 DoNotDisturb b true
   busctl --user call org.kynexos.Daemon /org/kynexos/Daemon/Notifications org.kynexos.Daemon.Notifications1 GetHistory
+  ```
+
+### `org.kde.StatusNotifierWatcher` & `org.freedesktop.StatusNotifierWatcher`
+Standard StatusNotifierWatcher service implementing the FreeDesktop / KDE StatusNotifierItem specification. Implemented by `kynex-daemon` and bound to `/StatusNotifierWatcher`. Acquired with non-replacement flags (`DO_NOT_QUEUE`, never replacing existing owners).
+- Service names: `org.kde.StatusNotifierWatcher` and `org.freedesktop.StatusNotifierWatcher` (when acquired)
+- Object path: `/StatusNotifierWatcher`
+- Methods:
+  - `RegisterStatusNotifierItem(service: s) -> ()`: Registers an application's StatusNotifierItem.
+    - Argument can be an object path starting with `/` (sender is caller's unique bus name) or a service name (`service` or `service/path`).
+    - Sender Verification Invariant: Argument MUST resolve to the sender's own connection bus name. Clients cannot register another application's service.
+    - Limits: Max 4 items per sender; max 64 items in total across the session. Excess calls rejected with `LimitsExceeded`.
+  - `RegisterStatusNotifierHost(service: s) -> ()`: Registers a visualization panel host (such as `kynex-shell`).
+- Signals:
+  - `StatusNotifierItemRegistered(service: s)`: Emitted when an item is registered.
+  - `StatusNotifierItemUnregistered(service: s)`: Emitted when an item is unregistered or its owner disconnects.
+  - `StatusNotifierHostRegistered()`: Emitted when a new host registers.
+  - `StatusNotifierHostUnregistered()`: Emitted when a host disconnects.
+- Properties:
+  - `RegisteredStatusNotifierItems` (`as`, read-only): Array of currently registered item identifiers.
+  - `IsStatusNotifierHostRegistered` (`b`, read-only): `true` if at least one visualization host is active; `false` otherwise.
+  - `ProtocolVersion` (`i`, read-only): Implemented protocol version (`0`).
+- Test commands:
+  ```bash
+  busctl --user introspect org.kde.StatusNotifierWatcher /StatusNotifierWatcher org.kde.StatusNotifierWatcher
+  busctl --user get-property org.kde.StatusNotifierWatcher /StatusNotifierWatcher org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems
+  busctl --user get-property org.kde.StatusNotifierWatcher /StatusNotifierWatcher org.kde.StatusNotifierWatcher IsStatusNotifierHostRegistered
+  busctl --user get-property org.kde.StatusNotifierWatcher /StatusNotifierWatcher org.kde.StatusNotifierWatcher ProtocolVersion
+  ```
+
+### `org.kynexos.Daemon.Tray1`
+Internal system tray presentation and interaction interface for `kynex-shell`. Bound to `/org/kynexos/Daemon/Tray` under service name `org.kynexos.Daemon`.
+- Object path: `/org/kynexos/Daemon/Tray`
+- Methods:
+  - `GetItems() -> (a(ssssssba(iiay)s))` (or structured `TrayItemInfo`): Returns list of currently active items with sanitized metadata and validated icon pixmaps.
+  - `Activate(id: s, x: i, y: i) -> ()`: Asynchronously invokes `Activate(x, y)` on the target item.
+  - `SecondaryActivate(id: s, x: i, y: i) -> ()`: Asynchronously invokes `SecondaryActivate(x, y)` on the target item.
+  - `ContextMenu(id: s, x: i, y: i) -> ()`: Asynchronously invokes `ContextMenu(x, y)` on the target item with global window coordinates. The item application draws its own popup menu window; dbusmenu is out of scope and deferred.
+  - `Scroll(id: s, delta: i, orientation: s) -> ()`: Asynchronously invokes `Scroll(delta, orientation)` on the target item.
+- Signals:
+  - `ItemAdded(item: TrayItemInfo)`: Emitted when a new tray item is validated and ready for display.
+  - `ItemChanged(item: TrayItemInfo)`: Emitted when an existing item's properties update (rate-limited to 10/s).
+  - `ItemRemoved(id: s)`: Emitted when an item is unregistered or its owner disconnects.
+- Test commands:
+  ```bash
+  busctl --user introspect org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1
+  busctl --user call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 GetItems
   ```
 
 ## Template for each interface

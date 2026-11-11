@@ -854,6 +854,7 @@ dependencies = [
  "kynex-apps-index",
  "kynex-ipc",
  "kynex-notifications",
+ "kynex-tray",
  "rustix",
  "serde",
  "tempfile",
@@ -909,6 +910,7 @@ dependencies = [
  "kynex-ipc",
  "kynex-shell-core",
  "kynex-style",
+ "kynex-tray",
  "pkg-config",
  "tempfile",
  "tokio",
@@ -936,6 +938,14 @@ dependencies = [
  "thiserror 2.0.21",
  "toml",
  "tracing",
+]
+
+[[package]]
+name = "kynex-tray"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

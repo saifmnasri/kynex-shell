@@ -36,8 +36,7 @@ have ripsecrets && step "secret scan" ripsecrets --strict-ignore . || skip "secr
 
 # shellcheck disable=SC2317,SC2329
 check_style_tokens() {
-  ./scripts/check-style-tokens.py "styles"
-  ./scripts/check-style-tokens.py "crates/kynex-shell/qml"
+  ./scripts/check-style-tokens.py "styles" && ./scripts/check-style-tokens.py "crates/kynex-shell/qml"
 }
 
 step "style tokens lint" check_style_tokens
@@ -57,6 +56,9 @@ if ((${#QMLFILES[@]})); then
     QMLLINT_ARGS=(-I crates/kynex-shell/qml)
     if "$QMLLINT" --help 2>&1 | grep -q -- '--compiler'; then
       QMLLINT_ARGS+=(--compiler warning)
+    fi
+    if "$QMLLINT" --help 2>&1 | grep -q -- '--max-warnings'; then
+      QMLLINT_ARGS+=(--max-warnings 0)
     fi
     step "qmllint" "$QMLLINT" "${QMLLINT_ARGS[@]}" "${QMLFILES[@]}"
   else
@@ -90,6 +92,24 @@ fi
 
 if [[ -f scripts/check-report.py ]]; then
   step "work report evidence check" ./scripts/check-report.py
+fi
+
+# shellcheck disable=SC2317,SC2329
+check_no_literal_metrics() {
+  local matches
+  matches=$(grep -nE '^\s*(peak_[a-zA-Z0-9_]*|tray_[a-zA-Z0-9_]*|[a-zA-Z0-9_]*_p50|[a-zA-Z0-9_]*_p95|[a-zA-Z0-9_]*_p99|[a-zA-Z0-9_]*_cpu|[a-zA-Z0-9_]*_pss)\s*=\s*[0-9]+(\.[0-9]+)?\s*$' dev/bench/*.py 2>/dev/null || true)
+  if [[ -n "$matches" ]]; then
+    echo "ERROR: Literal metric values detected in benchmark scripts:" >&2
+    echo "$matches" >&2
+    return 1
+  fi
+  return 0
+}
+
+step "no literal benchmark metrics" check_no_literal_metrics
+
+if [[ -f tests/test_budget_scalar_rejection.py ]]; then
+  step "budget-check scalar rejection test" python3 tests/test_budget_scalar_rejection.py
 fi
 
 echo; echo "================ SUMMARY ================"

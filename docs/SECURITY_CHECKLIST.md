@@ -288,3 +288,53 @@
   - Proptests for text sanitizer, actions validator, and image-data validator.
   - Cargo-fuzz targets for markup stripper and image-data validator (10 min each, 0 crashes).
   - 10x consecutive test execution across workspace with zero flakes.
+
+---
+
+# Security checklist (Stage O - System Tray Subsystem)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - String payloads bounded: `title <= 128` chars, `tooltip_title <= 128` chars, `tooltip_text <= 512` chars, `id <= 128` chars.
+  - Text sanitized in pure Rust (`kynex_tray::sanitize`): strips XML/HTML tags, drops ASCII control chars (except standard whitespace), drops Unicode bidirectional overrides/isolates (U+202A..=U+202E, U+2066..=U+2069, U+200E, U+200F, U+061C), slices strictly on valid UTF-8 character boundaries.
+  - In QML presentation (`styles/default/Shell.qml`), tray tooltips explicitly declare `textFormat: Text.PlainText`, preventing HTML or rich-text injection attacks from untrusted tray items.
+  - Icon names resolved through `kynex-icons` theme hierarchy; raw absolute paths rejected (`kynex_tray::sanitize_icon_name`). Single-character fallback letter badge generated if no icon found.
+  - `IconPixmap` and `AttentionIconPixmap` validated with checked arithmetic (`kynex_tray::pixmap::validate_and_convert_pixmap`): width/height clamped to `[1, 64]`, checked multiplication `width * height * 4`, exact buffer length match, total payload <= 64 KiB (`MAX_PIXMAP_BYTES`), network byte order ARGB32 converted to RGBA32. Oversized, lying, truncated, or negative dimensions rejected cleanly.
+- [x] No shell execution; commands use argv arrays only:
+  - System Tray subsystem executes zero shell commands and zero external child processes.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `crates/kynex-tray` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-shell-core/src/tray.rs` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-daemon/src/services/tray.rs` has zero `unsafe`.
+  - C++ in-memory image provider `kynex-tray` reads from global thread-safe RwLock cache via null-checked buffer copy with bounds checking.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`; zero secrets found.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - Both `org.kde.StatusNotifierWatcher` and `org.freedesktop.StatusNotifierWatcher` acquired with `DO_NOT_QUEUE` flag (`0x4`): never replaces an existing owner; logs warning and disables standard watcher if already owned.
+  - Internal interface `org.kynexos.Daemon.Tray1` documented in `docs/DBUS_API.md` with methods `GetItems`, `Activate`, `SecondaryActivate`, `ContextMenu`, `Scroll` and signals `ItemAdded`, `ItemChanged`, `ItemRemoved`.
+  - Caller verification / anti-spoofing: `RegisterStatusNotifierItem` accepts registration only when the argument resolves to the sender's own bus name (a client cannot register someone else's service).
+  - Capacity limits: <= 4 items per sender (`MAX_ITEMS_PER_SENDER`) and <= 64 items total (`MAX_TOTAL_ITEMS`).
+  - Automatic removal on owner vanish via `NameOwnerChanged`.
+  - All property queries asynchronous with 2 s timeout (`PROPERTY_TIMEOUT_SECS`) preventing hanging items from stalling daemon or shell.
+  - Signal-driven refresh rate-limited via token bucket to 10 updates/s per item (`RefreshRateLimiter`).
+  - Signal listeners cleanly cancelled via oneshot channel on client disconnection; zero leaked Tokio tasks or D-Bus match rules.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - No file I/O in `kynex-tray`; all state is held in-memory with strict memory and task bounds.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - Sender items capped at 4, total items capped at 64.
+  - Rate limiting enforced at 10/s per item for refresh signals.
+  - Pixmaps capped at 64x64 and 64 KiB per item.
+  - All property fetches bounded by 2.0 s timeout.
+- [x] Failure path is safe:
+  - Corrupt or oversized pixmaps dropped safely without panic.
+  - Hostile markup and bidi overrides stripped cleanly.
+  - Hanging items timeout after 2 s and do not block other registrations or shell operations.
+  - Disconnected clients cleanly unregister items and hosts without memory leaks.
+- [x] Tests include malicious/malformed input cases:
+  - Spoof test: registering another client's service name rejected with `AccessDenied`.
+  - Capacity tests: 5th item from same sender and 65th item total rejected with `LimitsExceeded`.
+  - Hostile pixmaps: lying width/height, negative values, u32 overflow products, huge arrays (10 MB), truncated data.
+  - Hostile titles/tooltips: markup, bidi overrides, control characters, 10,000 chars.
+  - Hanging items: item never answering property calls, answering after 30 s, flooding NewIcon signals at 10,000/s.
+  - Proptests for pixmap validator and sanitizer.
+  - Cargo-fuzz target for pixmap validator (10 min, 372M executions, 0 crashes).
+  - 10x consecutive test execution across workspace with zero flakes.

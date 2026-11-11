@@ -1,0 +1,1610 @@
+=== COMMAND ===
+env STRICT=1 ./scripts/verify.sh
+=== TIMESTAMP: 2026-11-11T06:35:11Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+
+=== rustfmt ===
+
+=== clippy ===
+   Compiling kynex-shell v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-shell)
+    Checking kynex-daemon v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-daemon)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.77s
+
+=== tests (nextest) ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+────────────
+ Nextest run ID 7be2971f-6cee-4e2d-bb54-1ddf458c0e27 with nextest profile: default
+    Starting 345 tests across 43 binaries
+        PASS [   0.003s] (  1/345) kynex-apps-index::entry_tests test_localized_string_fallback
+        PASS [   0.004s] (  2/345) kynex-apps-index::entry_tests test_decode_escapes
+        PASS [   0.004s] (  3/345) kynex-apps-index::entry_tests test_oversized_file_and_line_limits
+        PASS [   0.005s] (  4/345) kynex-apps-index::entry_tests test_desktop_environment_filters
+        PASS [   0.005s] (  5/345) kynex-apps-index::entry_tests test_locale_candidate_generation
+        PASS [   0.002s] (  6/345) kynex-apps-index::entry_tests test_reject_hidden_and_nodisplay
+        PASS [   0.004s] (  7/345) kynex-apps-index::entry_tests test_parse_string_list
+        PASS [   0.003s] (  8/345) kynex-apps-index::entry_tests test_parse_valid_desktop_entry
+        PASS [   0.004s] (  9/345) kynex-apps-index::entry_tests test_reject_non_application_type
+        PASS [   0.003s] ( 10/345) kynex-apps-index::exec_tests test_basic_exec_parsing
+        PASS [   0.004s] ( 11/345) kynex-apps-index::entry_tests test_try_exec_nonexistent_rejected
+        PASS [   0.003s] ( 12/345) kynex-apps-index::exec_tests test_empty_field_codes_dropped_when_no_files
+        PASS [   0.004s] ( 13/345) kynex-apps-index::exec_tests test_deprecated_field_codes_dropped
+        PASS [   0.011s] ( 14/345) kynex-apps-index::entry_tests test_fifo_rejected
+        PASS [   0.002s] ( 15/345) kynex-apps-index::exec_tests test_field_code_expansion
+        PASS [   0.003s] ( 16/345) kynex-apps-index::exec_tests test_exec_quoting_and_escapes
+        PASS [   0.002s] ( 17/345) kynex-apps-index::exec_tests test_hostile_exec_attacks_never_interpreted_by_shell
+        PASS [   0.003s] ( 18/345) kynex-apps-index::exec_tests test_unclosed_quote_error
+        PASS [   0.003s] ( 19/345) kynex-apps-index::exec_tests test_url_and_file_field_code_expansions
+        PASS [   0.003s] ( 20/345) kynex-apps-index::precedence_tests test_precedence_masking_nodisplay_and_desktop_not_allowed
+        PASS [   0.003s] ( 21/345) kynex-apps-index::precedence_tests test_precedence_user_overrides_system
+        PASS [   0.004s] ( 22/345) kynex-apps-index::precedence_tests test_index_incremental_update_and_removal
+        PASS [   0.003s] ( 23/345) kynex-apps-index::precedence_tests test_subdirectory_desktop_id_generation
+        PASS [   0.003s] ( 24/345) kynex-apps-index::precedence_tests test_symlink_loop_handling
+        PASS [   0.003s] ( 25/345) kynex-apps-index::precedence_tests test_user_hidden_masks_system_entry
+        PASS [   0.004s] ( 26/345) kynex-apps-index::search_tests test_empty_query_returns_alphabetical
+        PASS [   0.004s] ( 27/345) kynex-apps-index::search_tests test_search_edge_cases_and_tie_breaking
+        PASS [   0.003s] ( 28/345) kynex-apps-index::search_tests test_search_ranking_hierarchy
+        PASS [   0.003s] ( 29/345) kynex-apps-index::search_tests test_search_subsequence_and_word_start
+        PASS [   0.004s] ( 30/345) kynex-apps-index::search_tests test_search_with_locale
+        PASS [   0.040s] ( 31/345) kynex-apps-index::precedence_tests test_index_standard_dirs_and_methods
+        PASS [   0.069s] ( 32/345) kynex-apps-index::proptests prop_parse_exec_never_panics
+        PASS [   0.073s] ( 33/345) kynex-apps-index::proptests prop_argv_never_contains_unexpanded_field_codes
+        PASS [   0.246s] ( 34/345) kynex-apps-index::precedence_tests test_10000_files_benchmark_and_stability
+        PASS [   0.358s] ( 35/345) kynex-apps-index::watcher_tests test_watcher_atomic_rename
+        PASS [   0.003s] ( 36/345) kynex-common tests::test_battery_low_threshold
+        PASS [   0.003s] ( 37/345) kynex-common tests::test_network_weak_signal_threshold
+        PASS [   0.003s] ( 38/345) kynex-daemon services::network::tests::test_map_connection_type
+        PASS [   0.002s] ( 39/345) kynex-daemon services::network::tests::test_map_nm_state
+        PASS [   0.003s] ( 40/345) kynex-daemon services::network::tests::test_network_server_direct_getters_and_update
+        PASS [   0.003s] ( 41/345) kynex-daemon services::network::tests::test_sanitize_signal_strength
+        PASS [   0.003s] ( 42/345) kynex-daemon services::network::tests::test_sanitize_ssid_bidi_and_overrides
+        PASS [   0.003s] ( 43/345) kynex-daemon services::network::tests::test_sanitize_ssid_cap_32_bytes
+        PASS [   0.003s] ( 44/345) kynex-daemon services::network::tests::test_sanitize_ssid_control_characters
+        PASS [   0.003s] ( 45/345) kynex-daemon services::network::tests::test_sanitize_ssid_emoji
+        PASS [   0.003s] ( 46/345) kynex-daemon services::network::tests::test_sanitize_ssid_empty
+        PASS [   0.002s] ( 47/345) kynex-daemon services::network::tests::test_sanitize_ssid_invalid_utf8
+        PASS [   0.002s] ( 48/345) kynex-daemon services::network::tests::test_sanitize_ssid_valid
+        PASS [   0.354s] ( 49/345) kynex-apps-index::watcher_tests test_watcher_deletion
+        PASS [   0.354s] ( 50/345) kynex-apps-index::watcher_tests test_watcher_directory_and_nonexistent_handling
+        PASS [   0.003s] ( 51/345) kynex-daemon services::notifications::tests::test_extract_bool_hint
+        PASS [   0.003s] ( 52/345) kynex-daemon services::notifications::tests::test_extract_image_data_hint
+        PASS [   0.002s] ( 53/345) kynex-daemon services::notifications::tests::test_extract_urgency_hint
+        PASS [   0.003s] ( 54/345) kynex-daemon services::notifications::tests::test_fdo_server_direct_calls
+        PASS [   0.003s] ( 55/345) kynex-daemon services::notifications::tests::test_map_notification_error
+        PASS [   0.003s] ( 56/345) kynex-daemon services::notifications::tests::test_notifications1_server_direct_calls
+        PASS [   0.004s] ( 57/345) kynex-daemon services::notifications::tests::test_promotions_and_signals_coverage
+        PASS [   0.402s] ( 58/345) kynex-apps-index::watcher_tests test_watcher_burst_coalescing
+        PASS [   0.006s] ( 59/345) kynex-daemon services::notifications::tests::test_resolve_app_identity_with_apps_index
+        PASS [   0.003s] ( 60/345) kynex-daemon services::pins::tests::test_pins_constructors
+        PASS [   0.006s] ( 61/345) kynex-daemon services::notifications::tests::test_try_acquire_fdo_name_coverage
+        PASS [   0.002s] ( 62/345) kynex-daemon services::pins::tests::test_rate_limit_bucket
+        PASS [   0.006s] ( 63/345) kynex-daemon services::pins::tests::test_pins_shared_state_persistence_and_limits
+        PASS [   0.003s] ( 64/345) kynex-daemon services::pins::tests::test_validate_app_id
+        PASS [   0.002s] ( 65/345) kynex-daemon services::power::tests::test_power_server_snapshot_update
+        PASS [   0.002s] ( 66/345) kynex-daemon services::power::tests::test_sanitize_state
+        PASS [   0.002s] ( 67/345) kynex-daemon services::power::tests::test_sanitize_time
+        PASS [   0.003s] ( 68/345) kynex-daemon services::power::tests::test_sanitize_percentage
+        PASS [   0.002s] ( 69/345) kynex-daemon services::windows::tests::test_feeder_auth_caller_exited_rejected
+        PASS [   0.003s] ( 70/345) kynex-daemon services::windows::tests::test_create_action_temp_file_permissions
+        PASS [   0.003s] ( 71/345) kynex-daemon services::windows::tests::test_feeder_auth_capability_restricted
+        PASS [   0.003s] ( 72/345) kynex-daemon services::windows::tests::test_feeder_auth_error_display_formatting
+        PASS [   0.003s] ( 73/345) kynex-daemon services::windows::tests::test_feeder_auth_exact_executable
+        PASS [   0.003s] ( 74/345) kynex-daemon services::windows::tests::test_feeder_auth_inspection_failed_rejected
+        PASS [   0.003s] ( 75/345) kynex-daemon services::windows::tests::test_feeder_auth_not_kwin_owner_rejected
+        PASS [   0.003s] ( 76/345) kynex-daemon services::windows::tests::test_feeder_auth_no_kwin_owner_rejected
+        PASS [   0.003s] ( 77/345) kynex-daemon services::windows::tests::test_feeder_auth_rogue_takes_name_after_kwin_dies_rejected_by_exe
+        PASS [   0.003s] ( 78/345) kynex-daemon services::windows::tests::test_feeder_auth_rogue_temp_binary_rejected
+        PASS [   0.003s] ( 79/345) kynex-daemon services::windows::tests::test_feeder_auth_uid_mismatch_rejected
+        PASS [   0.003s] ( 80/345) kynex-daemon services::windows::tests::test_generate_action_script
+        PASS [   0.003s] ( 81/345) kynex-daemon services::windows::tests::test_kwin_sender_policy_self_inspection
+        PASS [   0.005s] ( 82/345) kynex-daemon services::windows::tests::test_noop_and_mock_action_executors
+        PASS [   0.004s] ( 83/345) kynex-daemon window_state::tests::test_has_window
+        PASS [   0.003s] ( 84/345) kynex-daemon window_state::tests::test_sanitize_app_id
+        PASS [   0.002s] ( 85/345) kynex-daemon window_state::tests::test_sanitize_id_invalid
+        PASS [   0.002s] ( 86/345) kynex-daemon window_state::tests::test_sanitize_title_bidi_overrides
+        PASS [   0.003s] ( 87/345) kynex-daemon window_state::tests::test_sanitize_id_valid
+        PASS [   0.003s] ( 88/345) kynex-daemon window_state::tests::test_sanitize_title_clean
+        PASS [   0.002s] ( 89/345) kynex-daemon window_state::tests::test_sanitize_title_control_chars
+        PASS [   0.003s] ( 90/345) kynex-daemon window_state::tests::test_sanitize_title_truncation_utf8
+        PASS [   0.003s] ( 91/345) kynex-daemon window_state::tests::test_set_active_and_remove
+        PASS [   0.057s] ( 92/345) kynex-daemon services::notifications::tests::test_expiry_scheduler_promotion
+        PASS [   0.005s] ( 93/345) kynex-daemon window_state::tests::test_upsert_lifecycle_and_capacity
+        PASS [   0.156s] ( 94/345) kynex-daemon::apps_service_test test_apps_service_full_lifecycle
+        PASS [   0.016s] ( 95/345) kynex-daemon::apps_service_test test_daemon_wide_launch_rate_limiter
+        PASS [   0.877s] ( 96/345) kynex-apps-index::proptests prop_parse_bytes_never_panics
+        PASS [   0.010s] ( 97/345) kynex-daemon::dbus_roundtrip_test test_dbus_session_bus_roundtrip
+        PASS [   0.663s] ( 98/345) kynex-apps-index::watcher_tests test_watcher_ignores_non_desktop_files_and_clean_drop
+        PASS [   0.435s] ( 99/345) kynex-daemon::apps_service_test test_200_long_lived_children_zero_zombies_regression
+        PASS [   0.014s] (100/345) kynex-daemon::launcher_e2e_test test_launcher_shortcut_path_and_spoof_protection
+        PASS [   0.064s] (101/345) kynex-daemon::launcher_e2e_test test_launcher_e2e_type_select_launch
+        PASS [   0.111s] (102/345) kynex-daemon::launcher_e2e_test test_launcher_stale_reply_race_protection
+        PASS [   0.112s] (103/345) kynex-daemon::network_service_test test_network_service_change_signal
+        PASS [   0.061s] (104/345) kynex-daemon::network_service_test test_network_service_initial_values
+        PASS [   0.166s] (105/345) kynex-daemon::network_service_test test_network_service_disappearing_and_reappearing
+        PASS [   0.060s] (106/345) kynex-daemon::network_service_test test_network_service_malformed_values
+        PASS [   0.007s] (107/345) kynex-daemon::network_service_test test_network_service_nm_missing
+        PASS [   0.009s] (108/345) kynex-daemon::network_service_test test_network_service_no_devices
+        PASS [   0.060s] (109/345) kynex-daemon::network_service_test test_network_service_no_primary_connection
+        PASS [   0.059s] (110/345) kynex-daemon::network_service_test test_network_service_wifi_no_access_point
+        PASS [   0.012s] (111/345) kynex-daemon::notifications_service_test test_do_not_disturb_and_urgency_filtering
+        PASS [   0.012s] (112/345) kynex-daemon::notifications_service_test test_hostile_corpus_sanitization_and_injection_defense
+        PASS [   0.011s] (113/345) kynex-daemon::notifications_service_test test_hostile_image_data_validation
+        PASS [   0.383s] (114/345) kynex-daemon::network_service_test test_network_service_adversarial_ssids
+        PASS [   0.017s] (115/345) kynex-daemon::notifications_service_test test_id_squatting_and_sender_isolation
+        PASS [   0.010s] (116/345) kynex-daemon::notifications_service_test test_spec_conformance_capabilities_and_server_info
+        PASS [   0.020s] (117/345) kynex-daemon::notifications_service_test test_kynex_ipc_proxy_traits_and_constants_against_daemon
+        PASS [   0.012s] (118/345) kynex-daemon::notifications_service_test test_spec_replaces_id_and_sender_authorization
+        PASS [   0.012s] (119/345) kynex-daemon::notifications_service_test test_token_bucket_flood_protection
+        PASS [   0.004s] (120/345) kynex-daemon::pins_service_test test_pins_atomic_write_crash_resilience
+        PASS [   0.004s] (121/345) kynex-daemon::pins_service_test test_pins_service_corrupt_file_quarantine
+        PASS [   0.014s] (122/345) kynex-daemon::pins_service_test test_pins_concurrent_mutations_from_10_connections
+        PASS [   0.009s] (123/345) kynex-daemon::pins_service_test test_pins_service_max_limit_enforced
+        PASS [   0.004s] (124/345) kynex-daemon::pins_service_test test_pins_service_symlink_swap_safety
+        PASS [   0.014s] (125/345) kynex-daemon::pins_service_test test_pins_service_pin_unpin_move_and_permissions
+        PASS [   0.214s] (126/345) kynex-daemon::notifications_service_test test_action_round_trip_unicast_isolation
+        PASS [   0.113s] (127/345) kynex-daemon::power_service_test test_power_service_change_signal
+        PASS [   1.048s] (128/345) kynex-daemon::apps_service_test test_child_process_zombie_reaping_regression
+        PASS [   0.163s] (129/345) kynex-daemon::power_service_test test_power_service_disappearing_and_reappearing
+        PASS [   0.060s] (130/345) kynex-daemon::power_service_test test_power_service_initial_values
+        PASS [   0.003s] (131/345) kynex-daemon::server_test test_daemon_server_direct
+        PASS [   0.112s] (132/345) kynex-daemon::power_service_test test_power_service_malformed_values
+        PASS [   0.060s] (133/345) kynex-daemon::shell_service_test test_shell_feed_without_emitter
+        PASS [   0.061s] (134/345) kynex-daemon::shell_service_test test_shell_shortcut_authorized_triggers_signal
+        PASS [   0.077s] (135/345) kynex-daemon::shell_service_test test_shell_shortcut_rate_limiting
+        PASS [   0.017s] (136/345) kynex-daemon::tray_service_test test_capacity_limits_per_sender_and_total
+        PASS [   0.162s] (137/345) kynex-daemon::shell_service_test test_shell_kwin_watcher_owner_lifecycle
+        PASS [   0.014s] (138/345) kynex-daemon::tray_service_test test_fdo_watcher_and_item_state_pixmaps
+        PASS [   0.059s] (139/345) kynex-daemon::shell_service_test test_shell_shortcut_unauthorized_caller_rejected
+        PASS [   0.014s] (140/345) kynex-daemon::tray_service_test test_hostile_pixmap_corpus
+        PASS [   0.013s] (141/345) kynex-daemon::tray_service_test test_hostile_string_sanitization
+        PASS [   0.013s] (142/345) kynex-daemon::tray_service_test test_invalid_item_id_dispatch
+        PASS [   0.019s] (143/345) kynex-daemon::tray_service_test test_malformed_ids_and_paths
+        PASS [   0.208s] (144/345) kynex-daemon::power_service_test test_power_service_upower_missing
+        PASS [   0.012s] (145/345) kynex-daemon::tray_service_test test_register_by_another_clients_well_known_name_rejected
+        PASS [   0.013s] (146/345) kynex-daemon::tray_service_test test_register_by_object_path_ok
+        PASS [   0.012s] (147/345) kynex-daemon::tray_service_test test_register_by_own_unique_name_ok
+        PASS [   0.015s] (148/345) kynex-daemon::tray_service_test test_register_by_own_well_known_name_ok
+        PASS [   0.010s] (149/345) kynex-daemon::tray_service_test test_register_by_unowned_well_known_name_rejected
+        PASS [   0.094s] (150/345) kynex-daemon::tray_service_test test_multi_client_65_items_global_cap_enforced
+        PASS [   0.119s] (151/345) kynex-daemon::tray_service_test test_name_vanish_unregisters_item_and_host
+        PASS [   0.066s] (152/345) kynex-daemon::tray_service_test test_register_well_known_name_owner_changes_mid_way
+        PASS [   0.012s] (153/345) kynex-daemon::tray_service_test test_spoof_detection_and_rejection
+        PASS [   0.014s] (154/345) kynex-daemon::tray_service_test test_tray1_actions_dispatch
+        PASS [   1.563s] (155/345) kynex-daemon::apps_service_test test_apps_watcher_service_level_integration
+        PASS [   0.011s] (156/345) kynex-daemon::tray_service_test test_watcher_name_acquisition_and_default_state
+        PASS [   0.014s] (157/345) kynex-daemon::tray_service_test test_watcher_spec_conformance_and_properties
+        PASS [   0.217s] (158/345) kynex-daemon::tray_service_test test_signal_flood_rate_limit
+        PASS [   0.020s] (159/345) kynex-daemon::windows_service_test test_fake_kwin_feeder_lifecycle
+        PASS [   0.015s] (160/345) kynex-daemon::windows_service_test test_hostile_titles_and_input_sanitization
+        PASS [   0.013s] (161/345) kynex-daemon::windows_service_test test_kwin_restart_reset
+        PASS [   0.019s] (162/345) kynex-daemon::windows_service_test test_kwin_script_action_executor_lifecycle
+        PASS [   0.215s] (163/345) kynex-daemon::tray_service_test test_tray_signals_and_attention_state
+        PASS [   0.010s] (164/345) kynex-daemon::windows_service_test test_production_policy_rejects_spoofed_caller
+        PASS [   0.014s] (165/345) kynex-daemon::windows_service_test test_sender_policy_and_clear_coverage
+        PASS [   0.032s] (166/345) kynex-daemon::windows_service_test test_kwin_watcher_disappearance
+        PASS [   0.013s] (167/345) kynex-daemon::windows_service_test test_window_actions_happy_path
+        PASS [   0.010s] (168/345) kynex-daemon::windows_service_test test_window_actions_kwin_gone
+        PASS [   0.040s] (169/345) kynex-daemon::windows_service_test test_window_actions_hostile_ids
+        PASS [   0.009s] (170/345) kynex-daemon::windows_service_test test_window_actions_unknown_ids
+        PASS [   0.017s] (171/345) kynex-daemon::windows_service_test test_window_storm_capacity_bound
+        PASS [   0.067s] (172/345) kynex-icons::hostile_test test_10000_icon_theme_performance
+        PASS [   0.004s] (173/345) kynex-icons::hostile_test test_hostile_100mb_file_rejected
+        PASS [   0.003s] (174/345) kynex-icons::hostile_test test_hostile_absolute_path_outside_roots
+        PASS [   0.005s] (175/345) kynex-icons::hostile_test test_hostile_fifo_rejected
+        PASS [   0.003s] (176/345) kynex-icons::hostile_test test_hostile_names_and_path_traversal
+        PASS [   0.003s] (177/345) kynex-icons::hostile_test test_hostile_symlink_loop_rejected
+        PASS [   0.003s] (178/345) kynex-icons::hostile_test test_hostile_symlink_to_passwd_rejected
+        PASS [   0.003s] (179/345) kynex-icons::lookup_test test_absolute_path_icon_rules
+        PASS [   0.140s] (180/345) kynex-daemon::windows_service_test test_window_actions_rapid_1000_rate_limit
+        PASS [   0.003s] (181/345) kynex-icons::lookup_test test_config_additional_branches
+        PASS [   0.003s] (182/345) kynex-icons::lookup_test test_hostile_file_limits_and_symlinks
+        PASS [   0.003s] (183/345) kynex-icons::lookup_test test_icon_name_validation_and_normalization
+        PASS [   0.004s] (184/345) kynex-icons::lookup_test test_inheritance_order_spec_compliance
+        PASS [   0.004s] (185/345) kynex-icons::lookup_test test_pixmap_fallback
+        PASS [   0.003s] (186/345) kynex-icons::lookup_test test_roots_additional_branches
+        PASS [   0.002s] (187/345) kynex-icons::lookup_test test_subdirectory_matching_and_distance
+        PASS [   0.023s] (188/345) kynex-icons::lookup_test test_config_and_roots_from_env
+        PASS [   0.003s] (189/345) kynex-icons::lookup_test test_theme_hierarchy_inheritance_and_cycle_detection
+        PASS [   0.006s] (190/345) kynex-icons::lookup_test test_theme_additional_branches
+        PASS [   0.217s] (191/345) kynex-daemon::windows_service_test test_rate_limiting_enforcement
+        PASS [   0.033s] (192/345) kynex-icons::proptest_parser prop_validate_icon_name
+        PASS [   0.002s] (193/345) kynex-ipc network::tests::test_network_kind_mapping
+        PASS [   0.002s] (194/345) kynex-ipc network::tests::test_network_state_mapping
+        PASS [   0.002s] (195/345) kynex-ipc tray::tests::test_tray_item_info_operations
+        PASS [   0.002s] (196/345) kynex-ipc::ipc_tests test_battery_state_mapping
+        PASS [   0.047s] (197/345) kynex-icons::proptest_parser prop_theme_index_structured
+        PASS [   0.002s] (198/345) kynex-ipc::ipc_tests test_daemon_status_clone_and_eq
+        PASS [   0.003s] (199/345) kynex-ipc::ipc_tests test_ipc_constants
+        PASS [   0.002s] (200/345) kynex-ipc::ipc_tests test_notification_ipc_constants_and_types
+        PASS [   0.002s] (201/345) kynex-ipc::ipc_tests test_service_health_states
+        PASS [   0.002s] (202/345) kynex-ipc::ipc_tests test_tray_ipc_constants_and_types
+        PASS [   0.002s] (203/345) kynex-notifications::image_test test_reject_dimensions_exceeding_max_256
+        PASS [   0.002s] (204/345) kynex-notifications::image_test test_reject_inconsistent_alpha_flag
+        PASS [   0.002s] (205/345) kynex-notifications::image_test test_reject_invalid_bits_per_sample
+        PASS [   0.002s] (206/345) kynex-notifications::image_test test_reject_invalid_channel_counts
+        PASS [   0.002s] (207/345) kynex-notifications::image_test test_reject_mismatched_data_length
+        PASS [   0.002s] (208/345) kynex-notifications::image_test test_reject_rowstride_too_small
+        PASS [   0.002s] (209/345) kynex-notifications::image_test test_reject_total_size_exceeding_256_kib
+        PASS [   0.002s] (210/345) kynex-notifications::image_test test_reject_zero_or_negative_dimensions
+        PASS [   0.002s] (211/345) kynex-notifications::image_test test_valid_rgb_image
+        PASS [   0.002s] (212/345) kynex-notifications::image_test test_valid_rgba_image_with_padded_rowstride
+        PASS [   0.020s] (213/345) kynex-notifications::proptests prop_markup_stripper_invariants
+        PASS [   0.021s] (214/345) kynex-notifications::proptests prop_sanitize_text_never_panics_and_respects_invariants
+        PASS [   0.019s] (215/345) kynex-notifications::proptests prop_truncate_to_char_boundary_always_safe
+        PASS [   0.020s] (216/345) kynex-notifications::proptests prop_validate_action_key_invariants
+        PASS [   0.002s] (217/345) kynex-notifications::rate_limit_test test_burst_capacity_and_exhaustion
+        PASS [   0.002s] (218/345) kynex-notifications::rate_limit_test test_independent_per_sender_limits
+        PASS [   0.002s] (219/345) kynex-notifications::rate_limit_test test_sender_removal
+        PASS [   0.003s] (220/345) kynex-notifications::rate_limit_test test_sustained_refill_rate
+        PASS [   0.003s] (221/345) kynex-notifications::rate_limit_test test_tracked_senders_pruning_and_cap
+        PASS [   0.003s] (222/345) kynex-notifications::sanitize_test test_action_key_validation
+        PASS [   0.002s] (223/345) kynex-notifications::sanitize_test test_actions_list_validation
+        PASS [   0.002s] (224/345) kynex-notifications::sanitize_test test_bidi_override_filtering
+        PASS [   0.002s] (225/345) kynex-notifications::sanitize_test test_control_character_filtering
+        PASS [   0.002s] (226/345) kynex-notifications::sanitize_test test_entity_decoding
+        PASS [   0.004s] (227/345) kynex-notifications::sanitize_test test_field_length_caps
+        PASS [   0.002s] (228/345) kynex-notifications::sanitize_test test_html_tag_stripping
+        PASS [   0.002s] (229/345) kynex-notifications::sanitize_test test_script_and_style_removal
+        PASS [   0.002s] (230/345) kynex-notifications::sanitize_test test_utf8_char_boundary_truncation
+        PASS [   0.002s] (231/345) kynex-notifications::state_test test_action_invocation_unicast_and_residence
+        PASS [   0.002s] (232/345) kynex-notifications::state_test test_close_notification_authorization
+        PASS [   0.002s] (233/345) kynex-notifications::state_test test_do_not_disturb_suppresses_popups_except_critical
+        PASS [   0.003s] (234/345) kynex-notifications::state_test test_history_bounding_and_eviction
+        PASS [   0.002s] (235/345) kynex-notifications::state_test test_id_wraparound_and_collision_skipping
+        PASS [   0.002s] (236/345) kynex-notifications::state_test test_monotonic_ids_and_non_zero
+        PASS [   0.002s] (237/345) kynex-notifications::state_test test_replaces_id_different_sender_rejected
+        PASS [   0.002s] (238/345) kynex-notifications::state_test test_replaces_id_same_sender_succeeds
+        PASS [   0.002s] (239/345) kynex-notifications::state_test test_single_deadline_expiry_scheduler
+        PASS [   0.002s] (240/345) kynex-notifications::state_test test_state_edge_cases_and_accessors
+        PASS [   0.002s] (241/345) kynex-notifications::state_test test_timeout_semantics
+        PASS [   0.002s] (242/345) kynex-notifications::state_test test_urgency_conversions
+        PASS [   0.002s] (243/345) kynex-notifications::state_test test_visible_stack_bounding_and_queue_promotion
+        PASS [   0.082s] (244/345) kynex-notifications::proptests prop_validate_image_data_never_panics
+        PASS [   0.016s] (245/345) kynex-shell network::tests::test_network_client_state_clamped_and_fallback
+        PASS [   0.014s] (246/345) kynex-shell network::tests::test_network_client_state_default
+        PASS [   0.013s] (247/345) kynex-shell network::tests::test_network_client_state_disconnected
+        PASS [   0.013s] (248/345) kynex-shell network::tests::test_network_client_state_not_present
+        PASS [   0.013s] (249/345) kynex-shell network::tests::test_network_client_state_ethernet
+        PASS [   0.018s] (250/345) kynex-shell network::tests::test_network_client_state_wifi_connected
+        PASS [   0.018s] (251/345) kynex-shell network::tests::test_network_client_state_weak_signal_threshold
+        PASS [   0.014s] (252/345) kynex-shell notifications::tests::test_compute_letter_badge
+        PASS [   0.014s] (253/345) kynex-shell notifications::tests::test_create_notification_role_names
+        PASS [   0.013s] (254/345) kynex-shell notifications::tests::test_escape_json_str_special_characters
+        PASS [   0.013s] (255/345) kynex-shell notifications::tests::test_format_actions_json
+        PASS [   0.014s] (256/345) kynex-shell notifications::tests::test_handle_notification_signal_message_and_name_owner
+        PASS [   0.013s] (257/345) kynex-shell notifications::tests::test_notification_item_role_variant_all_roles
+        PASS [   0.288s] (258/345) kynex-icons::proptest_parser prop_theme_index_parser
+        PASS [   0.012s] (259/345) kynex-shell notifications::tests::test_notification_model_rust_row_count_data_and_record_first_frame
+        PASS [   0.012s] (260/345) kynex-shell notifications::tests::test_notification_model_rust_state_and_items
+        PASS [   0.013s] (261/345) kynex-shell notifications::tests::test_notification_ui_state_upsert_and_remove
+        PASS [   0.011s] (262/345) kynex-shell notifications::tests::test_parse_shown_notification_and_default_action
+        PASS [   0.012s] (263/345) kynex-shell notifications::tests::test_role_constants_uniqueness
+        PASS [   0.010s] (264/345) kynex-shell power::tests::test_power_state_charging_states
+        PASS [   0.077s] (265/345) kynex-shell notifications::tests::test_init_signal_stream_and_proxy_calls
+        PASS [   0.015s] (266/345) kynex-shell power::tests::test_power_state_sanitization
+        PASS [   0.016s] (267/345) kynex-shell power::tests::test_power_state_not_present
+        PASS [   0.014s] (268/345) kynex-shell tray::tests::test_handle_name_owner_changed_event
+        PASS [   0.011s] (269/345) kynex-shell tray::tests::test_project_tray_coordinates_negative_screen_origin
+        PASS [   0.012s] (270/345) kynex-shell tray::tests::test_pixmap_cache_and_ffi
+        PASS [   0.014s] (271/345) kynex-shell tray::tests::test_tray_item_role_variant_and_names
+        PASS [   0.014s] (272/345) kynex-shell tray::tests::test_tray_model_rust_defaults
+        PASS [   0.014s] (273/345) kynex-shell::image_decoding_security_test test_hostile_svg_decoding_rejected
+        PASS [   0.014s] (274/345) kynex-shell::image_decoding_security_test test_svg_security_filter
+        PASS [   0.014s] (275/345) kynex-shell::image_decoding_security_test test_png_decompression_bomb_header_rejected
+        PASS [   0.014s] (276/345) kynex-shell::image_decoding_security_test test_truncated_png_rejected
+        PASS [   0.003s] (277/345) kynex-shell-core coordinates::tests::test_scaled_output
+        PASS [   0.002s] (278/345) kynex-shell-core coordinates::tests::test_second_monitor_at_negative_x
+        PASS [   0.003s] (279/345) kynex-shell-core coordinates::tests::test_single_monitor_bottom_anchoring
+        PASS [   0.002s] (280/345) kynex-shell-core coordinates::tests::test_single_monitor_left_anchoring
+        PASS [   0.002s] (281/345) kynex-shell-core coordinates::tests::test_single_monitor_right_anchoring
+        PASS [   0.002s] (282/345) kynex-shell-core coordinates::tests::test_single_monitor_top_anchoring
+        PASS [   0.002s] (283/345) kynex-shell-core launcher::tests::test_latest_wins_sequence_ordering
+        PASS [   0.002s] (284/345) kynex-shell-core launcher::tests::test_compute_letter_badge
+        PASS [   0.002s] (285/345) kynex-shell-core launcher::tests::test_launcher_core_empty_results_resets_selection
+        PASS [   0.002s] (286/345) kynex-shell-core launcher::tests::test_launcher_core_launch_bounds_and_off_by_one_protection
+        PASS [   0.002s] (287/345) kynex-shell-core launcher::tests::test_launcher_core_query_and_close
+        PASS [   0.002s] (288/345) kynex-shell-core launcher::tests::test_launcher_core_stale_results_dropped
+        PASS [   0.015s] (289/345) kynex-shell::image_decoding_security_test test_valid_svg_decodes_cleanly
+        PASS [   0.002s] (290/345) kynex-shell-core launcher::tests::test_sanitize_app_item_fallback
+        PASS [   0.002s] (291/345) kynex-shell-core launcher::tests::test_sanitize_app_item_unknown_fallback
+        PASS [   0.002s] (292/345) kynex-shell-core launcher::tests::test_sanitize_display_text_bidi_override_characters
+        PASS [   0.002s] (293/345) kynex-shell-core launcher::tests::test_sanitize_query
+        PASS [   0.002s] (294/345) kynex-shell-core launcher::tests::test_sanitize_display_text_control_characters
+        PASS [   0.002s] (295/345) kynex-shell-core launcher::tests::test_sanitize_display_text_length_capping
+        PASS [   0.002s] (296/345) kynex-shell-core launcher::tests::test_selection_wrap_around
+        PASS [   0.002s] (297/345) kynex-shell-core tray::tests::test_letter_badge
+        PASS [   0.002s] (298/345) kynex-shell-core tray::tests::test_handle_tray_event
+        PASS [   0.002s] (299/345) kynex-shell-core tray::tests::test_pixmap_cache_operations
+        PASS [   0.002s] (300/345) kynex-shell-core tray::tests::test_role_values
+        PASS [   0.002s] (301/345) kynex-shell-core tray::tests::test_state_upsert_and_remove
+        PASS [   0.002s] (302/345) kynex-shell-core tray::tests::test_ui_item_conversion
+        PASS [   0.003s] (303/345) kynex-shell-core::matching_test test_realistic_installed_apps_matching
+        PASS [   0.004s] (304/345) kynex-shell-core::matching_test test_hostile_matching_inputs
+        PASS [   0.003s] (305/345) kynex-shell-core::matching_test test_suffix_stripping_and_helpers
+        PASS [   0.002s] (306/345) kynex-shell-core::taskbar_test test_launcher_core_methods_coverage
+        PASS [   0.002s] (307/345) kynex-shell-core::taskbar_test test_launcher_ctrl_p_pin_toggle
+        PASS [   0.002s] (308/345) kynex-shell-core::taskbar_test test_taskbar_click_interactions_and_multi_window_cycling
+        PASS [   0.003s] (309/345) kynex-shell-core::taskbar_test test_taskbar_edge_cases_and_coverage
+        PASS [   0.003s] (310/345) kynex-shell-core::taskbar_test test_taskbar_middle_click_close
+        PASS [   0.002s] (311/345) kynex-shell-core::taskbar_test test_taskbar_pinned_and_running_ordering
+        PASS [   0.003s] (312/345) kynex-style::validation_tests test_default_style_pack_validates
+        PASS [   0.003s] (313/345) kynex-style::validation_tests test_invalid_color_in_tokens_rejected
+        PASS [   0.004s] (314/345) kynex-style::validation_tests test_fifo_rejected_without_hanging
+        PASS [   0.003s] (315/345) kynex-style::validation_tests test_invalid_style_id_rejected
+        PASS [   0.003s] (316/345) kynex-style::validation_tests test_malicious_absolute_path_rejected
+        PASS [   0.002s] (317/345) kynex-style::validation_tests test_malicious_path_traversal_in_entry
+        PASS [   0.003s] (318/345) kynex-style::validation_tests test_malicious_path_traversal_in_tokens
+        PASS [   0.003s] (319/345) kynex-style::validation_tests test_oversized_file_rejected
+        PASS [   0.002s] (320/345) kynex-style::validation_tests test_symlink_escaping_pack_rejected
+        PASS [   0.002s] (321/345) kynex-style::validation_tests test_symlink_to_dev_zero_rejected_without_hanging
+        PASS [   0.003s] (322/345) kynex-style::validation_tests test_unsupported_schema_version_rejected
+        PASS [   0.002s] (323/345) kynex-tray pixmap::tests::test_dimension_bounds
+        PASS [   0.003s] (324/345) kynex-style::validation_tests test_valid_style_pack_loads_successfully
+        PASS [   0.002s] (325/345) kynex-tray pixmap::tests::test_lying_data_length
+        PASS [   0.003s] (326/345) kynex-tray pixmap::tests::test_select_best_pixmap
+        PASS [   0.002s] (327/345) kynex-tray pixmap::tests::test_valid_pixmap_conversion
+        PASS [   0.002s] (328/345) kynex-tray rate_limit::tests::test_rate_limiter_burst_and_refill
+        PASS [   0.003s] (329/345) kynex-tray registry::tests::test_capacity_limits
+        PASS [   0.002s] (330/345) kynex-tray registry::tests::test_host_registration_lifecycle
+        PASS [   0.002s] (331/345) kynex-tray registry::tests::test_remove_sender
+        PASS [   0.002s] (332/345) kynex-tray registry::tests::test_sender_resolution
+        PASS [   0.002s] (333/345) kynex-tray registry::tests::test_total_capacity_limit_across_senders
+        PASS [   0.002s] (334/345) kynex-tray registry::tests::test_unregister_get_and_iter
+        PASS [   0.002s] (335/345) kynex-tray sanitize::tests::test_entity_decoding
+        PASS [   0.002s] (336/345) kynex-tray sanitize::tests::test_sanitize_icon_name
+        PASS [   0.002s] (337/345) kynex-tray sanitize::tests::test_sanitize_id_and_title
+        PASS [   0.002s] (338/345) kynex-tray status::tests::test_status_mapping
+        PASS [   0.032s] (339/345) kynex-tray::proptests proptest_sanitize_text
+        PASS [   0.033s] (340/345) kynex-tray::proptests proptest_sanitize_helpers
+        PASS [   0.041s] (341/345) kynex-tray::proptests proptest_pixmap_validator
+        PASS [   0.046s] (342/345) kynex-tray::proptests proptest_select_best_pixmap
+        PASS [   1.370s] (343/345) kynex-daemon::tray_service_test test_signal_flood_decoupled_resilience
+        PASS [   2.014s] (344/345) kynex-daemon::tray_service_test test_hanging_item_timeout
+        PASS [  10.529s] (345/345) kynex-daemon::apps_service_test test_real_limiter_5_launches_per_sec_for_10s
+────────────
+     Summary [  11.416s] 345 tests run: 345 passed, 0 skipped
+
+=== doc tests ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+   Doc-tests kynex_apps_index
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_common
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_daemon
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_icons
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_ipc
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_notifications
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_shell
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_shell_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_style
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kynex_tray
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+=== cargo-deny (licenses, bans, advisories) ===
+warning[duplicate]: found 2 duplicate entries for crate 'bitflags'
+  ┌─ /home/saif/Kynex-Shell/Cargo.lock:7:1
+  │  
+7 │ ╭ bitflags 1.3.2 registry+https://github.com/rust-lang/crates.io-index
+8 │ │ bitflags 2.13.2 registry+https://github.com/rust-lang/crates.io-index
+  │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+  │  
+  ├ bitflags v1.3.2
+    └── inotify v0.9.6
+        └── notify v6.1.1
+            └── kynex-apps-index v0.1.0
+                └── kynex-daemon v0.1.0
+  ├ bitflags v2.13.2
+    ├── kqueue-sys v1.1.2
+    │   └── kqueue v1.2.1
+    │       └── notify v6.1.1
+    │           └── kynex-apps-index v0.1.0
+    │               └── kynex-daemon v0.1.0
+    ├── notify v6.1.1 (*)
+    ├── proptest v1.12.0
+    │   ├── (dev) kynex-apps-index v0.1.0 (*)
+    │   ├── (dev) kynex-icons v0.1.0
+    │   │   └── kynex-shell v0.1.0
+    │   ├── (dev) kynex-notifications v0.1.0
+    │   │   └── kynex-daemon v0.1.0 (*)
+    │   └── (dev) kynex-tray v0.1.0
+    │       ├── kynex-daemon v0.1.0 (*)
+    │       └── kynex-shell v0.1.0 (*)
+    ├── redox_syscall v0.5.18
+    │   └── parking_lot_core v0.9.12
+    │       └── parking_lot v0.12.5
+    │           └── tokio v1.54.1
+    │               ├── kynex-daemon v0.1.0 (*)
+    │               ├── kynex-shell v0.1.0 (*)
+    │               └── zbus v6.2.1
+    │                   ├── kynex-daemon v0.1.0 (*)
+    │                   ├── kynex-ipc v0.1.0
+    │                   │   ├── kynex-daemon v0.1.0 (*)
+    │                   │   ├── kynex-shell v0.1.0 (*)
+    │                   │   └── kynex-shell-core v0.1.0
+    │                   │       └── kynex-shell v0.1.0 (*)
+    │                   └── kynex-shell v0.1.0 (*)
+    ├── rustix v1.1.6
+    │   ├── kynex-daemon v0.1.0 (*)
+    │   ├── tempfile v3.27.0
+    │   │   ├── (dev) kynex-apps-index v0.1.0 (*)
+    │   │   ├── (dev) kynex-daemon v0.1.0 (*)
+    │   │   ├── (dev) kynex-icons v0.1.0 (*)
+    │   │   ├── (dev) kynex-shell v0.1.0 (*)
+    │   │   ├── (dev) kynex-style v0.1.0
+    │   │   │   └── kynex-shell v0.1.0 (*)
+    │   │   ├── proptest v1.12.0 (*)
+    │   │   ├── rusty-fork v0.3.1
+    │   │   │   └── proptest v1.12.0 (*)
+    │   │   └── uds_windows v1.2.1
+    │   │       └── zbus v6.2.1 (*)
+    │   └── zbus v6.2.1 (*)
+    └── zbus v6.2.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'codespan-reporting'
+   ┌─ /home/saif/Kynex-Shell/Cargo.lock:19:1
+   │  
+19 │ ╭ codespan-reporting 0.11.1 registry+https://github.com/rust-lang/crates.io-index
+20 │ │ codespan-reporting 0.13.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ codespan-reporting v0.11.1
+     └── cxx-qt-build v0.10.0
+         ├── (build) cxx-qt v0.10.0
+         │   ├── cxx-qt-lib v0.10.0
+         │   │   └── kynex-shell v0.1.0
+         │   └── kynex-shell v0.1.0 (*)
+         ├── (build) cxx-qt-lib v0.10.0 (*)
+         └── (build) kynex-shell v0.1.0 (*)
+   ├ codespan-reporting v0.13.1
+     └── cxx-gen v0.7.205
+         ├── cxx-qt-build v0.10.0
+         │   ├── (build) cxx-qt v0.10.0
+         │   │   ├── cxx-qt-lib v0.10.0
+         │   │   │   └── kynex-shell v0.1.0
+         │   │   └── kynex-shell v0.1.0 (*)
+         │   ├── (build) cxx-qt-lib v0.10.0 (*)
+         │   └── (build) kynex-shell v0.1.0 (*)
+         └── cxx-qt-gen v0.10.0
+             ├── cxx-qt-build v0.10.0 (*)
+             └── cxx-qt-macro v0.10.0
+                 └── cxx-qt v0.10.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'image'
+   ┌─ /home/saif/Kynex-Shell/Cargo.lock:67:1
+   │  
+67 │ ╭ image 0.24.9 registry+https://github.com/rust-lang/crates.io-index
+68 │ │ image 0.25.10 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ image v0.24.9
+     └── cxx-qt-lib v0.10.0
+         └── kynex-shell v0.1.0
+   ├ image v0.25.10
+     └── cxx-qt-lib v0.10.0
+         └── kynex-shell v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'mio'
+   ┌─ /home/saif/Kynex-Shell/Cargo.lock:98:1
+   │  
+98 │ ╭ mio 0.8.11 registry+https://github.com/rust-lang/crates.io-index
+99 │ │ mio 1.2.4 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ mio v0.8.11
+     └── notify v6.1.1
+         └── kynex-apps-index v0.1.0
+             └── kynex-daemon v0.1.0
+   ├ mio v1.2.4
+     └── tokio v1.54.1
+         ├── kynex-daemon v0.1.0
+         ├── kynex-shell v0.1.0
+         └── zbus v6.2.1
+             ├── kynex-daemon v0.1.0 (*)
+             ├── kynex-ipc v0.1.0
+             │   ├── kynex-daemon v0.1.0 (*)
+             │   ├── kynex-shell v0.1.0 (*)
+             │   └── kynex-shell-core v0.1.0
+             │       └── kynex-shell v0.1.0 (*)
+             └── kynex-shell v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ /home/saif/Kynex-Shell/Cargo.lock:148:1
+    │  
+148 │ ╭ syn 2.0.119 registry+https://github.com/rust-lang/crates.io-index
+149 │ │ syn 3.0.9 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v2.0.119
+      ├── cxx-qt-gen v0.10.0
+      │   ├── cxx-qt-build v0.10.0
+      │   │   ├── (build) cxx-qt v0.10.0
+      │   │   │   ├── cxx-qt-lib v0.10.0
+      │   │   │   │   └── kynex-shell v0.1.0
+      │   │   │   └── kynex-shell v0.1.0 (*)
+      │   │   ├── (build) cxx-qt-lib v0.10.0 (*)
+      │   │   └── (build) kynex-shell v0.1.0 (*)
+      │   └── cxx-qt-macro v0.10.0
+      │       └── cxx-qt v0.10.0 (*)
+      ├── cxx-qt-macro v0.10.0 (*)
+      ├── thiserror-impl v1.0.69
+      │   └── thiserror v1.0.69
+      │       ├── clang-format v0.3.0
+      │       │   └── cxx-qt-gen v0.10.0 (*)
+      │       ├── cxx-qt v0.10.0 (*)
+      │       └── qt-build-utils v0.10.0
+      │           ├── (build) cxx-qt v0.10.0 (*)
+      │           ├── cxx-qt-build v0.10.0 (*)
+      │           └── (build) cxx-qt-lib v0.10.0 (*)
+      ├── tracing-attributes v0.1.31
+      │   └── tracing v0.1.44
+      │       ├── kynex-apps-index v0.1.0
+      │       │   └── kynex-daemon v0.1.0
+      │       ├── kynex-daemon v0.1.0 (*)
+      │       ├── kynex-icons v0.1.0
+      │       │   └── kynex-shell v0.1.0 (*)
+      │       ├── kynex-shell v0.1.0 (*)
+      │       ├── kynex-shell-core v0.1.0
+      │       │   └── kynex-shell v0.1.0 (*)
+      │       ├── kynex-style v0.1.0
+      │       │   └── kynex-shell v0.1.0 (*)
+      │       ├── tokio v1.54.1
+      │       │   ├── kynex-daemon v0.1.0 (*)
+      │       │   ├── kynex-shell v0.1.0 (*)
+      │       │   └── zbus v6.2.1
+      │       │       ├── kynex-daemon v0.1.0 (*)
+      │       │       ├── kynex-ipc v0.1.0
+      │       │       │   ├── kynex-daemon v0.1.0 (*)
+      │       │       │   ├── kynex-shell v0.1.0 (*)
+      │       │       │   └── kynex-shell-core v0.1.0 (*)
+      │       │       └── kynex-shell v0.1.0 (*)
+      │       ├── tracing-subscriber v0.3.23
+      │       │   ├── kynex-daemon v0.1.0 (*)
+      │       │   └── kynex-shell v0.1.0 (*)
+      │       ├── zbus v6.2.1 (*)
+      │       └── zruntime v0.2.2
+      │           └── zbus v6.2.1 (*)
+      ├── windows-implement v0.60.2
+      │   └── windows-core v0.62.2
+      │       └── iana-time-zone v0.1.65
+      │           └── chrono v0.4.45
+      │               ├── cxx-qt-lib v0.10.0 (*)
+      │               └── kynex-shell v0.1.0 (*)
+      └── windows-interface v0.59.3
+          └── windows-core v0.62.2 (*)
+    ├ syn v3.0.9
+      ├── async-trait v0.1.92
+      │   └── zbus v6.2.1
+      │       ├── kynex-daemon v0.1.0
+      │       ├── kynex-ipc v0.1.0
+      │       │   ├── kynex-daemon v0.1.0 (*)
+      │       │   ├── kynex-shell v0.1.0
+      │       │   └── kynex-shell-core v0.1.0
+      │       │       └── kynex-shell v0.1.0 (*)
+      │       └── kynex-shell v0.1.0 (*)
+      ├── cxx-gen v0.7.205
+      │   ├── cxx-qt-build v0.10.0
+      │   │   ├── (build) cxx-qt v0.10.0
+      │   │   │   ├── cxx-qt-lib v0.10.0
+      │   │   │   │   └── kynex-shell v0.1.0 (*)
+      │   │   │   └── kynex-shell v0.1.0 (*)
+      │   │   ├── (build) cxx-qt-lib v0.10.0 (*)
+      │   │   └── (build) kynex-shell v0.1.0 (*)
+      │   └── cxx-qt-gen v0.10.0
+      │       ├── cxx-qt-build v0.10.0 (*)
+      │       └── cxx-qt-macro v0.10.0
+      │           └── cxx-qt v0.10.0 (*)
+      ├── cxxbridge-macro v1.0.205
+      │   └── cxx v1.0.205
+      │       ├── cxx-qt v0.10.0 (*)
+      │       ├── cxx-qt-lib v0.10.0 (*)
+      │       └── kynex-shell v0.1.0 (*)
+      ├── displaydoc v0.2.7
+      │   ├── icu_collections v2.4.0
+      │   │   ├── icu_normalizer v2.4.0
+      │   │   │   └── idna_adapter v1.2.2
+      │   │   │       └── idna v1.1.0
+      │   │   │           └── url v2.5.8
+      │   │   │               └── cxx-qt-lib v0.10.0 (*)
+      │   │   └── icu_properties v2.4.0
+      │   │       └── idna_adapter v1.2.2 (*)
+      │   ├── icu_locale_core v2.4.0
+      │   │   ├── icu_properties v2.4.0 (*)
+      │   │   └── icu_provider v2.4.0
+      │   │       ├── icu_normalizer v2.4.0 (*)
+      │   │       └── icu_properties v2.4.0 (*)
+      │   ├── icu_properties v2.4.0 (*)
+      │   ├── icu_provider v2.4.0 (*)
+      │   ├── tinystr v0.8.5
+      │   │   └── icu_locale_core v2.4.0 (*)
+      │   └── zerotrie v0.2.5
+      │       ├── icu_properties v2.4.0 (*)
+      │       └── icu_provider v2.4.0 (*)
+      ├── serde_derive v1.0.229
+      │   └── serde v1.0.229
+      │       ├── cxx-qt-build v0.10.0 (*)
+      │       ├── cxx-qt-lib v0.10.0 (*)
+      │       ├── kynex-common v0.1.0
+      │       │   ├── kynex-icons v0.1.0
+      │       │   │   └── kynex-shell v0.1.0 (*)
+      │       │   ├── kynex-ipc v0.1.0 (*)
+      │       │   ├── kynex-shell v0.1.0 (*)
+      │       │   ├── kynex-shell-core v0.1.0 (*)
+      │       │   └── kynex-style v0.1.0
+      │       │       └── kynex-shell v0.1.0 (*)
+      │       ├── kynex-daemon v0.1.0 (*)
+      │       ├── kynex-icons v0.1.0 (*)
+      │       ├── kynex-ipc v0.1.0 (*)
+      │       ├── kynex-style v0.1.0 (*)
+      │       ├── qt-build-utils v0.10.0
+      │       │   ├── (build) cxx-qt v0.10.0 (*)
+      │       │   ├── cxx-qt-build v0.10.0 (*)
+      │       │   └── (build) cxx-qt-lib v0.10.0 (*)
+      │       ├── zbus v6.2.1 (*)
+      │       ├── zbus_utils v6.1.0
+      │       │   ├── zbus v6.2.1 (*)
+      │       │   └── zbus_macros v6.2.1
+      │       │       └── zbus v6.2.1 (*)
+      │       └── zcheapstr v1.2.0
+      │           └── zbus v6.2.1 (*)
+      ├── serde_repr v0.1.21
+      │   └── zbus v6.2.1 (*)
+      ├── synstructure v0.14.0
+      │   ├── yoke-derive v0.8.4
+      │   │   └── yoke v0.8.4
+      │   │       ├── icu_collections v2.4.0 (*)
+      │   │       ├── icu_provider v2.4.0 (*)
+      │   │       ├── zerotrie v0.2.5 (*)
+      │   │       └── zerovec v0.11.9
+      │   │           ├── icu_collections v2.4.0 (*)
+      │   │           ├── icu_locale_core v2.4.0 (*)
+      │   │           ├── icu_normalizer v2.4.0 (*)
+      │   │           ├── icu_properties v2.4.0 (*)
+      │   │           ├── icu_provider v2.4.0 (*)
+      │   │           ├── potential_utf v0.1.6
+      │   │           │   └── icu_collections v2.4.0 (*)
+      │   │           └── tinystr v0.8.5 (*)
+      │   └── zerofrom-derive v0.1.8
+      │       └── zerofrom v0.1.8
+      │           ├── icu_collections v2.4.0 (*)
+      │           ├── icu_provider v2.4.0 (*)
+      │           ├── yoke v0.8.4 (*)
+      │           ├── zerotrie v0.2.5 (*)
+      │           └── zerovec v0.11.9 (*)
+      ├── thiserror-impl v2.0.21
+      │   └── thiserror v2.0.21
+      │       ├── kynex-apps-index v0.1.0
+      │       │   └── kynex-daemon v0.1.0 (*)
+      │       ├── kynex-icons v0.1.0 (*)
+      │       ├── kynex-notifications v0.1.0
+      │       │   └── kynex-daemon v0.1.0 (*)
+      │       ├── kynex-style v0.1.0 (*)
+      │       └── kynex-tray v0.1.0
+      │           ├── kynex-daemon v0.1.0 (*)
+      │           └── kynex-shell v0.1.0 (*)
+      ├── tokio-macros v2.7.2
+      │   └── tokio v1.54.1
+      │       ├── kynex-daemon v0.1.0 (*)
+      │       ├── kynex-shell v0.1.0 (*)
+      │       └── zbus v6.2.1 (*)
+      ├── wasm-bindgen-macro-support v0.2.130
+      │   └── wasm-bindgen-macro v0.2.130
+      │       └── wasm-bindgen v0.2.130
+      │           ├── chrono v0.4.45
+      │           │   ├── cxx-qt-lib v0.10.0 (*)
+      │           │   └── kynex-shell v0.1.0 (*)
+      │           ├── iana-time-zone v0.1.65
+      │           │   └── chrono v0.4.45 (*)
+      │           └── js-sys v0.3.107
+      │               ├── chrono v0.4.45 (*)
+      │               └── iana-time-zone v0.1.65 (*)
+      ├── yoke-derive v0.8.4 (*)
+      ├── zbus_macros v6.2.1 (*)
+      ├── zbus_utils v6.1.0 (*)
+      ├── zerofrom-derive v0.1.8 (*)
+      └── zerovec-derive v0.11.7
+          └── zerovec v0.11.9 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror'
+    ┌─ /home/saif/Kynex-Shell/Cargo.lock:153:1
+    │  
+153 │ ╭ thiserror 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+154 │ │ thiserror 2.0.21 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror v1.0.69
+      ├── clang-format v0.3.0
+      │   └── cxx-qt-gen v0.10.0
+      │       ├── cxx-qt-build v0.10.0
+      │       │   ├── (build) cxx-qt v0.10.0
+      │       │   │   ├── cxx-qt-lib v0.10.0
+      │       │   │   │   └── kynex-shell v0.1.0
+      │       │   │   └── kynex-shell v0.1.0 (*)
+      │       │   ├── (build) cxx-qt-lib v0.10.0 (*)
+      │       │   └── (build) kynex-shell v0.1.0 (*)
+      │       └── cxx-qt-macro v0.10.0
+      │           └── cxx-qt v0.10.0 (*)
+      ├── cxx-qt v0.10.0 (*)
+      └── qt-build-utils v0.10.0
+          ├── (build) cxx-qt v0.10.0 (*)
+          ├── cxx-qt-build v0.10.0 (*)
+          └── (build) cxx-qt-lib v0.10.0 (*)
+    ├ thiserror v2.0.21
+      ├── kynex-apps-index v0.1.0
+      │   └── kynex-daemon v0.1.0
+      ├── kynex-icons v0.1.0
+      │   └── kynex-shell v0.1.0
+      ├── kynex-notifications v0.1.0
+      │   └── kynex-daemon v0.1.0 (*)
+      ├── kynex-style v0.1.0
+      │   └── kynex-shell v0.1.0 (*)
+      └── kynex-tray v0.1.0
+          ├── kynex-daemon v0.1.0 (*)
+          └── kynex-shell v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror-impl'
+    ┌─ /home/saif/Kynex-Shell/Cargo.lock:155:1
+    │  
+155 │ ╭ thiserror-impl 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+156 │ │ thiserror-impl 2.0.21 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror-impl v1.0.69
+      └── thiserror v1.0.69
+          ├── clang-format v0.3.0
+          │   └── cxx-qt-gen v0.10.0
+          │       ├── cxx-qt-build v0.10.0
+          │       │   ├── (build) cxx-qt v0.10.0
+          │       │   │   ├── cxx-qt-lib v0.10.0
+          │       │   │   │   └── kynex-shell v0.1.0
+          │       │   │   └── kynex-shell v0.1.0 (*)
+          │       │   ├── (build) cxx-qt-lib v0.10.0 (*)
+          │       │   └── (build) kynex-shell v0.1.0 (*)
+          │       └── cxx-qt-macro v0.10.0
+          │           └── cxx-qt v0.10.0 (*)
+          ├── cxx-qt v0.10.0 (*)
+          └── qt-build-utils v0.10.0
+              ├── (build) cxx-qt v0.10.0 (*)
+              ├── cxx-qt-build v0.10.0 (*)
+              └── (build) cxx-qt-lib v0.10.0 (*)
+    ├ thiserror-impl v2.0.21
+      └── thiserror v2.0.21
+          ├── kynex-apps-index v0.1.0
+          │   └── kynex-daemon v0.1.0
+          ├── kynex-icons v0.1.0
+          │   └── kynex-shell v0.1.0
+          ├── kynex-notifications v0.1.0
+          │   └── kynex-daemon v0.1.0 (*)
+          ├── kynex-style v0.1.0
+          │   └── kynex-shell v0.1.0 (*)
+          └── kynex-tray v0.1.0
+              ├── kynex-daemon v0.1.0 (*)
+              └── kynex-shell v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'unicode-width'
+    ┌─ /home/saif/Kynex-Shell/Cargo.lock:176:1
+    │  
+176 │ ╭ unicode-width 0.1.14 registry+https://github.com/rust-lang/crates.io-index
+177 │ │ unicode-width 0.2.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ unicode-width v0.1.14
+      └── codespan-reporting v0.11.1
+          └── cxx-qt-build v0.10.0
+              ├── (build) cxx-qt v0.10.0
+              │   ├── cxx-qt-lib v0.10.0
+              │   │   └── kynex-shell v0.1.0
+              │   └── kynex-shell v0.1.0 (*)
+              ├── (build) cxx-qt-lib v0.10.0 (*)
+              └── (build) kynex-shell v0.1.0 (*)
+    ├ unicode-width v0.2.3
+      └── codespan-reporting v0.13.1
+          └── cxx-gen v0.7.205
+              ├── cxx-qt-build v0.10.0
+              │   ├── (build) cxx-qt v0.10.0
+              │   │   ├── cxx-qt-lib v0.10.0
+              │   │   │   └── kynex-shell v0.1.0
+              │   │   └── kynex-shell v0.1.0 (*)
+              │   ├── (build) cxx-qt-lib v0.10.0 (*)
+              │   └── (build) kynex-shell v0.1.0 (*)
+              └── cxx-qt-gen v0.10.0
+                  ├── cxx-qt-build v0.10.0 (*)
+                  └── cxx-qt-macro v0.10.0
+                      └── cxx-qt v0.10.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-sys'
+    ┌─ /home/saif/Kynex-Shell/Cargo.lock:197:1
+    │  
+197 │ ╭ windows-sys 0.48.0 registry+https://github.com/rust-lang/crates.io-index
+198 │ │ windows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-sys v0.48.0
+      ├── mio v0.8.11
+      │   └── notify v6.1.1
+      │       └── kynex-apps-index v0.1.0
+      │           └── kynex-daemon v0.1.0
+      └── notify v6.1.1 (*)
+    ├ windows-sys v0.61.2
+      ├── errno v0.3.14
+      │   ├── rustix v1.1.6
+      │   │   ├── kynex-daemon v0.1.0
+      │   │   ├── tempfile v3.27.0
+      │   │   │   ├── (dev) kynex-apps-index v0.1.0
+      │   │   │   │   └── kynex-daemon v0.1.0 (*)
+      │   │   │   ├── (dev) kynex-daemon v0.1.0 (*)
+      │   │   │   ├── (dev) kynex-icons v0.1.0
+      │   │   │   │   └── kynex-shell v0.1.0
+      │   │   │   ├── (dev) kynex-shell v0.1.0 (*)
+      │   │   │   ├── (dev) kynex-style v0.1.0
+      │   │   │   │   └── kynex-shell v0.1.0 (*)
+      │   │   │   ├── proptest v1.12.0
+      │   │   │   │   ├── (dev) kynex-apps-index v0.1.0 (*)
+      │   │   │   │   ├── (dev) kynex-icons v0.1.0 (*)
+      │   │   │   │   ├── (dev) kynex-notifications v0.1.0
+      │   │   │   │   │   └── kynex-daemon v0.1.0 (*)
+      │   │   │   │   └── (dev) kynex-tray v0.1.0
+      │   │   │   │       ├── kynex-daemon v0.1.0 (*)
+      │   │   │   │       └── kynex-shell v0.1.0 (*)
+      │   │   │   ├── rusty-fork v0.3.1
+      │   │   │   │   └── proptest v1.12.0 (*)
+      │   │   │   └── uds_windows v1.2.1
+      │   │   │       └── zbus v6.2.1
+      │   │   │           ├── kynex-daemon v0.1.0 (*)
+      │   │   │           ├── kynex-ipc v0.1.0
+      │   │   │           │   ├── kynex-daemon v0.1.0 (*)
+      │   │   │           │   ├── kynex-shell v0.1.0 (*)
+      │   │   │           │   └── kynex-shell-core v0.1.0
+      │   │   │           │       └── kynex-shell v0.1.0 (*)
+      │   │   │           └── kynex-shell v0.1.0 (*)
+      │   │   └── zbus v6.2.1 (*)
+      │   └── signal-hook-registry v1.4.8
+      │       └── tokio v1.54.1
+      │           ├── kynex-daemon v0.1.0 (*)
+      │           ├── kynex-shell v0.1.0 (*)
+      │           └── zbus v6.2.1 (*)
+      ├── mio v1.2.4
+      │   └── tokio v1.54.1 (*)
+      ├── nu-ansi-term v0.50.3
+      │   └── tracing-subscriber v0.3.23
+      │       ├── kynex-daemon v0.1.0 (*)
+      │       └── kynex-shell v0.1.0 (*)
+      ├── rustix v1.1.6 (*)
+      ├── socket2 v0.6.5
+      │   ├── tokio v1.54.1 (*)
+      │   └── zbus v6.2.1 (*)
+      ├── tempfile v3.27.0 (*)
+      ├── tokio v1.54.1 (*)
+      ├── uds_windows v1.2.1 (*)
+      ├── winapi-util v0.1.11
+      │   ├── same-file v1.0.6
+      │   │   └── walkdir v2.5.0
+      │   │       └── notify v6.1.1
+      │   │           └── kynex-apps-index v0.1.0 (*)
+      │   ├── termcolor v1.4.1
+      │   │   ├── codespan-reporting v0.11.1
+      │   │   │   └── cxx-qt-build v0.10.0
+      │   │   │       ├── (build) cxx-qt v0.10.0
+      │   │   │       │   ├── cxx-qt-lib v0.10.0
+      │   │   │       │   │   └── kynex-shell v0.1.0 (*)
+      │   │   │       │   └── kynex-shell v0.1.0 (*)
+      │   │   │       ├── (build) cxx-qt-lib v0.10.0 (*)
+      │   │   │       └── (build) kynex-shell v0.1.0 (*)
+      │   │   └── codespan-reporting v0.13.1
+      │   │       └── cxx-gen v0.7.205
+      │   │           ├── cxx-qt-build v0.10.0 (*)
+      │   │           └── cxx-qt-gen v0.10.0
+      │   │               ├── cxx-qt-build v0.10.0 (*)
+      │   │               └── cxx-qt-macro v0.10.0
+      │   │                   └── cxx-qt v0.10.0 (*)
+      │   └── walkdir v2.5.0 (*)
+      └── zbus v6.2.1 (*)
+
+advisories ok, bans ok, licenses ok, sources ok
+
+=== cargo-audit (RustSec) ===
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 1458 security advisories (from /home/saif/.cargo/advisory-db)
+    Updating crates.io index
+    Scanning Cargo.lock for vulnerabilities (236 crate dependencies)
+
+=== typos ===
+
+=== secret scan ===
+
+=== style tokens lint ===
+
+=== style tokens linter test ===
+All style token linter attack tests passed (19/19 cases verified)!
+
+=== qmllint ===
+
+=== shellcheck ===
+
+=== desktop-file-validate ===
+
+=== qml quick test (base controls) ===
+********* Start testing of controls *********
+Config: Using QtTest library 6.10.2, Qt 6.10.2 (arm64-little_endian-lp64 shared (dynamic) release build; by GCC 15.2.0), ubuntu 26.04
+PASS   : controls::KynexControlsTests::initTestCase()
+PASS   : controls::KynexControlsTests::test_button_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_button_focus_ring()
+PASS   : controls::KynexControlsTests::test_button_icon_and_letter_badge()
+PASS   : controls::KynexControlsTests::test_button_keyboard_return()
+PASS   : controls::KynexControlsTests::test_button_keyboard_space()
+PASS   : controls::KynexControlsTests::test_button_mouse_click()
+PASS   : controls::KynexControlsTests::test_button_window_count_badge()
+PASS   : controls::KynexControlsTests::test_controls_rtl_layout_mirroring()
+PASS   : controls::KynexControlsTests::test_controls_token_bindings()
+PASS   : controls::KynexControlsTests::test_generic_disabled_contract()
+PASS   : controls::KynexControlsTests::test_listitem_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_listitem_focus_ring()
+PASS   : controls::KynexControlsTests::test_listitem_keyboard_activation()
+PASS   : controls::KynexControlsTests::test_listitem_mouse_click()
+PASS   : controls::KynexControlsTests::test_listitem_selection()
+PASS   : controls::KynexControlsTests::test_searchfield_clear_button()
+PASS   : controls::KynexControlsTests::test_searchfield_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_searchfield_focus_ring()
+PASS   : controls::KynexControlsTests::test_searchfield_typing_and_editing()
+PASS   : controls::KynexControlsTests::test_slider_clamping()
+PASS   : controls::KynexControlsTests::test_slider_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_slider_focus_ring()
+PASS   : controls::KynexControlsTests::test_slider_keyboard_navigation()
+PASS   : controls::KynexControlsTests::test_slider_mouse_and_wheel()
+PASS   : controls::KynexControlsTests::test_switch_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_switch_focus_ring()
+PASS   : controls::KynexControlsTests::test_switch_keyboard_toggle()
+PASS   : controls::KynexControlsTests::test_switch_mouse_toggle()
+PASS   : controls::KynexControlsTests::test_tooltip_properties_and_visibility()
+PASS   : controls::KynexControlsTests::cleanupTestCase()
+PASS   : controls::LauncherTests::initTestCase()
+QWARN  : controls::LauncherTests::test_backdrop_click_closes() layershellqt: Launcher_QMLTYPE_25(0xc28486f2e3a0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_backdrop_click_closes()
+QWARN  : controls::LauncherTests::test_ctrl_p_pin_toggle() layershellqt: Launcher_QMLTYPE_25(0xc28486fe6d20) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_ctrl_p_pin_toggle()
+QWARN  : controls::LauncherTests::test_delegate_item_selection_and_secondary_text() layershellqt: Launcher_QMLTYPE_25(0xc28486f2d060) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_delegate_item_selection_and_secondary_text()
+QWARN  : controls::LauncherTests::test_enter_launches_selected_bounds() layershellqt: Launcher_QMLTYPE_25(0xc28486dc0a50) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_enter_launches_selected_bounds()
+QWARN  : controls::LauncherTests::test_esc_closes() layershellqt: Launcher_QMLTYPE_25(0xc28486dcaed0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_esc_closes()
+QWARN  : controls::LauncherTests::test_focus_lands_in_search_field_on_open() layershellqt: Launcher_QMLTYPE_25(0xc28486efe980) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_focus_lands_in_search_field_on_open()
+PASS   : controls::LauncherTests::test_initial_state()
+QWARN  : controls::LauncherTests::test_no_double_launch_on_repeated_enter() layershellqt: Launcher_QMLTYPE_25(0xc28486cc1310) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_no_double_launch_on_repeated_enter()
+PASS   : controls::LauncherTests::test_null_model_listview_hidden()
+QWARN  : controls::LauncherTests::test_placeholder_text_states() layershellqt: Launcher_QMLTYPE_25(0xc28486c6cf30) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_placeholder_text_states()
+QWARN  : controls::LauncherTests::test_results_list_visibility() layershellqt: Launcher_QMLTYPE_25(0xc28486f88150) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_results_list_visibility()
+QWARN  : controls::LauncherTests::test_up_down_wrap() layershellqt: Launcher_QMLTYPE_25(0xc28486ca8130) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_up_down_wrap()
+PASS   : controls::LauncherTests::cleanupTestCase()
+PASS   : controls::NotificationPopupTests::initTestCase()
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486f8f0e0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486d5f920) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring()
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486fc35b0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_action_buttons_and_interaction()
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486c9ee40) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_body_visibility_and_elision()
+QWARN  : controls::NotificationPopupTests::test_dismiss_and_hover_tracking() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486fe5be0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_dismiss_and_hover_tracking() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_dismiss_and_hover_tracking()
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486d88240) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_icon_and_letter_badge()
+PASS   : controls::NotificationPopupTests::test_initial_state()
+PASS   : controls::NotificationPopupTests::test_null_model_initial_state()
+QWARN  : controls::NotificationPopupTests::test_text_plain_text_format_enforcement() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486f29730) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_text_plain_text_format_enforcement() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_text_plain_text_format_enforcement()
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486edf150) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_urgency_border_and_styling()
+QWARN  : controls::NotificationPopupTests::test_visibility_and_mask() layershellqt: NotificationPopup_QMLTYPE_35(0xc28486b72be0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_visibility_and_mask() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_visibility_and_mask()
+PASS   : controls::NotificationPopupTests::cleanupTestCase()
+PASS   : controls::ShellTests::initTestCase()
+QWARN  : controls::ShellTests::test_initial_state() layershellqt: Shell_QMLTYPE_47(0xc28486b66f90) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_initial_state() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_initial_state()
+QWARN  : controls::ShellTests::test_launcher_loader_ready_binding() layershellqt: Shell_QMLTYPE_47(0xc28486dd0b70) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_launcher_loader_ready_binding() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_launcher_loader_ready_binding() layershellqt: Launcher_QMLTYPE_56(0xc28486ca5cf0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::ShellTests::test_launcher_loader_ready_binding()
+QWARN  : controls::ShellTests::test_network_indicator_states() layershellqt: Shell_QMLTYPE_47(0xc28486da56d0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_network_indicator_states() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_network_indicator_states()
+QWARN  : controls::ShellTests::test_notification_loader_and_model() layershellqt: Shell_QMLTYPE_47(0xc28486effdf0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_notification_loader_and_model() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_notification_loader_and_model() layershellqt: NotificationPopup_QMLTYPE_60(0xc28486f9f880) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::ShellTests::test_notification_loader_and_model() This plugin does not support setting window masks
+PASS   : controls::ShellTests::test_notification_loader_and_model()
+QWARN  : controls::ShellTests::test_taskbar_keyboard_activation() layershellqt: Shell_QMLTYPE_47(0xc28486b6b350) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_taskbar_keyboard_activation() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_taskbar_keyboard_activation()
+QWARN  : controls::ShellTests::test_taskbar_window_count_badge_and_delegates() layershellqt: Shell_QMLTYPE_47(0xc28486de6180) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_taskbar_window_count_badge_and_delegates() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_taskbar_window_count_badge_and_delegates()
+QWARN  : controls::ShellTests::test_tray_click_and_scroll_interactions() layershellqt: Shell_QMLTYPE_47(0xc28486f46f40) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_click_and_scroll_interactions() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_click_and_scroll_interactions()
+QWARN  : controls::ShellTests::test_tray_initial_state() layershellqt: Shell_QMLTYPE_47(0xc28486ec4270) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_initial_state() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_initial_state()
+QWARN  : controls::ShellTests::test_tray_items_presentation() layershellqt: Shell_QMLTYPE_47(0xc28486c3b280) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_items_presentation() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_items_presentation()
+QWARN  : controls::ShellTests::test_tray_secondary_screen_negative_origin() layershellqt: Shell_QMLTYPE_47(0xc28486d95160) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_secondary_screen_negative_origin() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_secondary_screen_negative_origin()
+QWARN  : controls::ShellTests::test_tray_tooltip_branches() layershellqt: Shell_QMLTYPE_47(0xc28486e63560) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_tooltip_branches() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_tooltip_branches()
+PASS   : controls::ShellTests::cleanupTestCase()
+Totals: 70 passed, 0 failed, 0 skipped, 0 blacklisted, 1051ms
+********* Finished testing of controls *********
+
+=== visual regression test (gallery) ===
+=== Visual Regression Test (Tolerance: RMS <= 2.5) ===
+PASS: dark-100 (RMS delta: 0 (tolerance: 2.5))
+PASS: dark-200 (RMS delta: 0 (tolerance: 2.5))
+PASS: light-100 (RMS delta: 0 (tolerance: 2.5))
+PASS: light-200 (RMS delta: 0 (tolerance: 2.5))
+PASS: rtl-100 (RMS delta: 0 (tolerance: 2.5))
+PASS: launcher-results (RMS delta: 0 (tolerance: 2.5))
+PASS: launcher-no-results (RMS delta: 0 (tolerance: 2.5))
+PASS: launcher-empty (RMS delta: 0 (tolerance: 2.5))
+PASS: launcher-rtl (RMS delta: 0 (tolerance: 2.5))
+Visual regression suite passed.
+
+=== adversarial mutation test (qml controls) ===
+=== Automatic QML Mutation Testing ===
+Target files: 9 files
+Total mutations generated: 319
+------------------------------------------------------------
+Mutants Killed   : 313/319 (98.1%)
+Mutants Survived : 6
+------------------------------------------------------------
+Survivor Details & Justifications:
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexButton.qml:65 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.Button with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml:50 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.EditableText with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] crates/kynex-shell/qml/Kynex/Controls/KynexSwitch.qml:35 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.CheckBox with activeFocusOnTab=true automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+  [EQUIVALENT MUTANT] styles/default/Shell.qml:96 [delete]
+    Original : when: launcherLoader.status === Loader.Ready
+    Mutant   : 
+    Reason   : Qt Quick Binding evaluates target property assignment only when target is non-null; since launcherLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: launcherLoader.status === Loader.Ready semantically equivalent to unconditional binding.
+  [EQUIVALENT MUTANT] styles/default/Shell.qml:125 [delete]
+    Original : when: notificationLoader.status === Loader.Ready
+    Mutant   : 
+    Reason   : Qt Quick Binding evaluates target property assignment only when target is non-null; since notificationLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: notificationLoader.status === Loader.Ready semantically equivalent to unconditional binding.
+  [EQUIVALENT MUTANT] styles/default/Shell.qml:272 [delete]
+    Original : Accessible.focusable: true
+    Mutant   : 
+    Reason   : Qt Quick QQuickAccessibleAttached::role() for Accessible.Button automatically defaults QAccessible::Focusable to true in Qt Quick C++ accessibility bridge.
+------------------------------------------------------------
+Final Kill Ratio : 98.1%
+Equivalent Valid : 6
+Unjustified Gaps : 0
+SUCCESS: All non-equivalent mutants killed; 6 surviving mutants verified equivalent.
+
+=== systemd user unit sandbox test ===
+=== 1. Probing Individual Systemd Sandboxing Directives ===
+------------------------------------------------------------
+Directive: NoNewPrivileges=yes
+Description: Verifies prctl(PR_SET_NO_NEW_PRIVS) is active
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-1-12449.service; invocation ID: 3d4cefbd888d4aa3a724ab14270c17d5
+NoNewPrivs:	1
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 10ms
+             CPU time consumed: 5ms
+                   Memory peak: 2.5M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: ProtectSystem=strict
+Description: Mount namespace is not unshared; user home remains writable
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-2-30405.service; invocation ID: 8bc3fc414d944c978d623344149200bc
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 14ms
+             CPU time consumed: 7ms
+                   Memory peak: 2.2M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: ProtectHome=read-only
+Description: Mount namespace is not unshared; $HOME remains writable
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-3-2548.service; invocation ID: 620ed71457624f608a415fd6d1f56568
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 16ms
+             CPU time consumed: 8ms
+                   Memory peak: 2.3M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: PrivateTmp=yes
+Description: Mount namespace is not unshared; host /tmp marker remains visible
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-4-6747.service; invocation ID: 081cde6d1f124959970863397401e26d
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 14ms
+             CPU time consumed: 5ms
+                   Memory peak: 2.2M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: PrivateNetwork=yes
+Description: Network namespace not isolated; host interfaces visible; journal warns 'proceeding without'
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-5-20736.service; invocation ID: 94294b8a32d24bcba523abf90645c563
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 14ms
+             CPU time consumed: 7ms
+                   Memory peak: 2.2M (swap: 0B)
+Journal warning: Nov 11 07:44:43 saif-QEMU-Virtual-Machine (bash)[683754]: kynex-probe-683694-5-20736.service: PrivateNetwork=yes is configured, but the kernel does not support or we lack privileges for network namespace, proceeding without.
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: IPAddressDeny=any
+Description: cgroup BPF filter not attached; outbound TCP connection succeeds
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-6-8767.service; invocation ID: c980d60948b44069a301aa5a1c61c156
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 49ms
+             CPU time consumed: 15ms
+                   Memory peak: 5M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: RestrictAddressFamilies=AF_UNIX
+Description: Seccomp socket filter successfully blocks AF_INET with EAFNOSUPPORT
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-7-24692.service; invocation ID: 64b97e3499b7480a8b536313d452c234
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 21ms
+             CPU time consumed: 15ms
+                   Memory peak: 5.4M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: SystemCallFilter=@system-service
+Description: Seccomp mode 2 active; non-whitelisted syscalls filtered
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-8-18018.service; invocation ID: d7e726269f134169ad0113c3d2075f1b
+Seccomp:	2
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 20ms
+             CPU time consumed: 13ms
+                   Memory peak: 2.5M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: SystemCallArchitectures=native
+Description: Seccomp mode 2 active enforcing native architecture syscall ABI
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-9-2080.service; invocation ID: da20e5e325824317ade28785c6d6a112
+Seccomp:	2
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 10ms
+             CPU time consumed: 5ms
+                   Memory peak: 2M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: ProtectKernelTunables=yes
+Description: Mount namespace unchanged from host session
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-10-32374.service
+mnt:[4026531832]
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 13ms
+             CPU time consumed: 6ms
+                   Memory peak: 2.2M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: ProtectControlGroups=yes
+Description: Mount namespace unchanged from host session
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-11-18866.service; invocation ID: f0810ae3b4b8441cbf25e1637fd3afdf
+mnt:[4026531832]
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 12ms
+             CPU time consumed: 6ms
+                   Memory peak: 2.2M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: ProtectHostname=yes
+Description: UTS namespace prohibited in user manager; journal warns 'ignoring namespace setup'
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-12-17296.service
+saif-QEMU-Virtual-Machine
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 16ms
+             CPU time consumed: 5ms
+                   Memory peak: 2.2M (swap: 0B)
+Journal warning: Nov 11 07:44:43 saif-QEMU-Virtual-Machine (bash)[683832]: kynex-probe-683694-12-17296.service: ProtectHostname=yes is configured, but UTS namespace setup is prohibited (container manager?), ignoring namespace setup.
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: ProtectProc=invisible
+Description: Mount namespace unchanged; /proc/1 remains visible
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-13-4258.service; invocation ID: 58b1067364094d47bf323632b79e1826
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 8ms
+             CPU time consumed: 4ms
+                   Memory peak: 1.7M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: ProcSubset=pid
+Description: Mount namespace unchanged; /proc/cmdline remains visible
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-14-27394.service; invocation ID: 6a5b54523ccc43a4aaee2102e52f2482
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 10ms
+             CPU time consumed: 4ms
+                   Memory peak: 1.7M (swap: 0B)
+Classification: INEFFECTIVE-HERE
+------------------------------------------------------------
+Directive: RestrictRealtime=yes
+Description: Seccomp blocks real-time scheduler configuration with EPERM
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-15-2255.service; invocation ID: ad233bfa997d488b85895fdb455f3dd4
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 24ms
+             CPU time consumed: 15ms
+                   Memory peak: 5.7M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: RestrictNamespaces=yes
+Description: Seccomp blocks CLONE_NEW* / unshare with EPERM
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-16-32426.service; invocation ID: e44c7f9696f54d33970af8976e13f897
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 18ms
+             CPU time consumed: 6ms
+                   Memory peak: 1.7M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: RestrictSUIDSGID=yes
+Description: Seccomp blocks SUID bit creation with EPERM
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-17-29218.service; invocation ID: a271148d3c4a44f3a3afe6193dec8c79
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 30ms
+             CPU time consumed: 19ms
+                   Memory peak: 6.7M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: MemoryDenyWriteExecute=yes
+Description: Seccomp blocks W+X mmap allocation with EACCES
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-18-14860.service; invocation ID: 53449f9b36ff4dfe8054a1b112bff82c
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 22ms
+             CPU time consumed: 11ms
+                   Memory peak: 5.4M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: LockPersonality=yes
+Description: Seccomp locks execution domain; personality change fails with EPERM
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-19-5274.service
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 20ms
+             CPU time consumed: 14ms
+                   Memory peak: 6M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: KeyringMode=private
+Description: Allocates isolated session keyring distinct from default user keyring
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-20-4401.service; invocation ID: 431daa2bc14d430f994500ad990a1ad5
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 24ms
+             CPU time consumed: 18ms
+                   Memory peak: 6.9M (swap: 0B)
+Classification: EFFECTIVE
+------------------------------------------------------------
+Directive: UMask=0077
+Description: Process umask successfully set to 0077
+Probe exit code: 0
+Probe output: Running as unit: kynex-probe-683694-21-17455.service; invocation ID: 53ff59c64cb64b31b33692607b5e8d89
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 14ms
+             CPU time consumed: 4ms
+                   Memory peak: 2M (swap: 0B)
+Classification: EFFECTIVE
+All 21 individual directive probes evaluated cleanly.
+=== 2. Auditing Packaged Unit: systemd/kynex-daemon.service ===
+Packaged unit contains ONLY empirically effective directives.
+=== 3. Deploying and Testing Packaged Unit ===
+● kynex-daemon-test.service - KynexOS Background Daemon
+     Loaded: loaded (/run/user/1000/systemd/user/kynex-daemon-test.service; disabled; preset: enabled)
+     Active: active (running) since Wed 2026-11-11 07:44:44 CET; 8ms ago
+ Invocation: e091b98c24274615990ec14baf527238
+       Docs: https://github.com/saifmnasri/kynex-shell
+   Main PID: 683956 (kynex-daemon)
+      Tasks: 3 (limit: 6719)
+     Memory: 19.6M (peak: 19.6M)
+        CPU: 34ms
+     CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/kynex-daemon-test.service
+             └─683956 /home/saif/Kynex-Shell/target/debug/kynex-daemon
+
+Nov 11 07:44:44 saif-QEMU-Virtual-Machine systemd[2496]: Starting kynex-daemon-test.service - KynexOS Background Daemon...
+Nov 11 07:44:44 saif-QEMU-Virtual-Machine systemd[2496]: Started kynex-daemon-test.service - KynexOS Background Daemon.
+=== 4. Inspecting Running Process Security Status ===
+Process MainPID: 683956
+NoNewPrivs:	1
+Seccomp:	2
+=== 5. Querying D-Bus Interfaces ===
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+NAME         TYPE     SIGNATURE RESULT/VALUE FLAGS
+.Percentage  property d         0            emits-change
+.Present     property b         false        emits-change
+.State       property u         0            emits-change
+.TimeToEmpty property x         0            emits-change
+.TimeToFull  property x         0            emits-change
+b false
+d 0
+u 0
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+Unexpected signal <arg> direction value 'in'.
+NAME            TYPE     SIGNATURE RESULT/VALUE FLAGS
+.Kind           property u         2            emits-change
+.Present        property b         true         emits-change
+.SignalStrength property u         0            emits-change
+.Ssid           property s         ""           emits-change
+.State          property u         2            emits-change
+b true
+u 2
+u 2
+u 0
+s ""
+=== 6. Inspecting User Journal for Degraded Directives ===
+Nov 11 07:44:44 saif-QEMU-Virtual-Machine systemd[2496]: Starting kynex-daemon-test.service - KynexOS Background Daemon...
+Nov 11 07:44:44 saif-QEMU-Virtual-Machine systemd[2496]: Started kynex-daemon-test.service - KynexOS Background Daemon.
+=== 7. Secondary Information: systemd-analyze security ===
+  NAME                                                        DESCRIPTION                                                                                         EXPOSURE
+✓ SystemCallFilter=~@swap                                     System call allow list defined for service, and @swap is not included                               
+✗ SystemCallFilter=~@resources                                System call allow list defined for service, and @resources is included (e.g. ioprio_set is allowed)      0.2
+✓ SystemCallFilter=~@reboot                                   System call allow list defined for service, and @reboot is not included                             
+✓ SystemCallFilter=~@raw-io                                   System call allow list defined for service, and @raw-io is not included                             
+✗ SystemCallFilter=~@privileged                               System call allow list defined for service, and @privileged is included (e.g. fchown is allowed)         0.2
+✓ SystemCallFilter=~@obsolete                                 System call allow list defined for service, and @obsolete is not included                           
+✓ SystemCallFilter=~@mount                                    System call allow list defined for service, and @mount is not included                              
+✓ SystemCallFilter=~@module                                   System call allow list defined for service, and @module is not included                             
+✓ SystemCallFilter=~@debug                                    System call allow list defined for service, and @debug is not included                              
+✓ SystemCallFilter=~@cpu-emulation                            System call allow list defined for service, and @cpu-emulation is not included                      
+✓ SystemCallFilter=~@clock                                    System call allow list defined for service, and @clock is not included                              
+✗ RootDirectory=/RootImage=                                   Service runs within the host's root directory                                                            0.1
+✓ User=/DynamicUser=                                          Service runs under the calling user's identity                                                      
+✓ RestrictRealtime=                                           Service realtime scheduling access is restricted                                                    
+✗ CapabilityBoundingSet=~CAP_SYS_TIME                         Service processes may change the system clock                                                            0.2
+✓ NoNewPrivileges=                                            Service processes cannot acquire new privileges                                                     
+✓ AmbientCapabilities=                                        Service process does not receive ambient capabilities                                               
+✗ PrivateDevices=                                             Service potentially has access to hardware devices                                                       0.2
+✗ ProtectClock=                                               Service may write to the hardware clock or system clock                                                  0.2
+✗ CapabilityBoundingSet=~CAP_SYS_PACCT                        Service may use acct()                                                                                   0.1
+✗ CapabilityBoundingSet=~CAP_KILL                             Service may send UNIX signals to arbitrary processes                                                     0.1
+✗ ProtectKernelLogs=                                          Service may read from or write to the kernel log ring buffer                                             0.2
+✗ CapabilityBoundingSet=~CAP_WAKE_ALARM                       Service may program timers that wake up the system                                                       0.1
+✗ CapabilityBoundingSet=~CAP_(DAC_*|FOWNER|IPC_OWNER)         Service may override UNIX file/IPC permission checks                                                     0.2
+✗ ProtectControlGroups=                                       Service may modify the control group file system                                                         0.2
+✗ CapabilityBoundingSet=~CAP_LINUX_IMMUTABLE                  Service may mark files immutable                                                                         0.1
+✗ CapabilityBoundingSet=~CAP_IPC_LOCK                         Service may lock memory into RAM                                                                         0.1
+✗ ProtectKernelModules=                                       Service may load or read kernel modules                                                                  0.2
+✗ CapabilityBoundingSet=~CAP_SYS_MODULE                       Service may load kernel modules                                                                          0.2
+✗ CapabilityBoundingSet=~CAP_BPF                              Service may load BPF programs                                                                            0.1
+✗ CapabilityBoundingSet=~CAP_SYS_TTY_CONFIG                   Service may issue vhangup()                                                                              0.1
+✗ CapabilityBoundingSet=~CAP_SYS_BOOT                         Service may issue reboot()                                                                               0.1
+✗ CapabilityBoundingSet=~CAP_SYS_CHROOT                       Service may issue chroot()                                                                               0.1
+✗ PrivateMounts=                                              Service may install system mounts                                                                        0.2
+✓ SystemCallArchitectures=                                    Service may execute system calls only with native ABI                                               
+✗ CapabilityBoundingSet=~CAP_BLOCK_SUSPEND                    Service may establish wake locks                                                                         0.1
+✗ CapabilityBoundingSet=~CAP_LEASE                            Service may create file leases                                                                           0.1
+✗ CapabilityBoundingSet=~CAP_MKNOD                            Service may create device nodes                                                                          0.1
+✗ ProtectHostname=                                            Service may change system host/domainname                                                                0.1
+✗ CapabilityBoundingSet=~CAP_(CHOWN|FSETID|SETFCAP)           Service may change file ownership/access mode/capabilities unrestricted                                  0.2
+✗ CapabilityBoundingSet=~CAP_SET(UID|GID|PCAP)                Service may change UID/GID identities/capabilities                                                       0.3
+✗ ProtectKernelTunables=                                      Service may alter kernel tunables                                                                        0.2
+✗ RestrictAddressFamilies=~AF_UNIX                            Service may allocate local sockets                                                                       0.1
+✗ CapabilityBoundingSet=~CAP_MAC_*                            Service may adjust SMACK MAC                                                                             0.1
+✗ CapabilityBoundingSet=~CAP_SYS_RAWIO                        Service has raw I/O access                                                                               0.2
+✗ CapabilityBoundingSet=~CAP_SYS_PTRACE                       Service has ptrace() debugging abilities                                                                 0.3
+✗ CapabilityBoundingSet=~CAP_SYS_(NICE|RESOURCE)              Service has privileges to change resource use parameters                                                 0.1
+✓ SupplementaryGroups=                                        Service has no supplementary groups                                                                 
+✗ DeviceAllow=                                                Service has no device ACL                                                                                0.2
+✗ CapabilityBoundingSet=~CAP_NET_ADMIN                        Service has network configuration privileges                                                             0.2
+✗ ProtectSystem=                                              Service has full access to the OS file hierarchy                                                         0.2
+✗ ProtectProc=                                                Service has full access to process tree (/proc hidepid=)                                                 0.2
+✗ ProcSubset=                                                 Service has full access to non-process /proc files (/proc subset=)                                       0.1
+✗ ProtectHome=                                                Service has full access to home directories                                                              0.2
+✗ CapabilityBoundingSet=~CAP_NET_(BIND_SERVICE|BROADCAST|RAW) Service has elevated networking privileges                                                               0.1
+✗ CapabilityBoundingSet=~CAP_AUDIT_*                          Service has audit subsystem access                                                                       0.1
+✗ CapabilityBoundingSet=~CAP_SYS_ADMIN                        Service has administrator privileges                                                                     0.3
+✗ PrivateNetwork=                                             Service has access to the host's network                                                                 0.5
+✗ PrivateUsers=                                               Service has access to other users                                                                        0.2
+✗ PrivateTmp=                                                 Service has access to other software's temporary files                                                   0.2
+✗ CapabilityBoundingSet=~CAP_SYSLOG                           Service has access to kernel logging                                                                     0.1
+✓ KeyringMode=                                                Service doesn't share key material with other services                                              
+✓ Delegate=                                                   Service does not maintain its own delegated control group subtree                                   
+✗ IPAddressDeny=                                              Service does not define an IP address allow list                                                         0.2
+✓ NotifyAccess=                                               Service child processes cannot alter service state                                                  
+✓ MemoryDenyWriteExecute=                                     Service cannot create writable executable memory mappings                                           
+✓ RestrictNamespaces=~user                                    Service cannot create user namespaces                                                               
+✓ RestrictNamespaces=~pid                                     Service cannot create process namespaces                                                            
+✓ RestrictNamespaces=~net                                     Service cannot create network namespaces                                                            
+✓ RestrictNamespaces=~uts                                     Service cannot create hostname namespaces                                                           
+✓ RestrictNamespaces=~mnt                                     Service cannot create file system namespaces                                                        
+✓ RestrictNamespaces=~cgroup                                  Service cannot create cgroup namespaces                                                             
+✓ RestrictNamespaces=~ipc                                     Service cannot create IPC namespaces                                                                
+✓ LockPersonality=                                            Service cannot change ABI personality                                                               
+✓ RestrictAddressFamilies=~AF_PACKET                          Service cannot allocate packet sockets                                                              
+✓ RestrictAddressFamilies=~AF_NETLINK                         Service cannot allocate netlink sockets                                                             
+✓ RestrictAddressFamilies=~…                                  Service cannot allocate exotic sockets                                                              
+✓ RestrictAddressFamilies=~AF_(INET|INET6)                    Service cannot allocate Internet sockets                                                            
+✓ RestrictSUIDSGID=                                           SUID/SGID file creation by service is restricted                                                    
+  RemoveIPC=                                                  RemoveIPC= has no effect on per-user services                                                       
+✓ UMask=                                                      Files created by service are accessible only by service's own user by default                       
+
+→ Overall exposure level for kynex-daemon-test.service: 5.7 MEDIUM :-|
+=== 8. Stopping Unit and Verifying Clean Environment ===
+SUCCESS: All sandbox probes verified, packaged unit is free of ineffective directives, journal is 100% clean, and environment is clean.
+Cleaning up test systemd unit...
+
+=== work report evidence check ===
+Checking evidence blocks in stage-o2-report.md (29.7 KB)...
+  ✓ ```raw:o2-wellknown-fail:L92-L106 verified verbatim (15 lines)
+  ✓ ```raw:o2-wellknown-pass:L1-L14 verified verbatim (14 lines)
+  ✓ ```raw:o2-flood-decoupled-fail:L1-L9 verified verbatim (9 lines)
+  ✓ ```raw:o2-flood-decoupled-pass:L1-L12 verified verbatim (12 lines)
+  ✓ ```raw:o2-cov-kynex-ipc:L30-L43 verified verbatim (14 lines)
+  ✓ ```raw:o2-cov-kynex-shell-core:L61-L69 verified verbatim (9 lines)
+  ✓ ```raw:o2-budget-scalar-rejection:L1-L8 verified verbatim (8 lines)
+  ✓ ```raw:o2-bench:L214-L225 verified verbatim (12 lines)
+  ✓ ```raw:o2-budget-check:L9-L33 verified verbatim (25 lines)
+  ✓ ```raw:o2-12-mutants:L6-L33 verified verbatim (28 lines)
+  ✓ ```raw:o2-qml-qmllint:L1-L5 verified verbatim (5 lines)
+  ✓ ```raw:o2-qml-controls:L123-L137 verified verbatim (15 lines)
+  ✓ ```raw:o2-pr-draft-status:L1-L6 verified verbatim (6 lines)
+  ✓ ```raw:o2-verify-gate:L1583-L1606 verified verbatim (24 lines)
+  ✓ ```raw:o2-audit-gate:L2440-L2455 verified verbatim (16 lines)
+SUCCESS: All 15 raw evidence blocks in stage-o2-report.md match evidence files verbatim.
+
+=== no literal benchmark metrics ===
+
+=== budget-check scalar rejection test ===
+✓ Hand-typed scalar metric rejected as expected.
+✓ Structured metric with raw samples and method accepted and verified.
+All budget-check tests passed!
+
+================ SUMMARY ================
+PASSED : 20
+  + rustfmt
+  + clippy
+  + tests (nextest)
+  + doc tests
+  + cargo-deny (licenses, bans, advisories)
+  + cargo-audit (RustSec)
+  + typos
+  + secret scan
+  + style tokens lint
+  + style tokens linter test
+  + qmllint
+  + shellcheck
+  + desktop-file-validate
+  + qml quick test (base controls)
+  + visual regression test (gallery)
+  + adversarial mutation test (qml controls)
+  + systemd user unit sandbox test
+  + work report evidence check
+  + no literal benchmark metrics
+  + budget-check scalar rejection test
+SKIPPED: 0
+FAILED : 0

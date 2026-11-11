@@ -1,0 +1,15 @@
+=== COMMAND ===
+cargo test --test tray_service_test -p kynex-daemon test_register_by_own_well_known_name_ok
+=== TIMESTAMP: 2026-11-11T01:56:11Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+   Compiling kynex-tray v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-tray)
+   Compiling kynex-daemon v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-daemon)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.75s
+     Running tests/tray_service_test.rs (target/debug/deps/tray_service_test-6317c0111af1ba96)
+
+running 1 test
+test test_register_by_own_well_known_name_ok ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.01s
+
