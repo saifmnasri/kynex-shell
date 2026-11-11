@@ -48,8 +48,30 @@ wait_for_dpkg_lock() {
   done
 }
 
+# Ensure reliable DNS resolution in container/CI environments
+if ! getent hosts archive.ubuntu.com >/dev/null 2>&1; then
+  echo "nameserver 1.1.1.1" >> /etc/resolv.conf 2>/dev/null || true
+  echo "nameserver 8.8.8.8" >> /etc/resolv.conf 2>/dev/null || true
+fi
+
 wait_for_dpkg_lock
-apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false update
+for attempt in 1 2 3; do
+  if ! getent hosts archive.ubuntu.com >/dev/null 2>&1; then
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf 2>/dev/null || true
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf 2>/dev/null || true
+  fi
+  if apt-get -o Acquire::Check-Date=false -o Acquire::Check-Valid-Until=false -o Acquire::Retries=3 update; then
+    break
+  fi
+  if [[ $attempt -eq 3 ]]; then
+    echo "apt-get update failed after 3 attempts" >&2
+    exit 1
+  fi
+  echo "apt-get update failed on attempt $attempt; adding fallback DNS and retrying..."
+  echo "nameserver 1.1.1.1" >> /etc/resolv.conf 2>/dev/null || true
+  echo "nameserver 8.8.8.8" >> /etc/resolv.conf 2>/dev/null || true
+  sleep 3
+done
 
 INSTALL=()
 MISSING=()

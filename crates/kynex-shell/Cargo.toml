@@ -36,6 +36,7 @@ kynex-icons = { workspace = true }
 kynex-ipc = { workspace = true }
 kynex-shell-core = { workspace = true }
 kynex-style = { workspace = true }
+kynex-tray = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

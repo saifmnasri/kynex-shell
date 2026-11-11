@@ -1,0 +1,112 @@
+{
+  "tray_item_registration_cold": {
+    "method": "clock_gettime(CLOCK_MONOTONIC) client registration to first frameSwapped (30 cold samples)",
+    "samples": [
+      11.09,
+      7.97,
+      7.08,
+      11.69,
+      7.75,
+      8.94,
+      17.02,
+      9.76,
+      5.36,
+      8.94,
+      11.2,
+      10.46,
+      11.39,
+      8.55,
+      5.12,
+      6.81,
+      8.35,
+      9.94,
+      8.7,
+      16.6,
+      7.17,
+      8.99,
+      7.87,
+      10.35,
+      5.76,
+      9.32,
+      9.41,
+      5.16,
+      10.65,
+      7.59
+    ]
+  },
+  "tray_item_registration_warm": {
+    "method": "clock_gettime(CLOCK_MONOTONIC) client registration to first frameSwapped (30 warm samples)",
+    "samples": [
+      6.65,
+      2.59,
+      2.95,
+      2.61,
+      2.68,
+      3.3,
+      3.85,
+      4.07,
+      4.59,
+      5.39,
+      3.51,
+      2.99,
+      3.24,
+      2.89,
+      3.71,
+      3.32,
+      3.7,
+      3.48,
+      3.76,
+      2.33,
+      2.72,
+      2.95,
+      3.24,
+      4.0,
+      3.78,
+      9.34,
+      2.64,
+      2.67,
+      2.19,
+      2.96
+    ]
+  },
+  "tray_idle_daemon_pss": {
+    "method": "/proc/<pid>/smaps_rollup PSS plateau after 1000 churn cycles (10 samples)",
+    "samples": [
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41,
+      9.41
+    ]
+  },
+  "tray_flood_cpu": {
+    "method": "/proc/<pid>/stat utime+stime tick delta sampled at 50ms during 10,000-signal flood",
+    "samples": [
+      19.9
+    ]
+  },
+  "pidstat_output": "Linux 7.0.0-42-generic (saif-QEMU-Virtual-Machine) \t11/11/2026 \t_aarch64_\t(6 CPU)\n\n02:58:58 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:58:59 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:58:59 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:58:58 AM   UID       PID   cswch/s nvcswch/s  Command\n02:58:59 AM  1000    480980      0.00      0.00  kynex-daemon\n02:58:59 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:58:59 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:00 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:00 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:58:59 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:00 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:00 AM  1000    481513      5.94      2.97  kynex-shell\n\n02:59:00 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:01 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:01 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:00 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:01 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:01 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:01 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:02 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:02 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:01 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:02 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:02 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:02 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:03 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:03 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:02 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:03 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:03 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:03 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:04 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:04 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:03 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:04 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:04 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:04 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:05 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:05 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:04 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:05 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:05 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:05 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:06 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:06 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:05 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:06 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:06 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:06 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:07 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:07 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:06 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:07 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:07 AM  1000    481513      0.00      0.00  kynex-shell\n\n02:59:07 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n02:59:08 AM  1000    480980    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n02:59:08 AM  1000    481513    0.00    0.00    0.00    0.00    0.00     4  kynex-shell\n\n02:59:07 AM   UID       PID   cswch/s nvcswch/s  Command\n02:59:08 AM  1000    480980      0.00      0.00  kynex-daemon\n02:59:08 AM  1000    481513      0.00      0.00  kynex-shell\n\nAverage:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\nAverage:     1000    480980    0.00    0.00    0.00    0.00    0.00     -  kynex-daemon\nAverage:     1000    481513    0.00    0.00    0.00    0.00    0.00     -  kynex-shell\n\nAverage:      UID       PID   cswch/s nvcswch/s  Command\nAverage:     1000    480980      0.00      0.00  kynex-daemon\nAverage:     1000    481513      0.60      0.30  kynex-shell\n",
+  "exclusions": "Pre-call client setup before time.monotonic_ns() timestamp (connection establishment and payload construction) is excluded; timed region begins immediately prior to calling org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem on the D-Bus proxy and ends at the first frameSwapped event logged by C++ std::chrono::steady_clock in the shell shim.",
+  "procs": {
+    "kynex-daemon": {
+      "pss_mb_avg": 9.4111328125,
+      "rss_mb_avg": 14.11669921875,
+      "cpu_pct_avg": 0.0
+    },
+    "kynex-shell": {
+      "pss_mb_avg": 92.6640625,
+      "rss_mb_avg": 138.99609375,
+      "cpu_pct_avg": 0.0
+    },
+    "kwin_wayland": {
+      "pss_mb_avg": 96.0,
+      "rss_mb_avg": 120.0,
+      "cpu_pct_avg": 0.0
+    }
+  }
+}

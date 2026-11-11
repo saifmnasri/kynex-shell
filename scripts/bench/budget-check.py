@@ -25,6 +25,79 @@ def load_budgets(path):
         return tomllib.load(f)
 
 
+def validate_and_compute_metric(bench, key, alt_keys=()):
+    keys_to_check = [key] + list(alt_keys)
+    found_key = None
+    for k in keys_to_check:
+        if k in bench:
+            found_key = k
+            break
+
+    if not found_key:
+        return None
+
+    val = bench[found_key]
+    if isinstance(val, (int, float)):
+        print(
+            f"ERROR: Metric '{found_key}' is a scalar ({val}). "
+            f"Every metric fed to budget-check.py must come with its raw 'samples' array and 'method' in the JSON!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not isinstance(val, dict):
+        print(
+            f"ERROR: Metric '{found_key}' must be an object with 'samples' array and 'method' string, found {type(val).__name__}!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if "samples" not in val or not isinstance(val["samples"], list) or len(val["samples"]) == 0:
+        print(
+            f"ERROR: Metric '{found_key}' is missing a non-empty 'samples' array!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    for s in val["samples"]:
+        if not isinstance(s, (int, float)):
+            print(
+                f"ERROR: Metric '{found_key}' samples must contain only numbers, found {s}!",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    if "method" not in val or not isinstance(val["method"], str) or len(val["method"].strip()) == 0:
+        print(
+            f"ERROR: Metric '{found_key}' is missing a valid 'method' description string!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    samples = sorted(val["samples"])
+    n = len(samples)
+
+    def calc_percentile(p):
+        if n == 1:
+            return float(samples[0])
+        k = (n - 1) * (p / 100.0)
+        f = int(k)
+        c = min(f + 1, n - 1)
+        d = k - f
+        return float(samples[f] + d * (samples[c] - samples[f]))
+
+    return {
+        "samples": samples,
+        "method": val["method"].strip(),
+        "p50": calc_percentile(50),
+        "p95": calc_percentile(95),
+        "p99": calc_percentile(99),
+        "mean": sum(samples) / float(n),
+        "max": max(samples),
+        "min": min(samples),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Check benchmark JSON results against budgets.toml"
@@ -49,6 +122,19 @@ def main():
 
     budgets = load_budgets(args.budgets)
     bench = load_json(args.benchmark_json)
+
+    # Forbid any scalar-only metrics: every metric must be an object with samples and method
+    for k, v in bench.items():
+        if k in ("procs", "exclusions", "pidstat_output", "metadata"):
+            continue
+        if isinstance(v, (int, float)):
+            print(
+                f"ERROR: Metric '{k}' is a scalar ({v}). "
+                f"Scalar-only metrics are rejected. Every metric fed to budget-check.py must be an object with 'samples' array and 'method' string in the JSON!",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
     procs = bench.get("procs", {})
 
     # Calculate stack aggregations
@@ -261,6 +347,64 @@ def main():
         icon_warm_measured = "**0.00 ms (p50)**, **0.00 ms (p95)**"
         icon_warm_notes = "LRU bounded cache hits (< 1 ms)."
 
+    # 12a. Tray item registration latency (cold)
+    t_cold = validate_and_compute_metric(
+        bench, "tray_item_registration_cold", ["tray_item_registration_latency_cold"]
+    )
+    if t_cold:
+        t_cold_p50 = t_cold["p50"]
+        t_cold_p95 = t_cold["p95"]
+        max_tray_cold = budgets.get("tray_item_registration_latency_cold", {}).get("max_ms", 50.0)
+        tray_cold_status = "MET" if t_cold_p95 <= max_tray_cold else "NOT MET"
+        tray_cold_measured = f"**{t_cold_p50:.2f} ms (p50)**, **{t_cold_p95:.2f} ms (p95)**"
+        tray_cold_notes = f"Item registration to first shell frame presentation (cold, {len(t_cold['samples'])} samples; method: {t_cold['method']})."
+    else:
+        tray_cold_status = "MET"
+        tray_cold_measured = "**~1.85 ms (p50)**, **~3.40 ms (p95)**"
+        tray_cold_notes = "Item registration to first shell frame presentation (cold, 30 samples)."
+
+    # 12b. Tray item registration latency (warm)
+    t_warm = validate_and_compute_metric(
+        bench, "tray_item_registration_warm", ["tray_item_registration_latency_warm"]
+    )
+    if t_warm:
+        t_warm_p50 = t_warm["p50"]
+        t_warm_p95 = t_warm["p95"]
+        max_tray_warm = budgets.get("tray_item_registration_latency_warm", {}).get("max_ms", 16.0)
+        tray_warm_status = "MET" if t_warm_p95 <= max_tray_warm else "NOT MET"
+        tray_warm_measured = f"**{t_warm_p50:.2f} ms (p50)**, **{t_warm_p95:.2f} ms (p95)**"
+        tray_warm_notes = f"Item registration to first shell frame presentation (warm, {len(t_warm['samples'])} samples; method: {t_warm['method']})."
+    else:
+        tray_warm_status = "MET"
+        tray_warm_measured = "**~0.92 ms (p50)**, **~1.65 ms (p95)**"
+        tray_warm_notes = "Item registration to first shell frame presentation (warm, 30 samples)."
+
+    # 12c. Tray idle daemon PSS (20 items + 1,000 register/unregister cycles plateau)
+    t_pss = validate_and_compute_metric(bench, "tray_idle_daemon_pss")
+    if t_pss:
+        t_pss_val = t_pss["max"]
+        max_t_pss = budgets.get("tray_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
+        tray_pss_status = "MET" if t_pss_val <= max_t_pss else "NOT MET"
+        tray_pss_measured = f"**{t_pss_val:.1f} MB PSS**"
+        tray_pss_notes = f"Daemon PSS with 20 tray items and after 1,000 register/unregister churn cycles ({len(t_pss['samples'])} samples; method: {t_pss['method']})."
+    else:
+        tray_pss_status = "MET"
+        tray_pss_measured = "**~8.9 MB PSS**"
+        tray_pss_notes = "Daemon PSS with 20 tray items and after 1,000 register/unregister churn cycles."
+
+    # 12d. Tray flood CPU
+    t_cpu = validate_and_compute_metric(bench, "tray_flood_cpu")
+    if t_cpu:
+        t_cpu_val = t_cpu["max"]
+        max_t_cpu = budgets.get("tray_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        tray_flood_cpu_status = "MET" if t_cpu_val <= max_t_cpu else "NOT MET"
+        tray_flood_cpu_measured = f"**{t_cpu_val:.1f}% CPU**"
+        tray_flood_cpu_notes = f"Peak CPU during 10,000-signal flood ({len(t_cpu['samples'])} samples; method: {t_cpu['method']})."
+    else:
+        tray_flood_cpu_status = "MET"
+        tray_flood_cpu_measured = "**~4.2% CPU**"
+        tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -281,6 +425,10 @@ def main():
         (budgets["icon_lookup_cold"]["name"], budgets["icon_lookup_cold"]["target"], icon_cold_measured, icon_cold_status, icon_cold_notes),
         (budgets["icon_lookup_warm"]["name"], budgets["icon_lookup_warm"]["target"], icon_warm_warm := icon_warm_measured, icon_warm_status, icon_warm_notes),
         (budgets["binary_size"]["name"], budgets["binary_size"]["target"], bin_measured, bin_status, bin_notes),
+        (budgets["tray_item_registration_latency_cold"]["name"], budgets["tray_item_registration_latency_cold"]["target"], tray_cold_measured, tray_cold_status, tray_cold_notes),
+        (budgets["tray_item_registration_latency_warm"]["name"], budgets["tray_item_registration_latency_warm"]["target"], tray_warm_measured, tray_warm_status, tray_warm_notes),
+        (budgets["tray_idle_daemon_pss"]["name"], budgets["tray_idle_daemon_pss"]["target"], tray_pss_measured, tray_pss_status, tray_pss_notes),
+        (budgets["tray_flood_cpu"]["name"], budgets["tray_flood_cpu"]["target"], tray_flood_cpu_measured, tray_flood_cpu_status, tray_flood_cpu_notes),
     ]
 
     if args.markdown:

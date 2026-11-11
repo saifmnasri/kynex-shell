@@ -134,9 +134,15 @@ Item {
 
             tryVerify(function() { return launcher.visible; });
             tryVerify(function() {
-                let children = launcher.listView.contentItem.children;
-                return children.length >= 2;
-            }, 1000, "Delegates must be instantiated");
+                let delegates = [];
+                for (let i = 0; i < launcher.listView.contentItem.children.length; ++i) {
+                    let child = launcher.listView.contentItem.children[i];
+                    if (child.hasOwnProperty("selected") && child.hasOwnProperty("secondaryText")) {
+                        delegates.push(child);
+                    }
+                }
+                return delegates.length >= 2 && delegates[0].secondaryText === "Web Browser";
+            }, 1000, "Delegates must be instantiated with properties bound");
 
             let delegates = [];
             for (let i = 0; i < launcher.listView.contentItem.children.length; ++i) {

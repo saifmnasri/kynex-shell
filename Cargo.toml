@@ -47,6 +47,7 @@ kynex-ipc = { path = "crates/kynex-ipc", version = "0.1.0" }
 kynex-notifications = { path = "crates/kynex-notifications", version = "0.1.0" }
 kynex-shell-core = { path = "crates/kynex-shell-core", version = "0.1.0" }
 kynex-style = { path = "crates/kynex-style", version = "0.1.0" }
+kynex-tray = { path = "crates/kynex-tray", version = "0.1.0" }
 
 [profile.release]
 lto = "thin"
