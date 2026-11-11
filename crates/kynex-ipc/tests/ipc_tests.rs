@@ -146,6 +146,7 @@ fn test_tray_ipc_constants_and_types() {
         attention_pixmap: vec![0xFF, 0x44, 0x55, 0x66],
         attention_pixmap_width: 1,
         attention_pixmap_height: 1,
+        menu_path: "/MenuBar".to_string(),
     };
 
     let cloned = info.clone();

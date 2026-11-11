@@ -338,3 +338,64 @@
   - Proptests for pixmap validator and sanitizer.
   - Cargo-fuzz target for pixmap validator (10 min, 372M executions, 0 crashes).
   - 10x consecutive test execution across workspace with zero flakes.
+
+---
+
+# Security checklist (Stage P - System Tray dbusmenu Protocol & Shell Surface)
+
+- [x] Inputs from other processes/files are validated (size, format, encoding, bounds):
+  - dbusmenu layout trees and item properties are treated as 100% untrusted remote input.
+  - Nesting depth capped at `<= 6` levels (`MAX_MENU_DEPTH`). Trees deeper than 6 are rejected immediately.
+  - Total items capped at `<= 500` items (`MAX_TOTAL_ITEMS`). Trees exceeding 500 nodes are rejected immediately.
+  - Children per node capped at `<= 100` (`MAX_CHILDREN_PER_NODE`).
+  - Item IDs validated: duplicate IDs, negative IDs (other than root 0), cycles, or nodes that are their own ancestors reject the entire layout (`DuplicateId`, `InvalidId`, `CycleDetected`).
+  - Menu labels sanitized: capped at `<= 256` chars after stripping XML/HTML markup (`<b>`, `<span ...>`, etc.), ASCII controls (0x00-0x1F, 0x7F), and Unicode bidi overrides/isolates (U+202A-202E, U+2066-2069). Mnemonic underscores handled correctly (`_File` -> `File`, `__` -> `_`).
+  - Property type confusion tolerated: unexpected variant types ignored with safe fallbacks rather than crashing.
+  - Toggle type and state mapped strictly: `checkmark` -> Checkbox, `radio` -> Radio; toggle-state `1` -> Checked, `0` -> Unchecked, others -> Unknown.
+  - Shortcuts formatted and sanitized: parsed from string array, mapped to readable standard text (`Ctrl+Q`), capped at 64 chars.
+  - Icon names sanitized through `kynex-icons` naming rules: no raw absolute paths allowed.
+  - Invisible items (`visible: false`) dropped during parsing.
+  - Disabled items (`enabled: false`) kept but marked as disabled in both D-Bus DTO and UI model.
+  - Event validation: an event is permitted only for an ID that exists in the CURRENT validated layout, is enabled, and is not a separator; only event kinds `"clicked"` and `"hovered"` are forwarded.
+  - QML presentation explicitly uses `Text.PlainText` for all item labels, shortcuts, and tooltips.
+- [x] No shell execution; commands use argv arrays only:
+  - Zero shell execution in daemon, shell, or core crates.
+- [x] No `unsafe` (or each use justified with `// SAFETY:` and a test):
+  - `crates/kynex-dbusmenu` enforces `#![forbid(unsafe_code)]` with zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-shell-core/src/menu.rs` has zero `unsafe`, zero `unwrap()`, zero `expect()`.
+  - `crates/kynex-daemon/src/services/tray_menu.rs` has zero `unsafe`.
+- [x] No secrets, tokens, personal paths in code, logs or test fixtures:
+  - Verified with `ripsecrets --strict-ignore .`; zero secrets found.
+- [x] D-Bus: version bumped if API changed; caller checked for sensitive methods:
+  - Architecture contract: shell NEVER speaks `com.canonical.dbusmenu` directly; `kynex-daemon` acts as the security boundary.
+  - Internal interface `org.kynexos.Daemon.Tray1` extended with `GetMenu(item_id) -> (revision u, a(iisbbuuisusb))`, `MenuAboutToShow(item_id, menu_item_id)`, `MenuEvent(item_id, menu_item_id, event s)`, and signal `MenuChanged(item_id, revision)`.
+  - Documented in `docs/DBUS_API.md` and ADR-015.
+  - 2-second timeout on all remote dbusmenu calls (`GetLayout`, `AboutToShow`, `Event`) preventing hanging clients from starving daemon worker threads.
+  - Per-item rate limiting (10 refreshes/s) on `LayoutUpdated` signals; drops flood bursts.
+  - Concurrent fetch coalescing (single in-flight request per item) and global concurrency semaphore (max 8 concurrent fetches).
+  - Revision-based caching with lazy on-demand loading; cache dropped on item unregistration or sender disconnect.
+- [x] File ops: paths canonicalized; symlink and race conditions considered:
+  - No file I/O in `kynex-dbusmenu` or `tray_menu.rs`; pure in-memory state.
+- [x] Resource limits (memory, depth, count, time) on anything parsing untrusted data:
+  - Depth <= 6, total items <= 500, children per node <= 100, label <= 256 chars.
+  - Concurrent fetches capped at 8; timeouts capped at 2.0 s.
+  - Rate limiting capped at 10/s per item.
+- [x] Failure path is safe:
+  - Malformed or hostile layouts reject completely without polluting cache.
+  - Slow or deadlocked items timeout safely after 2 s.
+  - Disconnected items cleanly purged from cache and listener channels cancelled.
+- [x] Tests include malicious/malformed input cases:
+  - Hostile nesting: 1,000 levels deep.
+  - Hostile counts: 100,000 items, 100,000 children.
+  - Hostile labels: 10,000 chars, bidi overrides, control chars, HTML/XML tags.
+  - Malformed IDs: duplicate IDs, negative IDs, cycles (`1 -> 2 -> 1`).
+  - Property type confusion: strings where integers expected, dicts where arrays expected.
+  - Hanging items: GetLayout hangs forever, AboutToShow hangs for 30s.
+  - Signal flood: 10,000 LayoutUpdated/s while client executes `Core1.Ping()`.
+  - Event validation: event sent to invisible, disabled, or non-existent IDs rejected.
+  - Vanished owner while menu is open.
+  - 6 named mutants verified (depth cap, item cap, duplicate ID, event validation, label sanitization, timeout).
+  - Proptest for layout parser and validator.
+  - Cargo-fuzz target (`fuzz_menu_parser`) running on libFuzzer with corpus committed.
+  - 10 flakiness test iterations passing with 0 flakes.
+

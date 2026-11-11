@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import Kynex.Controls
 import Kynex.Style
+import Kynex.Shell
 
 Item {
     id: root
@@ -42,6 +43,21 @@ Item {
         KynexSearchField {
             id: searchField
             placeholderText: "Find programs..."
+        }
+
+        KynexMenuItem {
+            id: menuItem
+            text: "Menu Action"
+            shortcutText: "Ctrl+M"
+        }
+
+        TrayMenuModel {
+            id: mockMenuModel
+        }
+
+        KynexMenu {
+            id: testMenu
+            model: mockMenuModel
         }
     }
 
@@ -114,6 +130,24 @@ Item {
     SignalSpy {
         id: listItemReleasedSpy
         target: listItem
+        signalName: "released"
+    }
+
+    SignalSpy {
+        id: menuItemClickedSpy
+        target: menuItem
+        signalName: "clicked"
+    }
+
+    SignalSpy {
+        id: menuItemPressedSpy
+        target: menuItem
+        signalName: "pressed"
+    }
+
+    SignalSpy {
+        id: menuItemReleasedSpy
+        target: menuItem
         signalName: "released"
     }
 
@@ -886,6 +920,196 @@ Item {
             searchField.enabled = true;
             verify(searchField.inputEnabled);
             searchField.clear();
+
+            // 8. KynexMenuItem
+            menuItem.enabled = true;
+            menuItemClickedSpy.clear();
+            menuItemPressedSpy.clear();
+            menuItemReleasedSpy.clear();
+
+            menuItem.enabled = false;
+            compare(menuItem.opacity, Style.opacity.disabled);
+            compare(menuItem.cursorShape, Qt.ArrowCursor);
+
+            send_all_inputs(menuItem);
+            compare(menuItemClickedSpy.count, 0);
+            compare(menuItemPressedSpy.count, 0);
+            compare(menuItemReleasedSpy.count, 0);
+
+            // Programmatic calls while disabled
+            menuItem.click();
+            menuItem.press();
+            menuItem.release();
+            compare(menuItemClickedSpy.count, 0);
+            compare(menuItemPressedSpy.count, 0);
+            compare(menuItemReleasedSpy.count, 0);
+
+            // Accessible action while disabled
+            menuItem.Accessible.pressAction();
+            compare(menuItemClickedSpy.count, 0);
+
+            // Positive control
+            menuItem.enabled = true;
+            menuItem.click();
+            compare(menuItemClickedSpy.count, 1);
+            menuItemClickedSpy.clear();
+        }
+
+        function test_menu_item_properties_and_features(): void {
+            // Checkmark toggle
+            menuItem.toggleType = 1;
+            menuItem.toggleState = 0;
+            compare(menuItem.checkmarkText, "");
+            menuItem.toggleState = 1;
+            compare(menuItem.checkmarkText, "✓");
+
+            // Radio toggle
+            menuItem.toggleType = 2;
+            menuItem.toggleState = 0;
+            compare(menuItem.checkmarkText, "○");
+            menuItem.toggleState = 1;
+            compare(menuItem.checkmarkText, "●");
+
+            // Submenu indicator
+            menuItem.hasSubmenu = true;
+            compare(menuItem.submenuArrowText, "▶");
+
+            // Dispositions
+            menuItem.disposition = 0;
+            compare(menuItem.textColor, Style.colors.text);
+            menuItem.disposition = 1;
+            compare(menuItem.textColor, Style.colors.textMuted);
+            menuItem.disposition = 2;
+            compare(menuItem.textColor, Style.colors.warning);
+            menuItem.disposition = 3;
+            compare(menuItem.textColor, Style.colors.danger);
+
+            // Reset
+            menuItem.toggleType = 0;
+            menuItem.toggleState = 0;
+            menuItem.hasSubmenu = false;
+            menuItem.disposition = 0;
+
+            // Accessible name and focusable
+            compare(menuItem.Accessible.name, "Menu Action");
+            compare(menuItem.activeFocusOnTab, true);
+            compare(menuItem.Accessible.focusable, true);
+
+            menuItem.enabled = false;
+            compare(menuItem.Accessible.focusable, false);
+            menuItem.enabled = true;
+
+            menuItem.kind = 1;
+            compare(menuItem.activeFocusOnTab, false);
+            compare(menuItem.Accessible.focusable, false);
+            compare(menuItem.cursorShape, Qt.ArrowCursor);
+            menuItem.kind = 0;
+            compare(menuItem.cursorShape, Qt.PointingHandCursor);
+
+            // Accessible pressAction
+            menuItemClickedSpy.clear();
+            menuItem.Accessible.pressAction();
+            compare(menuItemClickedSpy.count, 1);
+            menuItemClickedSpy.clear();
+
+            // Down state tracking (driven by keyboard activeFocus + spaceDown)
+            compare(menuItem.down, false);
+            waitFocus(menuItem);
+            menuItem.spaceDown = true;
+            compare(menuItem.down, true);
+            menuItem.spaceDown = false;
+            compare(menuItem.down, false);
+
+            menuItem.enabled = false;
+            menuItem.spaceDown = true;
+            compare(menuItem.down, false);
+            menuItem.spaceDown = false;
+            menuItem.enabled = true;
+            root.forceActiveFocus();
+
+            // Border color & width states
+            menuItem.selected = false;
+            root.forceActiveFocus();
+            wait(10);
+            compare(menuItem.borderWidth, 0);
+            compare(menuItem.borderColor, Style.colors.surface);
+
+            menuItem.selected = true;
+            wait(10);
+            compare(menuItem.borderWidth, 1);
+            compare(menuItem.borderColor, Style.colors.accent);
+
+            menuItem.selected = false;
+            menuItem.forceActiveFocus();
+            wait(10);
+            compare(menuItem.borderWidth, 1);
+            compare(menuItem.borderColor, Style.colors.focusRing);
+            root.forceActiveFocus();
+
+            // Icon visibility
+            menuItem.iconSource = "";
+            verify(!menuItem.iconVisible);
+            let testIcon = Qt.resolvedUrl("test_icon.png");
+            menuItem.iconSource = testIcon;
+            tryVerify(function() { return menuItem.iconVisible; });
+            menuItem.iconSource = "";
+            tryVerify(function() { return !menuItem.iconVisible; });
+        }
+
+        function test_menu_separator(): void {
+            let sep = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexMenuItem { kind: 1 }",
+                root
+            );
+            verify(sep.isSeparator);
+            compare(sep.Accessible.role, Accessible.Separator);
+            compare(sep.cursorShape, Qt.ArrowCursor);
+            verify(!sep.activeFocusOnTab);
+            verify(!sep.Accessible.focusable);
+            sep.click();
+            sep.destroy();
+        }
+
+        function test_menu_container_and_model(): void {
+            compare(testMenu.Accessible.role, Accessible.PopupMenu);
+            compare(testMenu.Accessible.name, "Menu");
+            compare(testMenu.LayoutMirroring.childrenInherit, true);
+            compare(testMenu.LayoutMirroring.enabled, Qt.locale().textDirection === Qt.RightToLeft);
+
+            testMenu.enabled = false;
+            compare(testMenu.opacity, Style.opacity.disabled);
+            testMenu.enabled = true;
+            compare(testMenu.opacity, 1.0);
+
+            mockMenuModel.clear();
+            compare(testMenu.count, 0);
+
+            mockMenuModel.addItem(1, "Open", "Ctrl+O", 0, 0, 0, 0, false, "document-open", true);
+            mockMenuModel.addItem(2, "Disabled", "", 0, 0, 0, 0, false, "", false);
+            tryVerify(function() { return testMenu.count === 2; });
+            tryVerify(function() { return testMenu.itemAt(0) !== null && testMenu.itemAt(1) !== null; });
+
+            let d0 = testMenu.itemAt(0);
+            let d1 = testMenu.itemAt(1);
+
+            tryCompare(d0, "enabled", true);
+            tryCompare(d1, "enabled", false);
+            compare(d0.iconSource, "image://kynex-icon/document-open");
+            compare(d1.iconSource, "");
+
+            testMenu.selectedIndex = 0;
+            tryCompare(d0, "selected", true);
+            tryCompare(d1, "selected", false);
+
+            testMenu.selectedIndex = 1;
+            tryCompare(d0, "selected", false);
+            tryCompare(d1, "selected", true);
+
+            testMenu.selectedIndex = -1;
+            tryCompare(d0, "selected", false);
+            tryCompare(d1, "selected", false);
+
+            mockMenuModel.clear();
         }
 
         function test_controls_rtl_layout_mirroring(): void {
@@ -919,6 +1143,10 @@ Item {
                 "import QtQuick; import Kynex.Controls; KynexSearchField { text: 'Query'; width: 200 }",
                 root
             );
+            let ltrMenuItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexMenuItem { text: 'Menu'; hasSubmenu: true; width: 200 }",
+                root
+            );
 
             wait(50);
 
@@ -934,6 +1162,16 @@ Item {
             verify(!ltrSlider.LayoutMirroring.enabled, "LTR slider LayoutMirroring must be disabled");
             verify(!ltrTooltip.LayoutMirroring.enabled, "LTR tooltip LayoutMirroring must be disabled");
             verify(!ltrSearch.LayoutMirroring.enabled, "LTR search LayoutMirroring must be disabled");
+            verify(!ltrMenuItem.LayoutMirroring.enabled, "LTR menu item LayoutMirroring must be disabled");
+            compare(ltrMenuItem.submenuArrowText, "▶");
+
+            let ltrMenu = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexMenu {}",
+                root
+            );
+            verify(!ltrMenu.LayoutMirroring.enabled, "LTR menu LayoutMirroring must be disabled");
+            verify(ltrMenu.LayoutMirroring.childrenInherit, "LTR menu LayoutMirroring childrenInherit must be true");
+            ltrMenu.destroy();
 
             ltrButton.destroy();
             ltrSwitch.destroy();
@@ -941,6 +1179,7 @@ Item {
             ltrSlider.destroy();
             ltrTooltip.destroy();
             ltrSearch.destroy();
+            ltrMenuItem.destroy();
 
             // 2. Switch to RTL locale and verify LayoutMirroring enabled and mirrored positions
             LayoutHelper.setRtl(true);
@@ -970,6 +1209,10 @@ Item {
                 "import QtQuick; import Kynex.Controls; KynexSearchField { text: 'Query'; width: 200 }",
                 root
             );
+            let rtlMenuItem = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexMenuItem { text: 'Menu'; hasSubmenu: true; width: 200 }",
+                root
+            );
 
             wait(50);
 
@@ -985,6 +1228,16 @@ Item {
             verify(rtlSlider.LayoutMirroring.enabled, "RTL slider LayoutMirroring must be enabled");
             verify(rtlTooltip.LayoutMirroring.enabled, "RTL tooltip LayoutMirroring must be enabled");
             verify(rtlSearch.LayoutMirroring.enabled, "RTL search LayoutMirroring must be enabled");
+            verify(rtlMenuItem.LayoutMirroring.enabled, "RTL menu item LayoutMirroring must be enabled");
+            compare(rtlMenuItem.submenuArrowText, "◀");
+
+            let rtlMenu = Qt.createQmlObject(
+                "import QtQuick; import Kynex.Controls; KynexMenu {}",
+                root
+            );
+            verify(rtlMenu.LayoutMirroring.enabled, "RTL menu LayoutMirroring must be enabled");
+            verify(rtlMenu.LayoutMirroring.childrenInherit, "RTL menu LayoutMirroring childrenInherit must be true");
+            rtlMenu.destroy();
 
             rtlButton.destroy();
             rtlSwitch.destroy();
@@ -992,6 +1245,7 @@ Item {
             rtlSlider.destroy();
             rtlTooltip.destroy();
             rtlSearch.destroy();
+            rtlMenuItem.destroy();
 
             // Restore LTR
             LayoutHelper.setRtl(false);

@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (variant == "rtl-100" || variant == "launcher-rtl") {
+    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);
         QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
@@ -178,6 +178,21 @@ int main(int argc, char *argv[]) {
         scenario = "empty";
     } else if (variant == "launcher-rtl") {
         qmlFile = "tests/visual/LauncherHarness.qml";
+        scenario = "rtl";
+    } else if (variant == "menu-normal") {
+        qmlFile = "tests/visual/MenuHarness.qml";
+        scenario = "normal";
+    } else if (variant == "menu-checkable") {
+        qmlFile = "tests/visual/MenuHarness.qml";
+        scenario = "checkable";
+    } else if (variant == "menu-submenu") {
+        qmlFile = "tests/visual/MenuHarness.qml";
+        scenario = "submenu";
+    } else if (variant == "menu-disabled") {
+        qmlFile = "tests/visual/MenuHarness.qml";
+        scenario = "disabled";
+    } else if (variant == "menu-rtl") {
+        qmlFile = "tests/visual/MenuHarness.qml";
         scenario = "rtl";
     }
 

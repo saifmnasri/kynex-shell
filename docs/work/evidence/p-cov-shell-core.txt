@@ -1,0 +1,76 @@
+=== COMMAND ===
+cargo llvm-cov --package kynex-shell-core
+=== TIMESTAMP: 2026-11-11T14:50:09Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling kynex-shell-core v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-shell-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.49s
+     Running unittests src/lib.rs (target/llvm-cov-target/debug/deps/kynex_shell_core-2cf6b8301e2359b1)
+
+running 31 tests
+test coordinates::tests::test_second_monitor_at_negative_x ... ok
+test coordinates::tests::test_scaled_output ... ok
+test coordinates::tests::test_single_monitor_left_anchoring ... ok
+test coordinates::tests::test_single_monitor_right_anchoring ... ok
+test coordinates::tests::test_single_monitor_top_anchoring ... ok
+test launcher::tests::test_launcher_core_empty_results_resets_selection ... ok
+test coordinates::tests::test_single_monitor_bottom_anchoring ... ok
+test launcher::tests::test_latest_wins_sequence_ordering ... ok
+test launcher::tests::test_compute_letter_badge ... ok
+test launcher::tests::test_launcher_core_launch_bounds_and_off_by_one_protection ... ok
+test launcher::tests::test_launcher_core_stale_results_dropped ... ok
+test launcher::tests::test_sanitize_app_item_fallback ... ok
+test launcher::tests::test_sanitize_app_item_unknown_fallback ... ok
+test launcher::tests::test_sanitize_display_text_bidi_override_characters ... ok
+test launcher::tests::test_selection_wrap_around ... ok
+test launcher::tests::test_sanitize_display_text_control_characters ... ok
+test launcher::tests::test_sanitize_display_text_length_capping ... ok
+test launcher::tests::test_sanitize_query ... ok
+test menu::tests::test_menu_navigation_skips_separators_and_disabled ... ok
+test menu::tests::test_menu_popup_geometry_top_panel_pops_down ... ok
+test menu::tests::test_menu_popup_geometry_clamping ... ok
+test menu::tests::test_menu_popup_geometry_bottom_panel_flips_up ... ok
+test menu::tests::test_menu_roles_table ... ok
+test menu::tests::test_submenu_drill_down_and_pop_back ... ok
+test launcher::tests::test_launcher_core_query_and_close ... ok
+test tray::tests::test_handle_tray_event ... ok
+test tray::tests::test_role_values ... ok
+test tray::tests::test_letter_badge ... ok
+test tray::tests::test_state_upsert_and_remove ... ok
+test tray::tests::test_pixmap_cache_operations ... ok
+test tray::tests::test_ui_item_conversion ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/matching_test.rs (target/llvm-cov-target/debug/deps/matching_test-3c058f087d24f675)
+
+running 3 tests
+test test_suffix_stripping_and_helpers ... ok
+test test_realistic_installed_apps_matching ... ok
+test test_hostile_matching_inputs ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/taskbar_test.rs (target/llvm-cov-target/debug/deps/taskbar_test-729f944e641734c7)
+
+running 6 tests
+test test_launcher_core_methods_coverage ... ok
+test test_launcher_ctrl_p_pin_toggle ... ok
+test test_taskbar_edge_cases_and_coverage ... ok
+test test_taskbar_click_interactions_and_multi_window_cycling ... ok
+test test_taskbar_middle_click_close ... ok
+test test_taskbar_pinned_and_running_ordering ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+coordinates.rs                    173                 1    99.42%          13                 0   100.00%         184                 1    99.46%           0                 0         -
+launcher.rs                       678                 6    99.12%          43                 0   100.00%         359                 4    98.89%           0                 0         -
+matching.rs                       139                 2    98.56%           6                 0   100.00%          86                 2    97.67%           0                 0         -
+menu.rs                           369                35    90.51%          31                 5    83.87%         251                24    90.44%           0                 0         -
+taskbar.rs                        224                 1    99.55%          18                 0   100.00%         139                 1    99.28%           0                 0         -
+tray.rs                           880               216    75.45%          53                21    60.38%         572               158    72.38%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                            2463               261    89.40%         164                26    84.15%        1591               190    88.06%           0                 0         -

@@ -739,6 +739,8 @@ struct TrayItemTest {
     QString letterBadge;
     bool isMenu;
     int windowId;
+    QString menuPath;
+    bool hasMenu;
 };
 
 class MockTrayModel : public QAbstractListModel {
@@ -776,7 +778,9 @@ public:
         IsAttentionRole,
         LetterBadgeRole,
         IsMenuRole,
-        WindowIdRole
+        WindowIdRole,
+        MenuPathRole,
+        HasMenuRole
     };
 
     explicit MockTrayModel(QObject *parent = nullptr)
@@ -808,6 +812,8 @@ public:
             case LetterBadgeRole: return item.letterBadge;
             case IsMenuRole: return item.isMenu;
             case WindowIdRole: return item.windowId;
+            case MenuPathRole: return item.menuPath;
+            case HasMenuRole: return item.hasMenu;
             default: return QVariant();
         }
     }
@@ -826,6 +832,8 @@ public:
         roles[LetterBadgeRole] = "letterBadge";
         roles[IsMenuRole] = "isMenu";
         roles[WindowIdRole] = "windowId";
+        roles[MenuPathRole] = "menuPath";
+        roles[HasMenuRole] = "hasMenu";
         return roles;
     }
 
@@ -875,9 +883,10 @@ public:
     Q_INVOKABLE void addItem(const QString &id, const QString &title, const QString &status,
                              const QString &iconName, bool hasPixmap, const QString &pixmapId,
                              const QString &tooltipTitle, const QString &tooltipText,
-                             bool isAttention, const QString &letterBadge, bool isMenu, int windowId) {
+                             bool isAttention, const QString &letterBadge, bool isMenu, int windowId,
+                             const QString &menuPath = QString(), bool hasMenu = false) {
         beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-        m_items.append({id, title, status, iconName, hasPixmap, pixmapId, tooltipTitle, tooltipText, isAttention, letterBadge, isMenu, windowId});
+        m_items.append({id, title, status, iconName, hasPixmap, pixmapId, tooltipTitle, tooltipText, isAttention, letterBadge, isMenu, windowId, menuPath, hasMenu});
         endInsertRows();
         Q_EMIT countChanged();
     }
@@ -967,6 +976,155 @@ private:
     double m_lastPanelHeight = 40.0;
 };
 
+class MockTrayMenuModel : public QAbstractListModel {
+    Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
+    Q_PROPERTY(double menuX READ menuX NOTIFY geometryChanged)
+    Q_PROPERTY(double menuY READ menuY NOTIFY geometryChanged)
+    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+    Q_PROPERTY(int activeParentId READ activeParentId NOTIFY parentChanged)
+    Q_PROPERTY(QString itemId READ itemId NOTIFY itemChanged)
+
+public:
+    enum Roles {
+        IdRole = Qt::UserRole + 1,
+        LabelRole,
+        ShortcutRole,
+        KindRole,
+        ToggleRole,
+        ToggleStateRole,
+        DispositionRole,
+        HasSubmenuRole,
+        IconNameRole,
+        EnabledRole
+    };
+
+    struct MockMenuItem {
+        int id;
+        QString label;
+        QString shortcut;
+        int kind;
+        int toggle;
+        int toggleState;
+        int disposition;
+        bool hasSubmenu;
+        QString iconName;
+        bool enabled;
+    };
+
+    explicit MockTrayMenuModel(QObject *parent = nullptr)
+        : QAbstractListModel(parent), m_visible(false), m_menuX(0.0), m_menuY(0.0),
+          m_selectedIndex(-1), m_activeParentId(0) {}
+
+    int rowCount(const QModelIndex & = QModelIndex()) const override { return m_items.size(); }
+    QVariant data(const QModelIndex &index, int role) const override {
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
+            return QVariant();
+        const auto &it = m_items.at(index.row());
+        switch (role) {
+            case IdRole: return it.id;
+            case LabelRole: return it.label;
+            case ShortcutRole: return it.shortcut;
+            case KindRole: return it.kind;
+            case ToggleRole: return it.toggle;
+            case ToggleStateRole: return it.toggleState;
+            case DispositionRole: return it.disposition;
+            case HasSubmenuRole: return it.hasSubmenu;
+            case IconNameRole: return it.iconName;
+            case EnabledRole: return it.enabled;
+            default: return QVariant();
+        }
+    }
+
+    QHash<int, QByteArray> roleNames() const override {
+        QHash<int, QByteArray> roles;
+        roles[IdRole] = "id";
+        roles[LabelRole] = "label";
+        roles[ShortcutRole] = "shortcut";
+        roles[KindRole] = "kind";
+        roles[ToggleRole] = "toggle";
+        roles[ToggleStateRole] = "toggleState";
+        roles[DispositionRole] = "disposition";
+        roles[HasSubmenuRole] = "hasSubmenu";
+        roles[IconNameRole] = "iconName";
+        roles[EnabledRole] = "enabled";
+        return roles;
+    }
+
+    int count() const { return m_items.size(); }
+    bool visible() const { return m_visible; }
+    void setVisible(bool v) { if (m_visible != v) { m_visible = v; Q_EMIT visibleChanged(); } }
+    double menuX() const { return m_menuX; }
+    double menuY() const { return m_menuY; }
+    int selectedIndex() const { return m_selectedIndex; }
+    void setSelectedIndex(int idx) {
+        if (m_selectedIndex != idx) {
+            m_selectedIndex = idx;
+            Q_EMIT selectedIndexChanged();
+        }
+    }
+    int activeParentId() const { return m_activeParentId; }
+    QString itemId() const { return m_itemId; }
+
+    Q_INVOKABLE void addItem(int id, const QString &label, const QString &shortcut,
+                             int kind, int toggle, int toggleState,
+                             int disposition, bool hasSubmenu,
+                             const QString &iconName, bool enabled) {
+        beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
+        m_items.append({id, label, shortcut, kind, toggle, toggleState, disposition, hasSubmenu, iconName, enabled});
+        endInsertRows();
+        Q_EMIT countChanged();
+    }
+
+    Q_INVOKABLE void clear() {
+        beginResetModel();
+        m_items.clear();
+        endResetModel();
+        setSelectedIndex(-1);
+        Q_EMIT countChanged();
+    }
+
+    Q_INVOKABLE void init() {}
+    Q_INVOKABLE void open(const QString &id, double ax, double ay, double, double,
+                          double, double, double, double, double, double) {
+        m_itemId = id;
+        m_menuX = ax;
+        m_menuY = ay;
+        m_visible = true;
+        Q_EMIT visibleChanged();
+        Q_EMIT geometryChanged();
+        Q_EMIT itemChanged();
+    }
+    Q_INVOKABLE void close() { setVisible(false); }
+    Q_INVOKABLE void activateItem(int) { close(); }
+    Q_INVOKABLE void selectNext() {}
+    Q_INVOKABLE void selectPrev() {}
+    Q_INVOKABLE void selectFirst() {}
+    Q_INVOKABLE void selectLast() {}
+    Q_INVOKABLE void openSubmenu() {}
+    Q_INVOKABLE void closeSubmenu() { close(); }
+    Q_INVOKABLE void activateSelected() { close(); }
+    Q_INVOKABLE void recordFirstFrame() {}
+
+Q_SIGNALS:
+    void countChanged();
+    void visibleChanged();
+    void geometryChanged();
+    void selectedIndexChanged();
+    void parentChanged();
+    void itemChanged();
+
+private:
+    bool m_visible;
+    double m_menuX;
+    double m_menuY;
+    int m_selectedIndex;
+    int m_activeParentId;
+    QString m_itemId;
+    QList<MockMenuItem> m_items;
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
@@ -1000,6 +1158,7 @@ public slots:
         qmlRegisterType<MockWindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
         qmlRegisterType<MockNotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
         qmlRegisterType<MockTrayModel>("Kynex.Shell", 1, 0, "TrayModel");
+        qmlRegisterType<MockTrayMenuModel>("Kynex.Shell", 1, 0, "TrayMenuModel");
         engine->addImportPath("crates/kynex-shell/qml");
         engine->rootContext()->setContextProperty("LayoutHelper", new LayoutHelper(engine));
     }

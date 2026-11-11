@@ -28,9 +28,9 @@ use kynex_shell_core::coordinates::{
 };
 pub use kynex_shell_core::tray::{
     handle_tray_event, tray_item_role_value, tray_role_names, TrayEvent, TrayPixmapCache,
-    TrayRoleValue, TrayUiItem, TrayUiState, ROLE_HAS_PIXMAP, ROLE_ICON_NAME, ROLE_ID,
-    ROLE_IS_ATTENTION, ROLE_IS_MENU, ROLE_LETTER_BADGE, ROLE_PIXMAP_ID, ROLE_STATUS, ROLE_TITLE,
-    ROLE_TOOLTIP_TEXT, ROLE_TOOLTIP_TITLE, ROLE_WINDOW_ID,
+    TrayRoleValue, TrayUiItem, TrayUiState, ROLE_HAS_MENU, ROLE_HAS_PIXMAP, ROLE_ICON_NAME,
+    ROLE_ID, ROLE_IS_ATTENTION, ROLE_IS_MENU, ROLE_LETTER_BADGE, ROLE_MENU_PATH, ROLE_PIXMAP_ID,
+    ROLE_STATUS, ROLE_TITLE, ROLE_TOOLTIP_TEXT, ROLE_TOOLTIP_TITLE, ROLE_WINDOW_ID,
 };
 use tracing::{info, warn};
 use zbus::fdo::DBusProxy;
@@ -771,6 +771,8 @@ mod tests {
             letter_badge: "T".to_string(),
             is_menu: false,
             window_id: 0,
+            menu_path: String::new(),
+            has_menu: false,
             icon_pixmap: Vec::new(),
             icon_pixmap_width: 0,
             icon_pixmap_height: 0,
@@ -805,13 +807,15 @@ mod tests {
             letter_badge: "I".to_string(),
             is_menu: false,
             window_id: 1234,
+            menu_path: "/MenuBar".to_string(),
+            has_menu: true,
             icon_pixmap: vec![0; 16],
             icon_pixmap_width: 2,
             icon_pixmap_height: 2,
         };
 
         let role_names = create_tray_role_names();
-        assert_eq!(role_names.len(), 12);
+        assert_eq!(role_names.len(), 14);
         assert_eq!(role_names.get(&ROLE_ID).unwrap().to_string(), "id");
         assert_eq!(role_names.get(&ROLE_TITLE).unwrap().to_string(), "title");
         assert_eq!(role_names.get(&ROLE_STATUS).unwrap().to_string(), "status");
@@ -847,6 +851,14 @@ mod tests {
         assert_eq!(
             role_names.get(&ROLE_WINDOW_ID).unwrap().to_string(),
             "windowId"
+        );
+        assert_eq!(
+            role_names.get(&ROLE_MENU_PATH).unwrap().to_string(),
+            "menuPath"
+        );
+        assert_eq!(
+            role_names.get(&ROLE_HAS_MENU).unwrap().to_string(),
+            "hasMenu"
         );
 
         let v_id = tray_item_role_variant(&item, ROLE_ID);
@@ -974,6 +986,8 @@ mod tests {
             letter_badge: "T".to_string(),
             is_menu: false,
             window_id: 0,
+            menu_path: String::new(),
+            has_menu: false,
             icon_pixmap: Vec::new(),
             icon_pixmap_width: 0,
             icon_pixmap_height: 0,

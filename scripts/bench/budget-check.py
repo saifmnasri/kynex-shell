@@ -405,6 +405,86 @@ def main():
         tray_flood_cpu_measured = "**~4.2% CPU**"
         tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
 
+    # 13a. Tray menu open latency (cold)
+    m_cold = validate_and_compute_metric(bench, "menu_open_latency_cold")
+    if m_cold:
+        m_cold_p50 = m_cold["p50"]
+        m_cold_p95 = m_cold["p95"]
+        max_m_cold = budgets.get("menu_open_latency_cold", {}).get("max_ms", 50.0)
+        menu_cold_status = "MET" if m_cold_p95 <= max_m_cold else "NOT MET"
+        menu_cold_measured = f"**{m_cold_p50:.2f} ms (p50)**, **{m_cold_p95:.2f} ms (p95)**"
+        menu_cold_notes = f"Right-click to first menu frame (cold, {len(m_cold['samples'])} samples; method: {m_cold['method']})."
+    else:
+        menu_cold_status = "UNMEASURABLE"
+        menu_cold_measured = "Unmeasured"
+        menu_cold_notes = "Tray menu cold latency."
+
+    # 13b. Tray menu open latency (warm)
+    m_warm = validate_and_compute_metric(bench, "menu_open_latency_warm")
+    if m_warm:
+        m_warm_p50 = m_warm["p50"]
+        m_warm_p95 = m_warm["p95"]
+        max_m_warm = budgets.get("menu_open_latency_warm", {}).get("max_ms", 50.0)
+        menu_warm_status = "MET" if m_warm_p95 <= max_m_warm else "NOT MET"
+        menu_warm_measured = f"**{m_warm_p50:.2f} ms (p50)**, **{m_warm_p95:.2f} ms (p95)**"
+        menu_warm_notes = f"Right-click to first menu frame (warm, {len(m_warm['samples'])} samples; method: {m_warm['method']})."
+    else:
+        menu_warm_status = "UNMEASURABLE"
+        menu_warm_measured = "Unmeasured"
+        menu_warm_notes = "Tray menu warm latency."
+
+    # 13c. 500-item menu latency
+    m_500 = validate_and_compute_metric(bench, "menu_500_items_latency")
+    if m_500:
+        m_500_p95 = m_500["p95"]
+        max_m_500 = budgets.get("menu_500_items_latency", {}).get("max_ms", 50.0)
+        menu_500_status = "MET" if m_500_p95 <= max_m_500 else "NOT MET"
+        menu_500_measured = f"**{m_500_p95:.2f} ms (p95)**"
+        menu_500_notes = f"500-item menu parse & presentation ({len(m_500['samples'])} samples; method: {m_500['method']})."
+    else:
+        menu_500_status = "UNMEASURABLE"
+        menu_500_measured = "Unmeasured"
+        menu_500_notes = "500-item menu parse & presentation."
+
+    # 13d. Menu daemon PSS plateau
+    m_d_pss = validate_and_compute_metric(bench, "menu_idle_daemon_pss")
+    if m_d_pss:
+        m_d_pss_val = m_d_pss["max"]
+        max_m_d_pss = budgets.get("menu_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
+        menu_d_pss_status = "MET" if m_d_pss_val <= max_m_d_pss else "NOT MET"
+        menu_d_pss_measured = f"**{m_d_pss_val:.1f} MB PSS**"
+        menu_d_pss_notes = f"Daemon PSS after 100 menu open/close cycles plateau ({len(m_d_pss['samples'])} samples; method: {m_d_pss['method']})."
+    else:
+        menu_d_pss_status = "UNMEASURABLE"
+        menu_d_pss_measured = "Unmeasured"
+        menu_d_pss_notes = "Daemon PSS after 100 menu open/close cycles."
+
+    # 13e. Menu shell PSS plateau
+    m_s_pss = validate_and_compute_metric(bench, "menu_idle_shell_pss")
+    if m_s_pss:
+        m_s_pss_val = m_s_pss["max"]
+        max_m_s_pss = budgets.get("menu_idle_shell_pss", {}).get("max_pss_mb", 100.0)
+        menu_s_pss_status = "MET" if m_s_pss_val <= max_m_s_pss else "NOT MET"
+        menu_s_pss_measured = f"**{m_s_pss_val:.1f} MB PSS**"
+        menu_s_pss_notes = f"Shell PSS after 100 menu open/close cycles plateau ({len(m_s_pss['samples'])} samples; method: {m_s_pss['method']})."
+    else:
+        menu_s_pss_status = "UNMEASURABLE"
+        menu_s_pss_measured = "Unmeasured"
+        menu_s_pss_notes = "Shell PSS after 100 menu open/close cycles."
+
+    # 13f. Menu flood CPU
+    m_cpu = validate_and_compute_metric(bench, "menu_flood_cpu")
+    if m_cpu:
+        m_cpu_val = m_cpu["max"]
+        max_m_cpu = budgets.get("menu_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        menu_flood_cpu_status = "MET" if m_cpu_val <= max_m_cpu else "NOT MET"
+        menu_flood_cpu_measured = f"**{m_cpu_val:.1f}% CPU**"
+        menu_flood_cpu_notes = f"Peak CPU during 10,000 LayoutUpdated flood ({len(m_cpu['samples'])} samples; method: {m_cpu['method']})."
+    else:
+        menu_flood_cpu_status = "UNMEASURABLE"
+        menu_flood_cpu_measured = "Unmeasured"
+        menu_flood_cpu_notes = "Peak CPU during LayoutUpdated flood."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -429,6 +509,12 @@ def main():
         (budgets["tray_item_registration_latency_warm"]["name"], budgets["tray_item_registration_latency_warm"]["target"], tray_warm_measured, tray_warm_status, tray_warm_notes),
         (budgets["tray_idle_daemon_pss"]["name"], budgets["tray_idle_daemon_pss"]["target"], tray_pss_measured, tray_pss_status, tray_pss_notes),
         (budgets["tray_flood_cpu"]["name"], budgets["tray_flood_cpu"]["target"], tray_flood_cpu_measured, tray_flood_cpu_status, tray_flood_cpu_notes),
+        (budgets["menu_open_latency_cold"]["name"], budgets["menu_open_latency_cold"]["target"], menu_cold_measured, menu_cold_status, menu_cold_notes),
+        (budgets["menu_open_latency_warm"]["name"], budgets["menu_open_latency_warm"]["target"], menu_warm_measured, menu_warm_status, menu_warm_notes),
+        (budgets["menu_500_items_latency"]["name"], budgets["menu_500_items_latency"]["target"], menu_500_measured, menu_500_status, menu_500_notes),
+        (budgets["menu_idle_daemon_pss"]["name"], budgets["menu_idle_daemon_pss"]["target"], menu_d_pss_measured, menu_d_pss_status, menu_d_pss_notes),
+        (budgets["menu_idle_shell_pss"]["name"], budgets["menu_idle_shell_pss"]["target"], menu_s_pss_measured, menu_s_pss_status, menu_s_pss_notes),
+        (budgets["menu_flood_cpu"]["name"], budgets["menu_flood_cpu"]["target"], menu_flood_cpu_measured, menu_flood_cpu_status, menu_flood_cpu_notes),
     ]
 
     if args.markdown:

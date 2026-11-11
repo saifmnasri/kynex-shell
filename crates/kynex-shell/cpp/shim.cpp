@@ -9,6 +9,7 @@
 #include "kynex-shell/src/notifications.cxxqt.h"
 #include "kynex-shell/src/power.cxxqt.h"
 #include "kynex-shell/src/tray.cxxqt.h"
+#include "kynex-shell/src/menu.cxxqt.h"
 #include "kynex-shell/src/windows.cxxqt.h"
 #include <QtQml>
 #include <QFontDatabase>
@@ -24,6 +25,7 @@ void kynex_register_core_types()
     qmlRegisterType<NetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
     qmlRegisterType<NotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
     qmlRegisterType<TrayModel>("Kynex.Shell", 1, 0, "TrayModel");
+    qmlRegisterType<TrayMenuModel>("Kynex.Shell", 1, 0, "TrayMenuModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "TaskbarModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());

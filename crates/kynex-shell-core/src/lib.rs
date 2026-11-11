@@ -5,6 +5,7 @@
 pub mod coordinates;
 pub mod launcher;
 pub mod matching;
+pub mod menu;
 pub mod taskbar;
 pub mod tray;
 
@@ -21,6 +22,12 @@ pub use launcher::{
 pub use matching::{
     extract_reverse_dns_leaf, match_window_to_app, normalize_for_comparison, strip_desktop_suffix,
     AppCandidate,
+};
+pub use menu::{
+    compute_menu_popup_geometry, menu_role_names, MenuCoreState, MENU_ROLES, ROLE_MENU_DISPOSITION,
+    ROLE_MENU_ENABLED, ROLE_MENU_HAS_SUBMENU, ROLE_MENU_ICON_NAME, ROLE_MENU_ID, ROLE_MENU_KIND,
+    ROLE_MENU_LABEL, ROLE_MENU_PARENT_ID, ROLE_MENU_SHORTCUT, ROLE_MENU_TOGGLE,
+    ROLE_MENU_TOGGLE_STATE, ROLE_MENU_VISIBLE,
 };
 pub use taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
 pub use tray::{compute_letter_badge as compute_tray_letter_badge, TrayUiItem, TrayUiState};

@@ -203,6 +203,19 @@ Item {
             compare(shell.notificationLoader.item.notificationModel, shell.notificationModel);
         }
 
+        function test_menu_overlay_loader_ready_binding() {
+            compare(shell.menuOverlayLoaded, false);
+            shell.trayMenuModel.visible = true;
+            compare(shell.menuOverlayLoaded, true);
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready;
+            });
+            verify(shell.menuOverlayLoader.item !== null);
+            compare(shell.menuOverlayLoader.item.menuModel, shell.trayMenuModel);
+            shell.trayMenuModel.visible = false;
+        }
+
         function test_tray_initial_state() {
             compare(shell.trayModel.count, 0);
             compare(shell.trayArea.visible, false, "Tray area should be hidden when count is 0");
@@ -448,6 +461,51 @@ Item {
             compare(shell.trayModel.lastScreenX, -1920);
             compare(shell.trayModel.lastScreenY, 0);
             compare(shell.trayModel.lastPanelHeight, 48);
+        }
+
+        function test_tray_dbusmenu_right_click() {
+            shell.trayModel.clear();
+            compare(shell.trayRepeater.count, 0);
+
+            // Add item with hasMenu = true and a menuPath
+            shell.trayModel.addItem(
+                "dbusmenu-item-id",
+                "Menu App",
+                "Active",
+                "test-icon",
+                false,
+                "",
+                "Menu Title",
+                "Menu Desc",
+                false,
+                "M",
+                false,
+                0,
+                "/MenuBar",
+                true
+            );
+
+            compare(shell.trayRepeater.count, 1);
+            let btn = shell.trayRepeater.itemAt(0);
+            verify(btn !== null);
+
+            // Reset mock states
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+
+            let clickX = btn.width / 2;
+            let clickY = btn.height / 2;
+
+            // Right click -> should invoke trayMenuModel.open, NOT trayModel.contextMenu
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.RightButton);
+
+            compare(shell.trayMenuModel.visible, true);
+            compare(shell.trayMenuModel.itemId, "dbusmenu-item-id");
+            compare(shell.trayModel.lastContextMenuId, "");
+
+            // Closing menu hides overlay
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
         }
     }
 }

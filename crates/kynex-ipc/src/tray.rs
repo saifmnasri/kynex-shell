@@ -74,6 +74,37 @@ pub struct TrayItemInfo {
     pub attention_pixmap_width: i32,
     /// Height of `attention_pixmap`.
     pub attention_pixmap_height: i32,
+    /// Optional object path of associated `com.canonical.dbusmenu` service.
+    pub menu_path: String,
+}
+
+/// Representation of a validated menu item returned by `Tray1.GetMenu`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+pub struct MenuItemDto {
+    /// Unique menu item identifier.
+    pub id: i32,
+    /// Parent menu item identifier (0 for top-level root items).
+    pub parent: i32,
+    /// Sanitized display label text.
+    pub label: String,
+    /// Whether item is interactive.
+    pub enabled: bool,
+    /// Whether item is visible.
+    pub visible: bool,
+    /// Structural kind (0: normal, 1: separator).
+    pub kind: u32,
+    /// Toggle mark (0: none, 1: checkbox, 2: radio).
+    pub toggle: u32,
+    /// Toggle state (-1: indeterminate/unknown, 0: unchecked, 1: checked).
+    pub toggle_state: i32,
+    /// Sanitized Freedesktop icon theme name.
+    pub icon_name: String,
+    /// Visual disposition (0: normal, 1: informative, 2: warning, 3: alert).
+    pub disposition: u32,
+    /// Sanitized keyboard shortcut representation.
+    pub shortcut: String,
+    /// Whether this item has child menu items.
+    pub has_submenu: bool,
 }
 
 /// Client-side D-Bus proxy for `org.kynexos.Daemon.Tray1`.
@@ -98,6 +129,15 @@ pub trait Tray1 {
     /// Invokes scroll action on target item.
     fn scroll(&self, id: &str, delta: i32, orientation: &str) -> zbus::Result<()>;
 
+    /// Fetches the current sanitized menu layout for target tray item.
+    fn get_menu(&self, item_id: &str) -> zbus::Result<(u32, Vec<MenuItemDto>)>;
+
+    /// Signals that target submenu is about to be displayed; returns whether layout updated.
+    fn menu_about_to_show(&self, item_id: &str, menu_item_id: i32) -> zbus::Result<bool>;
+
+    /// Dispatches a user interaction event to the item's dbusmenu service.
+    fn menu_event(&self, item_id: &str, menu_item_id: i32, event: &str) -> zbus::Result<()>;
+
     /// Signal emitted when a new tray item is added.
     #[zbus(signal)]
     fn item_added(&self, item: TrayItemInfo) -> zbus::Result<()>;
@@ -109,6 +149,10 @@ pub trait Tray1 {
     /// Signal emitted when a tray item is unregistered or removed.
     #[zbus(signal)]
     fn item_removed(&self, id: &str) -> zbus::Result<()>;
+
+    /// Signal emitted when an item's menu layout updates.
+    #[zbus(signal)]
+    fn menu_changed(&self, item_id: &str, revision: u32) -> zbus::Result<()>;
 }
 
 /// Client-side D-Bus proxy for `org.kde.StatusNotifierWatcher`.
@@ -273,6 +317,10 @@ pub trait StatusNotifierItem {
     #[zbus(property)]
     fn item_is_menu(&self) -> zbus::Result<bool>;
 
+    /// Menu property returning object path to `com.canonical.dbusmenu`.
+    #[zbus(property)]
+    fn menu(&self) -> zbus::Result<zbus::OwnedObjectPath>;
+
     /// Signal emitted when title changes.
     #[zbus(signal)]
     fn new_title(&self) -> zbus::Result<()>;
@@ -296,6 +344,56 @@ pub trait StatusNotifierItem {
     /// Signal emitted when status changes.
     #[zbus(signal)]
     fn new_status(&self, status: &str) -> zbus::Result<()>;
+}
+
+/// Standard interface name for dbusmenu.
+pub const DBUS_MENU_INTERFACE: &str = "com.canonical.dbusmenu";
+
+/// Client-side proxy for `com.canonical.dbusmenu`.
+#[zbus::proxy(
+    default_service = "org.kde.StatusNotifierItem",
+    interface = "com.canonical.dbusmenu",
+    assume_defaults = false
+)]
+pub trait DBusMenu {
+    /// Returns the menu layout starting at parent_id.
+    fn get_layout(
+        &self,
+        parent_id: i32,
+        recursion_depth: i32,
+        property_names: &[&str],
+    ) -> zbus::Result<(
+        u32,
+        (
+            i32,
+            std::collections::HashMap<String, zbus::OwnedVariant>,
+            Vec<zbus::OwnedVariant>,
+        ),
+    )>;
+
+    /// Notifies that a menu item is about to be shown; returns whether update is needed.
+    fn about_to_show(&self, id: i32) -> zbus::Result<bool>;
+
+    /// Sends an interaction event to the menu.
+    fn event(
+        &self,
+        id: i32,
+        event_id: &str,
+        data: &zbus::Variant<'_>,
+        timestamp: u32,
+    ) -> zbus::Result<()>;
+
+    /// Signal emitted when layout updates.
+    #[zbus(signal)]
+    fn layout_updated(&self, revision: u32, parent: i32) -> zbus::Result<()>;
+
+    /// Signal emitted when item properties update.
+    #[zbus(signal)]
+    fn items_properties_updated(
+        &self,
+        updated_props: Vec<(i32, std::collections::HashMap<String, zbus::OwnedVariant>)>,
+        removed_props: Vec<(i32, Vec<String>)>,
+    ) -> zbus::Result<()>;
 }
 
 #[cfg(test)]
@@ -326,12 +424,31 @@ mod tests {
             attention_pixmap: vec![4, 5, 6, 7],
             attention_pixmap_width: 1,
             attention_pixmap_height: 1,
+            menu_path: "/MenuBar".to_string(),
         };
 
         let cloned = info.clone();
         assert_eq!(info, cloned);
         assert_ne!(info, def);
         assert_eq!(cloned.id, ":1.100/StatusNotifierItem");
+        assert_eq!(cloned.menu_path, "/MenuBar");
+
+        let menu_item = MenuItemDto {
+            id: 1,
+            parent: 0,
+            label: "Test".to_string(),
+            enabled: true,
+            visible: true,
+            kind: 0,
+            toggle: 0,
+            toggle_state: 0,
+            icon_name: "icon".to_string(),
+            disposition: 0,
+            shortcut: "Ctrl+Q".to_string(),
+            has_submenu: false,
+        };
+        assert_eq!(menu_item.label, "Test");
+        assert_eq!(DBUS_MENU_INTERFACE, "com.canonical.dbusmenu");
 
         // Constants
         assert_eq!(TRAY_INTERFACE, "org.kynexos.Daemon.Tray1");

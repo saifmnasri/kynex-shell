@@ -36,9 +36,11 @@ LayerSurface {
     readonly property alias launcherModel: launcherModel
     readonly property alias notificationModel: notificationModel
     readonly property alias trayModel: trayModel
+    readonly property alias trayMenuModel: trayMenuModel
     readonly property alias taskbarList: taskbarList
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
+    readonly property alias menuOverlayLoader: menuOverlayLoader
     readonly property alias trayArea: trayArea
     readonly property alias trayRepeater: trayRepeater
     readonly property alias networkText: networkText
@@ -131,10 +133,40 @@ LayerSurface {
         Component.onCompleted: trayModel.init()
     }
 
+    TrayMenuModel {
+        id: trayMenuModel
+        Component.onCompleted: trayMenuModel.init()
+    }
+
+    property bool menuOverlayLoaded: false
+
+    Connections {
+        target: trayMenuModel
+        function onVisibleChanged(): void {
+            if (trayMenuModel.visible) {
+                panel.menuOverlayLoaded = true;
+            }
+        }
+    }
+
+    Loader {
+        id: menuOverlayLoader
+        active: panel.menuOverlayLoaded
+        source: "MenuOverlay.qml"
+
+        Binding {
+            target: menuOverlayLoader.item
+            property: "menuModel"
+            value: trayMenuModel
+            when: menuOverlayLoader.status === Loader.Ready
+        }
+    }
+
     Connections {
         target: panel
         function onFrameSwapped(): void {
             trayModel.recordFirstFrame();
+            trayMenuModel.recordFirstFrame();
         }
     }
 
@@ -251,6 +283,8 @@ LayerSurface {
                     required property string letterBadge
                     required property bool isMenu
                     required property int windowId
+                    required property string menuPath
+                    required property bool hasMenu
 
                     readonly property alias mouseArea: trayMouseArea
                     readonly property alias iconImage: trayIconImage
@@ -336,13 +370,24 @@ LayerSurface {
                                                             panel.screenDevicePixelRatio,
                                                             panel.height);
                             } else if (mouse.button === Qt.RightButton) {
-                                trayModel.contextMenu(trayBtn.id, gx, gy,
-                                                      panel.screenVirtualX,
-                                                      panel.screenVirtualY,
-                                                      panel.screenWidth,
-                                                      panel.screenHeight,
-                                                      panel.screenDevicePixelRatio,
-                                                      panel.height);
+                                if (trayBtn.hasMenu) {
+                                    var menuW = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
+                                    var menuH = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
+                                    trayMenuModel.open(trayBtn.id, gx, gy, trayBtn.width, trayBtn.height,
+                                                       menuW, menuH,
+                                                       panel.screenVirtualX,
+                                                       panel.screenVirtualY,
+                                                       panel.screenWidth,
+                                                       panel.screenHeight);
+                                } else {
+                                    trayModel.contextMenu(trayBtn.id, gx, gy,
+                                                          panel.screenVirtualX,
+                                                          panel.screenVirtualY,
+                                                          panel.screenWidth,
+                                                          panel.screenHeight,
+                                                          panel.screenDevicePixelRatio,
+                                                          panel.height);
+                                }
                             }
                         }
 

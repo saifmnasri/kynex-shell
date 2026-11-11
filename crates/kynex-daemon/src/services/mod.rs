@@ -7,6 +7,7 @@ pub mod pins;
 pub mod power;
 pub mod shell;
 pub mod tray;
+pub mod tray_menu;
 pub mod windows;
 
 pub use apps::{setup_apps_watcher, AppsServer, AppsSharedState, LAUNCH_RATE_LIMIT_PER_SEC};

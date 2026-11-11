@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 
 use futures_util::StreamExt;
 use kynex_ipc::tray::{
-    StatusNotifierItemProxy, TrayItemInfo, STATUS_NOTIFIER_WATCHER_DESTINATION_FDO,
+    MenuItemDto, StatusNotifierItemProxy, TrayItemInfo, STATUS_NOTIFIER_WATCHER_DESTINATION_FDO,
     STATUS_NOTIFIER_WATCHER_DESTINATION_KDE,
 };
 use kynex_tray::limits::PROPERTY_TIMEOUT_SECS;
@@ -54,7 +54,7 @@ pub struct TraySharedState {
     /// Signal emitter for `org.freedesktop.StatusNotifierWatcher`.
     pub fdo_watcher_emitter: Mutex<Option<SignalEmitter<'static>>>,
     /// Signal emitter for internal `org.kynexos.Daemon.Tray1`.
-    pub tray1_emitter: Mutex<Option<SignalEmitter<'static>>>,
+    pub tray1_emitter: Arc<Mutex<Option<SignalEmitter<'static>>>>,
     /// Whether `org.kde.StatusNotifierWatcher` was successfully acquired on the bus.
     pub kde_name_acquired: AtomicBool,
     /// Whether `org.freedesktop.StatusNotifierWatcher` was successfully acquired on the bus.
@@ -65,6 +65,8 @@ pub struct TraySharedState {
     pub well_known_owners: Mutex<HashMap<String, Vec<ItemKey>>>,
     /// Semaphore enforcing a bounded cap on concurrent property fetches.
     pub fetch_semaphore: Arc<Semaphore>,
+    /// Menu manager handling dbusmenu fetching, caching, rate limiting, and events.
+    pub menu_manager: Arc<crate::services::tray_menu::MenuManager>,
 }
 
 impl TraySharedState {
@@ -77,12 +79,13 @@ impl TraySharedState {
             conn: RwLock::new(None),
             watcher_emitter: Mutex::new(None),
             fdo_watcher_emitter: Mutex::new(None),
-            tray1_emitter: Mutex::new(None),
+            tray1_emitter: Arc::new(Mutex::new(None)),
             kde_name_acquired: AtomicBool::new(false),
             fdo_name_acquired: AtomicBool::new(false),
             item_cancellers: Mutex::new(HashMap::new()),
             well_known_owners: Mutex::new(HashMap::new()),
             fetch_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_FETCHES)),
+            menu_manager: Arc::new(crate::services::tray_menu::MenuManager::new()),
         }
     }
 
@@ -294,6 +297,14 @@ impl TrayServer {
     #[zbus(signal)]
     pub async fn item_removed(emitter: &SignalEmitter<'_>, id: &str) -> zbus::Result<()>;
 
+    /// Signal emitted when an item's menu layout updates.
+    #[zbus(signal)]
+    pub async fn menu_changed(
+        emitter: &SignalEmitter<'_>,
+        item_id: &str,
+        revision: u32,
+    ) -> zbus::Result<()>;
+
     /// Returns list of all active tray items.
     async fn get_items(&self) -> Vec<TrayItemInfo> {
         let registry = self.shared.registry.read().await;
@@ -391,6 +402,84 @@ impl TrayServer {
 
         Ok(())
     }
+
+    /// Fetches the current sanitized menu layout for target tray item.
+    async fn get_menu(&self, item_id: &str) -> zbus::fdo::Result<(u32, Vec<MenuItemDto>)> {
+        let (bus_name, object_path) = parse_item_id(item_id)?;
+        let key = ItemKey::new(bus_name.clone(), object_path.clone());
+        let menu_path = {
+            let reg = self.shared.registry.read().await;
+            let item = reg.get(&key).ok_or_else(|| {
+                zbus::fdo::Error::InvalidArgs(format!("Unknown tray item '{item_id}'"))
+            })?;
+            item.menu_path.clone().ok_or_else(|| {
+                zbus::fdo::Error::NotSupported(format!(
+                    "Tray item '{item_id}' does not export a dbusmenu"
+                ))
+            })?
+        };
+
+        let conn = get_connection(&self.shared).await?;
+        self.shared
+            .menu_manager
+            .get_menu(&conn, &bus_name, &menu_path, item_id)
+            .await
+    }
+
+    /// Signals that target submenu is about to be displayed; returns whether layout updated.
+    async fn menu_about_to_show(
+        &self,
+        item_id: &str,
+        menu_item_id: i32,
+    ) -> zbus::fdo::Result<bool> {
+        let (bus_name, object_path) = parse_item_id(item_id)?;
+        let key = ItemKey::new(bus_name.clone(), object_path.clone());
+        let menu_path = {
+            let reg = self.shared.registry.read().await;
+            let item = reg.get(&key).ok_or_else(|| {
+                zbus::fdo::Error::InvalidArgs(format!("Unknown tray item '{item_id}'"))
+            })?;
+            item.menu_path.clone().ok_or_else(|| {
+                zbus::fdo::Error::NotSupported(format!(
+                    "Tray item '{item_id}' does not export a dbusmenu"
+                ))
+            })?
+        };
+
+        let conn = get_connection(&self.shared).await?;
+        self.shared
+            .menu_manager
+            .menu_about_to_show(&conn, &bus_name, &menu_path, item_id, menu_item_id)
+            .await
+    }
+
+    /// Dispatches a user interaction event to the item's dbusmenu service.
+    async fn menu_event(
+        &self,
+        item_id: &str,
+        menu_item_id: i32,
+        event: &str,
+    ) -> zbus::fdo::Result<()> {
+        let (bus_name, object_path) = parse_item_id(item_id)?;
+        let key = ItemKey::new(bus_name.clone(), object_path.clone());
+        let menu_path = {
+            let reg = self.shared.registry.read().await;
+            let item = reg.get(&key).ok_or_else(|| {
+                zbus::fdo::Error::InvalidArgs(format!("Unknown tray item '{item_id}'"))
+            })?;
+            item.menu_path.clone().ok_or_else(|| {
+                zbus::fdo::Error::NotSupported(format!(
+                    "Tray item '{item_id}' does not export a dbusmenu"
+                ))
+            })?
+        };
+
+        let conn = get_connection(&self.shared).await?;
+        self.shared
+            .menu_manager
+            .menu_event(&conn, &bus_name, &menu_path, item_id, menu_item_id, event)
+            .await
+    }
 }
 
 /// Helper converting pure Rust [`ItemState`] to D-Bus IPC [`TrayItemInfo`].
@@ -424,6 +513,7 @@ pub fn item_state_to_info(state: &ItemState) -> TrayItemInfo {
         attention_pixmap,
         attention_pixmap_width,
         attention_pixmap_height,
+        menu_path: state.menu_path.clone().unwrap_or_default(),
     }
 }
 
@@ -603,10 +693,18 @@ async fn handle_register_item(
     // Spawn item signal listener
     tokio::spawn(run_item_signal_listener(
         Arc::clone(&shared),
-        conn,
-        key,
+        conn.clone(),
+        key.clone(),
         cancel_rx,
     ));
+
+    // Register dbusmenu signal listener if item exports a menu path
+    if let Some(ref menu_path) = item_state.menu_path {
+        shared
+            .menu_manager
+            .register_signal_listener(&conn, &key, menu_path, Arc::clone(&shared.tray1_emitter))
+            .await;
+    }
 
     Ok(())
 }
@@ -706,6 +804,19 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
             .and_then(|v| v.clone().try_into().ok())
             .unwrap_or(false);
 
+        let raw_menu_path: Option<String> = props.get("Menu").and_then(|v| {
+            let p = match &**v {
+                zbus::zvariant::Variant::ObjectPath(op) => op.as_str().trim(),
+                zbus::zvariant::Variant::Str(s) => s.as_str().trim(),
+                _ => return None,
+            };
+            if p.is_empty() || p == "/" || p == "/NO_DBUSMENU" {
+                None
+            } else {
+                Some(p.to_string())
+            }
+        });
+
         let (raw_tt_title, raw_tt_text) = match props.get("ToolTip").and_then(|v| {
             let tt: Result<(String, Vec<RawPixmapTuple>, String, String), _> = v.clone().try_into();
             tt.ok()
@@ -725,6 +836,7 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
             raw_attention_icon_name,
             raw_attention_pixmaps,
             is_menu,
+            raw_menu_path,
             raw_tt_title,
             raw_tt_text,
         ))
@@ -741,6 +853,7 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
         raw_attention_icon_name,
         raw_attention_pixmaps,
         is_menu,
+        raw_menu_path,
         raw_tt_title,
         raw_tt_text,
     ) = tokio::time::timeout(Duration::from_secs(PROPERTY_TIMEOUT_SECS), fetch_fut)
@@ -804,6 +917,7 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
         window_id,
         attention_icon_name,
         attention_pixmap,
+        menu_path: raw_menu_path,
     })
 }
 
@@ -1017,6 +1131,7 @@ pub async fn run_tray_dbus_name_watcher(shared: Arc<TraySharedState>, conn: Conn
                 if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
                     let _ = TrayServer::item_removed(emitter, &id).await;
                 }
+                shared.menu_manager.on_item_removed(&id).await;
             }
 
             // Check if name was a host
@@ -1073,6 +1188,7 @@ pub async fn run_tray_dbus_name_watcher(shared: Arc<TraySharedState>, conn: Conn
                     if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
                         let _ = TrayServer::item_removed(emitter, &id).await;
                     }
+                    shared.menu_manager.on_item_removed(&id).await;
                 }
             }
         }
