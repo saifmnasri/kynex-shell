@@ -10,6 +10,12 @@ LayerSurface {
     width: Screen.width
     height: Style.spacing.panel
 
+    property real screenVirtualX: Screen.virtualX
+    property real screenVirtualY: Screen.virtualY
+    property real screenWidth: Screen.width
+    property real screenHeight: Screen.height
+    property real screenDevicePixelRatio: Screen.devicePixelRatio
+
     layer: LayerSurface.LayerTop
     anchors: LayerSurface.AnchorBottom + LayerSurface.AnchorLeft + LayerSurface.AnchorRight
     exclusiveZone: Style.spacing.panel
@@ -314,11 +320,29 @@ LayerSurface {
                             var gx = Math.round(globalPos.x);
                             var gy = Math.round(globalPos.y);
                             if (mouse.button === Qt.LeftButton) {
-                                trayModel.activate(trayBtn.id, gx, gy);
+                                trayModel.activate(trayBtn.id, gx, gy,
+                                                   panel.screenVirtualX,
+                                                   panel.screenVirtualY,
+                                                   panel.screenWidth,
+                                                   panel.screenHeight,
+                                                   panel.screenDevicePixelRatio,
+                                                   panel.height);
                             } else if (mouse.button === Qt.MiddleButton) {
-                                trayModel.secondaryActivate(trayBtn.id, gx, gy);
+                                trayModel.secondaryActivate(trayBtn.id, gx, gy,
+                                                            panel.screenVirtualX,
+                                                            panel.screenVirtualY,
+                                                            panel.screenWidth,
+                                                            panel.screenHeight,
+                                                            panel.screenDevicePixelRatio,
+                                                            panel.height);
                             } else if (mouse.button === Qt.RightButton) {
-                                trayModel.contextMenu(trayBtn.id, gx, gy);
+                                trayModel.contextMenu(trayBtn.id, gx, gy,
+                                                      panel.screenVirtualX,
+                                                      panel.screenVirtualY,
+                                                      panel.screenWidth,
+                                                      panel.screenHeight,
+                                                      panel.screenDevicePixelRatio,
+                                                      panel.height);
                             }
                         }
 

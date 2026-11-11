@@ -238,18 +238,36 @@ Module {
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "screenX"; type: "double" }
+            Parameter { name: "screenY"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
+            Parameter { name: "devicePixelRatio"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "secondaryActivate"
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "screenX"; type: "double" }
+            Parameter { name: "screenY"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
+            Parameter { name: "devicePixelRatio"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "contextMenu"
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "screenX"; type: "double" }
+            Parameter { name: "screenY"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
+            Parameter { name: "devicePixelRatio"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "scroll"

@@ -1,0 +1,13 @@
+=== COMMAND ===
+cargo test -p kynex-shell --lib test_project_tray_coordinates_negative_screen_origin
+=== TIMESTAMP: 2026-11-11T06:21:38Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s
+     Running unittests src/lib.rs (target/debug/deps/kynex_shell-b70bb358e080bb2d)
+
+running 1 test
+test tray::tests::test_project_tray_coordinates_negative_screen_origin ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 26 filtered out; finished in 0.00s
+

@@ -981,6 +981,18 @@ async fn test_register_by_another_clients_well_known_name_rejected() -> Result<(
         .request_name_with_flags(wk_name, zbus::fdo::RequestNameFlags::DO_NOT_QUEUE)
         .await?;
 
+    // Client B exports a COMPLETE valid StatusNotifierItem on its own object path
+    // so that property fetching would succeed if authentication/owner checks were bypassed.
+    let item_b = FakeItem::default();
+    *item_b.title.write().await = "Client B Valid Item".to_string();
+    *item_b.status.write().await = "Active".to_string();
+    *item_b.icon_name.write().await = "client-b-icon".to_string();
+    harness
+        .client_b_conn
+        .object_server()
+        .at("/StatusNotifierItem", item_b)
+        .await?;
+
     let client_b_watcher = StatusNotifierWatcherProxy::builder(&harness.client_b_conn)
         .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
         .path(STATUS_NOTIFIER_WATCHER_PATH)
@@ -988,12 +1000,32 @@ async fn test_register_by_another_clients_well_known_name_rejected() -> Result<(
         .build()
         .await?;
 
+    // Client B attempts to register Client A's well-known name
     let res = client_b_watcher
         .register_status_notifier_item(wk_name)
         .await;
+
+    let err = res.expect_err(
+        "Registering another client's well-known name must be rejected with AccessDenied",
+    );
+    let is_access_denied = match &err {
+        zbus::Error::FDO(boxed) => matches!(**boxed, zbus::fdo::Error::AccessDenied(_)),
+        zbus::Error::MethodError(name, _, _) => {
+            name.as_str() == "org.freedesktop.DBus.Error.AccessDenied"
+        }
+        _ => false,
+    };
     assert!(
-        res.is_err(),
-        "Registering another client's well-known name must be rejected"
+        is_access_denied,
+        "Error must be exactly org.freedesktop.DBus.Error.AccessDenied, got: {err:?}"
+    );
+
+    // Verify no item appears in GetItems()
+    let tray1 = harness.tray1_client().await?;
+    let items = tray1.get_items().await?;
+    assert!(
+        items.is_empty(),
+        "No item must appear in GetItems() when registration is rejected, got: {items:?}"
     );
 
     Ok(())
@@ -1004,12 +1036,42 @@ async fn test_register_by_unowned_well_known_name_rejected() -> Result<(), Box<d
     let harness = TestHarness::new().await?;
     let watcher = harness.kde_watcher_client().await?;
 
+    // Client A exports a COMPLETE valid StatusNotifierItem on its own object path
+    // so that property fetching would succeed if unowned name checks were bypassed.
+    let item_a = FakeItem::default();
+    *item_a.title.write().await = "Client A Valid Item".to_string();
+    *item_a.status.write().await = "Active".to_string();
+    *item_a.icon_name.write().await = "client-a-icon".to_string();
+    harness
+        .client_a_conn
+        .object_server()
+        .at("/StatusNotifierItem", item_a)
+        .await?;
+
     let res = watcher
         .register_status_notifier_item("org.kde.StatusNotifierItem.UnownedServiceXYZ")
         .await;
+
+    let err =
+        res.expect_err("Registering unowned well-known name must be rejected with AccessDenied");
+    let is_access_denied = match &err {
+        zbus::Error::FDO(boxed) => matches!(**boxed, zbus::fdo::Error::AccessDenied(_)),
+        zbus::Error::MethodError(name, _, _) => {
+            name.as_str() == "org.freedesktop.DBus.Error.AccessDenied"
+        }
+        _ => false,
+    };
     assert!(
-        res.is_err(),
-        "Registering unowned well-known name must be rejected"
+        is_access_denied,
+        "Error must be exactly org.freedesktop.DBus.Error.AccessDenied, got: {err:?}"
+    );
+
+    // Verify no item appears in GetItems()
+    let tray1 = harness.tray1_client().await?;
+    let items = tray1.get_items().await?;
+    assert!(
+        items.is_empty(),
+        "No item must appear in GetItems() when registration is rejected, got: {items:?}"
     );
 
     Ok(())

@@ -159,19 +159,52 @@ pub mod qobject {
         #[cxx_name = "roleNames"]
         fn role_names(self: &TrayModel) -> QHash_i32_QByteArray;
 
-        /// Invokes primary activation on target item.
+        /// Invokes primary activation on target item with screen geometry.
         #[qinvokable]
-        fn activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32);
+        fn activate(
+            self: Pin<&mut Self>,
+            id: &QString,
+            x: i32,
+            y: i32,
+            screen_x: f64,
+            screen_y: f64,
+            screen_width: f64,
+            screen_height: f64,
+            device_pixel_ratio: f64,
+            panel_height: f64,
+        );
 
-        /// Invokes secondary activation on target item.
+        /// Invokes secondary activation on target item with screen geometry.
         #[qinvokable]
         #[cxx_name = "secondaryActivate"]
-        fn secondary_activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32);
+        fn secondary_activate(
+            self: Pin<&mut Self>,
+            id: &QString,
+            x: i32,
+            y: i32,
+            screen_x: f64,
+            screen_y: f64,
+            screen_width: f64,
+            screen_height: f64,
+            device_pixel_ratio: f64,
+            panel_height: f64,
+        );
 
-        /// Invokes context menu on target item with window coordinates.
+        /// Invokes context menu on target item with screen geometry.
         #[qinvokable]
         #[cxx_name = "contextMenu"]
-        fn context_menu(self: Pin<&mut Self>, id: &QString, x: i32, y: i32);
+        fn context_menu(
+            self: Pin<&mut Self>,
+            id: &QString,
+            x: i32,
+            y: i32,
+            screen_x: f64,
+            screen_y: f64,
+            screen_width: f64,
+            screen_height: f64,
+            device_pixel_ratio: f64,
+            panel_height: f64,
+        );
 
         /// Invokes scroll action on target item.
         #[qinvokable]
@@ -292,69 +325,90 @@ impl qobject::TrayModel {
         create_tray_role_names()
     }
 
-    /// Invokes primary activation on target item.
-    pub fn activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
+    /// Invokes primary activation on target item with screen geometry.
+    #[allow(clippy::too_many_arguments)]
+    pub fn activate(
+        self: Pin<&mut Self>,
+        id: &QString,
+        x: i32,
+        y: i32,
+        screen_x: f64,
+        screen_y: f64,
+        screen_width: f64,
+        screen_height: f64,
+        device_pixel_ratio: f64,
+        panel_height: f64,
+    ) {
         let id_str = id.to_string();
-        let (screen_x, screen_y) = map_to_screen_coordinates(
-            SurfaceAnchors::top_panel(),
-            PanelSize {
-                width: 1920.0,
-                height: 40.0,
-            },
-            OutputGeometry {
-                x: 0.0,
-                y: 0.0,
-                width: 1920.0,
-                height: 1080.0,
-                scale: 1.0,
-            },
-            Point::new(f64::from(x), f64::from(y)),
+        let (screen_x, screen_y) = project_tray_coordinates(
+            x,
+            y,
+            screen_x,
+            screen_y,
+            screen_width,
+            screen_height,
+            device_pixel_ratio,
+            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_activate_call(&id_str, screen_x, screen_y).await;
         });
     }
 
-    /// Invokes secondary activation on target item.
-    pub fn secondary_activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
+    /// Invokes secondary activation on target item with screen geometry.
+    #[allow(clippy::too_many_arguments)]
+    pub fn secondary_activate(
+        self: Pin<&mut Self>,
+        id: &QString,
+        x: i32,
+        y: i32,
+        screen_x: f64,
+        screen_y: f64,
+        screen_width: f64,
+        screen_height: f64,
+        device_pixel_ratio: f64,
+        panel_height: f64,
+    ) {
         let id_str = id.to_string();
-        let (screen_x, screen_y) = map_to_screen_coordinates(
-            SurfaceAnchors::top_panel(),
-            PanelSize {
-                width: 1920.0,
-                height: 40.0,
-            },
-            OutputGeometry {
-                x: 0.0,
-                y: 0.0,
-                width: 1920.0,
-                height: 1080.0,
-                scale: 1.0,
-            },
-            Point::new(f64::from(x), f64::from(y)),
+        let (screen_x, screen_y) = project_tray_coordinates(
+            x,
+            y,
+            screen_x,
+            screen_y,
+            screen_width,
+            screen_height,
+            device_pixel_ratio,
+            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_secondary_activate_call(&id_str, screen_x, screen_y).await;
         });
     }
 
-    /// Invokes context menu on target item with window coordinates.
-    pub fn context_menu(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
+    /// Invokes context menu on target item with screen geometry.
+    #[allow(clippy::too_many_arguments)]
+    pub fn context_menu(
+        self: Pin<&mut Self>,
+        id: &QString,
+        x: i32,
+        y: i32,
+        screen_x: f64,
+        screen_y: f64,
+        screen_width: f64,
+        screen_height: f64,
+        device_pixel_ratio: f64,
+        panel_height: f64,
+    ) {
         let id_str = id.to_string();
-        let (screen_x, screen_y) = map_to_screen_coordinates(
-            SurfaceAnchors::top_panel(),
-            PanelSize {
-                width: 1920.0,
-                height: 40.0,
-            },
-            OutputGeometry {
-                x: 0.0,
-                y: 0.0,
-                width: 1920.0,
-                height: 1080.0,
-                scale: 1.0,
-            },
-            Point::new(f64::from(x), f64::from(y)),
+        let (screen_x, screen_y) = project_tray_coordinates(
+            x,
+            y,
+            screen_x,
+            screen_y,
+            screen_width,
+            screen_height,
+            device_pixel_ratio,
+            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_context_menu_call(&id_str, screen_x, screen_y).await;
@@ -374,6 +428,36 @@ impl qobject::TrayModel {
     pub fn record_first_frame(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().record_first_frame();
     }
+}
+
+/// Projects click point to screen coordinates based on QML geometry arguments.
+#[must_use]
+#[allow(clippy::too_many_arguments)]
+pub fn project_tray_coordinates(
+    x: i32,
+    y: i32,
+    screen_x: f64,
+    screen_y: f64,
+    screen_width: f64,
+    screen_height: f64,
+    device_pixel_ratio: f64,
+    panel_height: f64,
+) -> (i32, i32) {
+    map_to_screen_coordinates(
+        SurfaceAnchors::top_panel(),
+        PanelSize {
+            width: screen_width,
+            height: panel_height,
+        },
+        OutputGeometry {
+            x: screen_x,
+            y: screen_y,
+            width: screen_width,
+            height: screen_height,
+            scale: device_pixel_ratio,
+        },
+        Point::new(f64::from(x), f64::from(y)),
+    )
 }
 
 /// Sends Activate D-Bus call to daemon.
@@ -903,5 +987,18 @@ mod tests {
         // Daemon connected (non-empty new_owner)
         let reset = handle_name_owner_changed_event(&mut state, Some(":1.100"));
         assert!(!reset);
+    }
+
+    #[test]
+    fn test_project_tray_coordinates_negative_screen_origin() {
+        // Output on secondary display positioned to the left (negative origin)
+        let (sx, sy) = project_tray_coordinates(100, 20, -1920.0, 0.0, 1920.0, 1080.0, 1.0, 48.0);
+        assert_eq!(sx, -1820);
+        assert_eq!(sy, 20);
+
+        // Standard primary display
+        let (px, py) = project_tray_coordinates(150, 25, 0.0, 0.0, 1920.0, 1080.0, 1.0, 40.0);
+        assert_eq!(px, 150);
+        assert_eq!(py, 25);
     }
 }

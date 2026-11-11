@@ -388,5 +388,66 @@ Item {
             compare(shell.trayModel.lastScrollDelta, 120);
             compare(shell.trayModel.lastScrollOrientation, "vertical");
         }
+
+        function test_tray_secondary_screen_negative_origin() {
+            // Mock a secondary display positioned to the left of primary with negative origin (-1920, 0)
+            shell.screenVirtualX = -1920;
+            shell.screenVirtualY = 0;
+            shell.screenWidth = 1920;
+            shell.screenHeight = 1080;
+            shell.screenDevicePixelRatio = 1.0;
+            shell.height = 48;
+
+            shell.trayModel.addItem(
+                "negative-origin-item",
+                "Secondary Display App",
+                "Active",
+                "system-run",
+                false,
+                "",
+                "Title",
+                "Text",
+                false,
+                "S",
+                false,
+                0
+            );
+
+            verify(shell.trayRepeater.count > 0, "Tray repeater should instantiate delegate");
+            let btn = shell.trayRepeater.itemAt(0);
+            verify(btn !== null, "Tray button delegate must exist");
+
+            let clickX = btn.width / 2;
+            let clickY = btn.height / 2;
+            let expectedPos = btn.mapToItem(null, clickX, clickY);
+            let expectedX = Math.round(expectedPos.x);
+            let expectedY = Math.round(expectedPos.y);
+
+            // Left click -> activate: asserts negative origin & panel geometry reached model
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.LeftButton);
+            compare(shell.trayModel.lastActivatedId, "negative-origin-item");
+            compare(shell.trayModel.lastActivatedX, expectedX);
+            compare(shell.trayModel.lastActivatedY, expectedY);
+            compare(shell.trayModel.lastScreenX, -1920);
+            compare(shell.trayModel.lastScreenY, 0);
+            compare(shell.trayModel.lastScreenWidth, 1920);
+            compare(shell.trayModel.lastScreenHeight, 1080);
+            compare(shell.trayModel.lastDevicePixelRatio, 1.0);
+            compare(shell.trayModel.lastPanelHeight, 48);
+
+            // Middle click -> secondaryActivate: asserts negative origin reached model
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.MiddleButton);
+            compare(shell.trayModel.lastSecondaryActivatedId, "negative-origin-item");
+            compare(shell.trayModel.lastScreenX, -1920);
+            compare(shell.trayModel.lastScreenY, 0);
+            compare(shell.trayModel.lastPanelHeight, 48);
+
+            // Right click -> contextMenu: asserts negative origin reached model
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.RightButton);
+            compare(shell.trayModel.lastContextMenuId, "negative-origin-item");
+            compare(shell.trayModel.lastScreenX, -1920);
+            compare(shell.trayModel.lastScreenY, 0);
+            compare(shell.trayModel.lastPanelHeight, 48);
+        }
     }
 }

@@ -142,6 +142,9 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; fin
 2. **QML & C++ Integration**: Integrated with `Activate`, `SecondaryActivate`, and `ContextMenu` invocations in `Shell.qml`.
 3. **Architectural Decision Record**: Authored `docs/decisions/adr-014-tray-coordinate-mapping-and-dbusmenu-rendering.md` and recorded decision `D-049` in `docs/DECISIONS.md`.
 
+> [!NOTE]
+> **Stage O2 Adversarial Audit Note (AUD-O2-02 — Overstated Claim 1)**: The independent audit (`docs/audits/stage-o2-audit.md`) noted that while `map_to_screen_coordinates` in `kynex-shell-core` supports multi-monitor and negative origin arithmetic, the runtime bridge in `crates/kynex-shell/src/tray.rs` initially hardcoded 1920x1080 @ 0,0 and panel height 40.0. This was remediated in Stage O3 by passing real dynamic geometry (`Screen.virtualX`, `virtualY`, `width`, `height`, `devicePixelRatio`, and `panel.height`) from QML into `activate`, `secondary_activate`, and `context_menu`, and killed via automated QML negative origin testing.
+
 ---
 
 ## 6. O2.4 AUD-O-02: Unit Test Coverage Remediation
@@ -268,6 +271,9 @@ Integration tests needed to verify global capacity limits (64 items across 16 se
 1. **Integration Tests**: Added `test_total_capacity_limit_across_senders` in `kynex-tray` and `test_multi_client_65_items_global_cap_enforced` in `kynex-daemon`.
 2. **QML Assertions**: Added assertions in `tst_shell.qml` verifying `badgeText.textFormat === Text.PlainText` and asserting exact global screen coordinates passed to `activate()`.
 3. **12/12 Mutants Killed**: Ran `dev/tmp/test_12_mutants.py` against all 12 auditor mutants (including mutants 3, 10, and 11). All 12 mutants are now dead.
+
+> [!NOTE]
+> **Stage O2 Adversarial Audit Note (AUD-O2-01 — Overstated Claim 2)**: The independent audit (`docs/audits/stage-o2-audit.md`) noted that `test_register_by_another_clients_well_known_name_rejected` loosely checked `assert!(res.is_err())` without exporting an item on client B, allowing a mutant removing `if owner != sender` to pass due to unexported property fetch failures rather than authentication. This was remediated in Stage O3 by exporting a complete, valid `StatusNotifierItem` on client B, asserting `org.freedesktop.DBus.Error.AccessDenied` specifically, asserting empty `GetItems()`, and demonstrating with a mutant that removing `if owner != sender` fails the test.
 
 ### Evidence
 ```raw:o2-12-mutants:L6-L33
@@ -423,3 +429,12 @@ SBOM written
 ## 12. Conclusion & Next Steps
 
 All 7 adversarial audit findings from Stage O have been resolved, verified, and audited. The codebase is clean, robust, and ready for review.
+
+---
+
+## 13. Stage O2 Independent Audit Addendum
+
+Following the independent adversarial audit of Stage O2 (`docs/audits/stage-o2-audit.md`), the engineering team completed Stage O3 remediation for findings `AUD-O2-01` and `AUD-O2-02`:
+- **AUD-O2-01**: Hardened well-known rejection test with full `StatusNotifierItem` export on client B, exact `org.freedesktop.DBus.Error.AccessDenied` error verification, and `GetItems()` emptiness check.
+- **AUD-O2-02**: Wired attached `Screen.virtualX/virtualY/width/height/devicePixelRatio` and `panel.height` from QML into `TrayModel::activate`, `secondary_activate`, and `context_menu`, eliminating hardcoded display constants.
+- Details, evidence, and verification logs are recorded in `docs/work/stage-o3-report.md`.
