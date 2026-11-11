@@ -1,6 +1,216 @@
 //! Pure-Rust state machine and data model logic for the system tray in `kynex-shell`.
 
+use std::collections::HashMap;
+use std::sync::{OnceLock, RwLock};
+
 use kynex_ipc::tray::TrayItemInfo;
+
+/// Role ID for item unique identifier.
+pub const ROLE_ID: i32 = 257;
+/// Role ID for item title.
+pub const ROLE_TITLE: i32 = 258;
+/// Role ID for item status (`"Passive"`, `"Active"`, `"NeedsAttention"`).
+pub const ROLE_STATUS: i32 = 259;
+/// Role ID for icon name.
+pub const ROLE_ICON_NAME: i32 = 260;
+/// Role ID for whether an in-memory pixmap is present.
+pub const ROLE_HAS_PIXMAP: i32 = 261;
+/// Role ID for pixmap identifier (used with `image://kynex-tray/<id>`).
+pub const ROLE_PIXMAP_ID: i32 = 262;
+/// Role ID for tooltip headline.
+pub const ROLE_TOOLTIP_TITLE: i32 = 263;
+/// Role ID for tooltip body text.
+pub const ROLE_TOOLTIP_TEXT: i32 = 264;
+/// Role ID for whether the item requests attention.
+pub const ROLE_IS_ATTENTION: i32 = 265;
+/// Role ID for single-character fallback letter badge.
+pub const ROLE_LETTER_BADGE: i32 = 266;
+/// Role ID for whether item is menu-only.
+pub const ROLE_IS_MENU: i32 = 267;
+/// Role ID for associated window ID.
+pub const ROLE_WINDOW_ID: i32 = 268;
+
+/// Static table of all tray role IDs and their corresponding QML property names.
+pub const TRAY_ROLES: &[(i32, &str)] = &[
+    (ROLE_ID, "id"),
+    (ROLE_TITLE, "title"),
+    (ROLE_STATUS, "status"),
+    (ROLE_ICON_NAME, "iconName"),
+    (ROLE_HAS_PIXMAP, "hasPixmap"),
+    (ROLE_PIXMAP_ID, "pixmapId"),
+    (ROLE_TOOLTIP_TITLE, "tooltipTitle"),
+    (ROLE_TOOLTIP_TEXT, "tooltipText"),
+    (ROLE_IS_ATTENTION, "isAttention"),
+    (ROLE_LETTER_BADGE, "letterBadge"),
+    (ROLE_IS_MENU, "isMenu"),
+    (ROLE_WINDOW_ID, "windowId"),
+];
+
+/// Returns the static role name mapping table.
+#[must_use]
+pub fn tray_role_names() -> &'static [(i32, &'static str)] {
+    TRAY_ROLES
+}
+
+/// Strongly typed value returned for a model role.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TrayRoleValue {
+    /// String property.
+    Text(String),
+    /// Boolean property.
+    Bool(bool),
+    /// 32-bit signed integer property.
+    Int(i32),
+}
+
+/// Retrieves the typed value of a role for a given [`TrayUiItem`].
+#[must_use]
+pub fn tray_item_role_value(item: &TrayUiItem, role: i32) -> Option<TrayRoleValue> {
+    match role {
+        ROLE_ID => Some(TrayRoleValue::Text(item.id.clone())),
+        ROLE_TITLE => Some(TrayRoleValue::Text(item.title.clone())),
+        ROLE_STATUS => Some(TrayRoleValue::Text(item.status.clone())),
+        ROLE_ICON_NAME => Some(TrayRoleValue::Text(item.icon_name.clone())),
+        ROLE_HAS_PIXMAP => Some(TrayRoleValue::Bool(item.has_pixmap)),
+        ROLE_PIXMAP_ID => Some(TrayRoleValue::Text(item.pixmap_id.clone())),
+        ROLE_TOOLTIP_TITLE => Some(TrayRoleValue::Text(item.tooltip_title.clone())),
+        ROLE_TOOLTIP_TEXT => Some(TrayRoleValue::Text(item.tooltip_text.clone())),
+        ROLE_IS_ATTENTION => Some(TrayRoleValue::Bool(item.is_attention)),
+        ROLE_LETTER_BADGE => Some(TrayRoleValue::Text(item.letter_badge.clone())),
+        ROLE_IS_MENU => Some(TrayRoleValue::Bool(item.is_menu)),
+        ROLE_WINDOW_ID => Some(TrayRoleValue::Int(item.window_id)),
+        _ => None,
+    }
+}
+
+/// Raw tray icon pixel payload: `(width, height, argb32_data)`.
+pub type TrayIconData = (i32, i32, Vec<u8>);
+
+/// Thread-safe in-memory pixmap cache for raw tray icons.
+#[derive(Debug, Default)]
+pub struct TrayPixmapCache {
+    map: RwLock<HashMap<String, TrayIconData>>,
+}
+
+impl TrayPixmapCache {
+    /// Creates a new pixmap cache.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            map: RwLock::new(HashMap::new()),
+        }
+    }
+
+    /// Returns a reference to the global singleton cache.
+    #[must_use]
+    pub fn global() -> &'static Self {
+        static INSTANCE: OnceLock<TrayPixmapCache> = OnceLock::new();
+        INSTANCE.get_or_init(Self::new)
+    }
+
+    /// Updates or inserts a pixmap entry.
+    pub fn update(&self, id: &str, width: i32, height: i32, data: &[u8]) {
+        if let Ok(mut lock) = self.map.write() {
+            if data.is_empty() || width <= 0 || height <= 0 {
+                lock.remove(id);
+            } else {
+                lock.insert(id.to_string(), (width, height, data.to_vec()));
+            }
+        }
+    }
+
+    /// Removes a pixmap entry by identifier.
+    pub fn remove(&self, id: &str) {
+        if let Ok(mut lock) = self.map.write() {
+            lock.remove(id);
+        }
+    }
+
+    /// Clears all entries in the cache.
+    pub fn clear(&self) {
+        if let Ok(mut lock) = self.map.write() {
+            lock.clear();
+        }
+    }
+
+    /// Retrieves an entry from the cache.
+    #[must_use]
+    pub fn get(&self, id: &str) -> Option<(i32, i32, Vec<u8>)> {
+        self.map.read().ok()?.get(id).cloned()
+    }
+
+    /// Copies cached pixmap bytes into a caller-provided destination slice.
+    ///
+    /// Returns the number of bytes copied.
+    pub fn copy_to_slice(
+        &self,
+        id: &str,
+        out_width: &mut i32,
+        out_height: &mut i32,
+        out_buf: &mut [u8],
+    ) -> usize {
+        let Some((w, h, data)) = self.get(id) else {
+            return 0;
+        };
+        *out_width = w;
+        *out_height = h;
+        let copy_len = data.len().min(out_buf.len());
+        out_buf[..copy_len].copy_from_slice(&data[..copy_len]);
+        copy_len
+    }
+}
+
+/// Incoming event for the tray state machine.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TrayEvent {
+    /// Item was added.
+    ItemAdded(Box<TrayItemInfo>),
+    /// Item properties were updated.
+    ItemChanged(Box<TrayItemInfo>),
+    /// Item was removed by identifier.
+    ItemRemoved(String),
+    /// Daemon left the bus; all items must be cleared.
+    DaemonDisconnected,
+}
+
+/// Handles an incoming tray event, updating state and pixmap cache.
+///
+/// Returns `true` if state was modified.
+pub fn handle_tray_event(
+    state: &mut TrayUiState,
+    pixmap_cache: &TrayPixmapCache,
+    event: TrayEvent,
+) -> bool {
+    match event {
+        TrayEvent::ItemAdded(info) | TrayEvent::ItemChanged(info) => {
+            if !info.icon_pixmap.is_empty()
+                && info.icon_pixmap_width > 0
+                && info.icon_pixmap_height > 0
+            {
+                pixmap_cache.update(
+                    &info.id,
+                    info.icon_pixmap_width,
+                    info.icon_pixmap_height,
+                    &info.icon_pixmap,
+                );
+            } else {
+                pixmap_cache.remove(&info.id);
+            }
+            let item = TrayUiItem::from_ipc(&info);
+            state.upsert(item);
+            true
+        }
+        TrayEvent::ItemRemoved(id) => {
+            pixmap_cache.remove(&id);
+            state.remove(&id).is_some()
+        }
+        TrayEvent::DaemonDisconnected => {
+            state.clear();
+            pixmap_cache.clear();
+            true
+        }
+    }
+}
 
 /// Computes a fallback single-character letter badge for a title or identifier.
 #[must_use]
@@ -194,6 +404,20 @@ mod tests {
         assert!(ui_item.has_pixmap);
         assert!(ui_item.is_attention);
         assert_eq!(ui_item.letter_badge, "T");
+
+        // Fallback badge from icon_name
+        let mut info_no_title = info.clone();
+        info_no_title.title.clear();
+        let ui_item2 = TrayUiItem::from_ipc(&info_no_title);
+        assert_eq!(ui_item2.letter_badge, "T");
+
+        // Fallback badge from id
+        let mut info_only_id = info;
+        info_only_id.title.clear();
+        info_only_id.icon_name.clear();
+        info_only_id.id = ":99.1".to_string();
+        let ui_item3 = TrayUiItem::from_ipc(&info_only_id);
+        assert_eq!(ui_item3.letter_badge, "9");
     }
 
     #[test]
@@ -224,9 +448,13 @@ mod tests {
         assert_eq!(idx, 0);
         assert!(!is_update);
         assert_eq!(state.len(), 1);
+        assert_eq!(
+            state.get_by_index(0).map(|it| it.id.as_str()),
+            Some("item1")
+        );
 
         // Update item 1
-        let mut updated = item1;
+        let mut updated = item1.clone();
         updated.title = "Updated Item 1".to_string();
         let (idx_u, is_u) = state.upsert(updated);
         assert_eq!(idx_u, 0);
@@ -236,10 +464,223 @@ mod tests {
             Some("Updated Item 1")
         );
 
+        // Test state clear and default
+        let mut def_state = TrayUiState::default();
+        def_state.upsert(item1.clone());
+        assert_eq!(def_state.len(), 1);
+        def_state.clear();
+        assert!(def_state.is_empty());
+
         // Remove item 1
         let rem = state.remove("item1");
         assert!(rem.is_some());
         assert_eq!(state.len(), 0);
         assert!(state.remove("item1").is_none());
+        assert!(state.get("item1").is_none());
+        assert!(state.get_by_index(0).is_none());
+    }
+
+    #[test]
+    fn test_role_values() {
+        let item = TrayUiItem {
+            id: "app.id".to_string(),
+            title: "App Title".to_string(),
+            status: "Active".to_string(),
+            icon_name: "app-icon".to_string(),
+            has_pixmap: true,
+            pixmap_id: "app.id".to_string(),
+            tooltip_title: "Tip Title".to_string(),
+            tooltip_text: "Tip Text".to_string(),
+            is_attention: true,
+            letter_badge: "A".to_string(),
+            is_menu: true,
+            window_id: 42,
+            icon_pixmap: vec![0u8; 4],
+            icon_pixmap_width: 1,
+            icon_pixmap_height: 1,
+        };
+
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_ID),
+            Some(TrayRoleValue::Text("app.id".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_TITLE),
+            Some(TrayRoleValue::Text("App Title".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_STATUS),
+            Some(TrayRoleValue::Text("Active".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_ICON_NAME),
+            Some(TrayRoleValue::Text("app-icon".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_HAS_PIXMAP),
+            Some(TrayRoleValue::Bool(true))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_PIXMAP_ID),
+            Some(TrayRoleValue::Text("app.id".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_TOOLTIP_TITLE),
+            Some(TrayRoleValue::Text("Tip Title".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_TOOLTIP_TEXT),
+            Some(TrayRoleValue::Text("Tip Text".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_IS_ATTENTION),
+            Some(TrayRoleValue::Bool(true))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_LETTER_BADGE),
+            Some(TrayRoleValue::Text("A".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_IS_MENU),
+            Some(TrayRoleValue::Bool(true))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_WINDOW_ID),
+            Some(TrayRoleValue::Int(42))
+        );
+        assert_eq!(tray_item_role_value(&item, 999), None);
+
+        assert_eq!(tray_role_names().len(), 12);
+        for &(r_id, r_name) in tray_role_names() {
+            assert!(tray_item_role_value(&item, r_id).is_some());
+            assert_ne!(r_name, "");
+        }
+    }
+
+    #[test]
+    fn test_pixmap_cache_operations() {
+        let cache = TrayPixmapCache::new();
+        assert!(cache.get("non-existent").is_none());
+
+        // Update valid pixmap
+        cache.update(
+            "item1",
+            2,
+            2,
+            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        );
+        let entry = cache.get("item1");
+        assert!(matches!(entry, Some((2, 2, ref v)) if v.len() == 16));
+
+        // Copy to slice
+        let mut w = 0;
+        let mut h = 0;
+        let mut buf = [0u8; 16];
+        let copied = cache.copy_to_slice("item1", &mut w, &mut h, &mut buf);
+        assert_eq!(copied, 16);
+        assert_eq!(w, 2);
+        assert_eq!(h, 2);
+        assert_eq!(buf[0], 1);
+
+        // Copy to smaller buffer
+        let mut small_buf = [0u8; 4];
+        let copied_small = cache.copy_to_slice("item1", &mut w, &mut h, &mut small_buf);
+        assert_eq!(copied_small, 4);
+
+        // Copy non-existent
+        assert_eq!(cache.copy_to_slice("unknown", &mut w, &mut h, &mut buf), 0);
+
+        // Update invalid/empty clears entry
+        cache.update("item1", 0, 0, &[]);
+        assert!(cache.get("item1").is_none());
+
+        // Re-add and clear
+        cache.update("item2", 1, 1, &[255, 0, 0, 255]);
+        assert!(cache.get("item2").is_some());
+        cache.clear();
+        assert!(cache.get("item2").is_none());
+
+        // Test global instance
+        let g = TrayPixmapCache::global();
+        g.update("global-test", 1, 1, &[1, 2, 3, 4]);
+        assert!(g.get("global-test").is_some());
+        g.remove("global-test");
+        assert!(g.get("global-test").is_none());
+
+        // Test default
+        let d = TrayPixmapCache::default();
+        assert!(d.get("anything").is_none());
+    }
+
+    #[test]
+    fn test_handle_tray_event() {
+        let mut state = TrayUiState::new();
+        let cache = TrayPixmapCache::new();
+
+        let info = TrayItemInfo {
+            id: "app1".to_string(),
+            title: "App 1".to_string(),
+            status: "Active".to_string(),
+            icon_name: "icon1".to_string(),
+            icon_theme_path: String::new(),
+            icon_pixmap: vec![10, 20, 30, 40],
+            icon_pixmap_width: 1,
+            icon_pixmap_height: 1,
+            tooltip_title: String::new(),
+            tooltip_text: String::new(),
+            is_menu: false,
+            window_id: 0,
+            has_attention: false,
+            attention_icon_name: String::new(),
+            attention_pixmap: Vec::new(),
+            attention_pixmap_width: 0,
+            attention_pixmap_height: 0,
+        };
+
+        // ItemAdded
+        let modified = handle_tray_event(
+            &mut state,
+            &cache,
+            TrayEvent::ItemAdded(Box::new(info.clone())),
+        );
+        assert!(modified);
+        assert_eq!(state.len(), 1);
+        assert!(cache.get("app1").is_some());
+
+        // ItemChanged (empty pixmap)
+        let mut info2 = info;
+        info2.title = "Updated App 1".to_string();
+        info2.icon_pixmap.clear();
+        info2.icon_pixmap_width = 0;
+        info2.icon_pixmap_height = 0;
+        let modified2 =
+            handle_tray_event(&mut state, &cache, TrayEvent::ItemChanged(Box::new(info2)));
+        assert!(modified2);
+        assert_eq!(
+            state.get("app1").map(|i| i.title.as_str()),
+            Some("Updated App 1")
+        );
+        assert!(cache.get("app1").is_none());
+
+        // ItemRemoved
+        let modified3 = handle_tray_event(
+            &mut state,
+            &cache,
+            TrayEvent::ItemRemoved("app1".to_string()),
+        );
+        assert!(modified3);
+        assert_eq!(state.len(), 0);
+
+        // Remove unknown
+        assert!(!handle_tray_event(
+            &mut state,
+            &cache,
+            TrayEvent::ItemRemoved("unknown".to_string())
+        ));
+
+        // DaemonDisconnected
+        let modified4 = handle_tray_event(&mut state, &cache, TrayEvent::DaemonDisconnected);
+        assert!(modified4);
+        assert_eq!(state.len(), 0);
     }
 }

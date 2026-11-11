@@ -348,26 +348,39 @@ Item {
             let btn = shell.trayRepeater.itemAt(0);
             verify(btn !== null);
             verify(btn.mouseArea !== null);
+            compare(btn.badgeText.textFormat, Text.PlainText);
 
             // Initially no actions recorded
             compare(shell.trayModel.lastActivatedId, "");
             compare(shell.trayModel.lastSecondaryActivatedId, "");
             compare(shell.trayModel.lastContextMenuId, "");
 
+            let clickX = btn.width / 2;
+            let clickY = btn.height / 2;
+            let expectedPos = btn.mapToItem(null, clickX, clickY);
+            let expectedX = Math.round(expectedPos.x);
+            let expectedY = Math.round(expectedPos.y);
+
             // Left click -> activate
-            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.LeftButton);
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.LeftButton);
             compare(shell.trayModel.lastActivatedId, "test-tray-id");
+            compare(shell.trayModel.lastActivatedX, expectedX);
+            compare(shell.trayModel.lastActivatedY, expectedY);
             compare(shell.trayModel.lastSecondaryActivatedId, "");
             compare(shell.trayModel.lastContextMenuId, "");
 
             // Middle click -> secondaryActivate
-            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.MiddleButton);
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.MiddleButton);
             compare(shell.trayModel.lastSecondaryActivatedId, "test-tray-id");
+            compare(shell.trayModel.lastActivatedX, expectedX);
+            compare(shell.trayModel.lastActivatedY, expectedY);
             compare(shell.trayModel.lastContextMenuId, "");
 
             // Right click -> contextMenu
-            LayoutHelper.sendMouseClick(btn.mouseArea, btn.width / 2, btn.height / 2, Qt.RightButton);
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.RightButton);
             compare(shell.trayModel.lastContextMenuId, "test-tray-id");
+            compare(shell.trayModel.lastContextMenuX, expectedX);
+            compare(shell.trayModel.lastContextMenuY, expectedY);
 
             // Wheel scroll
             LayoutHelper.sendWheel(btn.mouseArea, btn.width / 2, btn.height / 2, 120, 0);

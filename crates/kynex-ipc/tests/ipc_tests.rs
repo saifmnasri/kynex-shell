@@ -88,3 +88,72 @@ fn test_notification_ipc_constants_and_types() {
     assert_eq!(cloned.id, 42);
     assert_eq!(cloned.app_name, "TestApp");
 }
+
+#[test]
+fn test_tray_ipc_constants_and_types() {
+    use kynex_ipc::tray::{
+        TrayItemInfo, STATUS_NOTIFIER_ITEM_DEFAULT_PATH, STATUS_NOTIFIER_ITEM_FDO_INTERFACE,
+        STATUS_NOTIFIER_ITEM_INTERFACE, STATUS_NOTIFIER_WATCHER_DESTINATION_FDO,
+        STATUS_NOTIFIER_WATCHER_DESTINATION_KDE, STATUS_NOTIFIER_WATCHER_FDO_INTERFACE,
+        STATUS_NOTIFIER_WATCHER_INTERFACE, STATUS_NOTIFIER_WATCHER_PATH, TRAY_INTERFACE, TRAY_PATH,
+    };
+
+    assert_eq!(TRAY_INTERFACE, "org.kynexos.Daemon.Tray1");
+    assert_eq!(TRAY_PATH, "/org/kynexos/Daemon/Tray");
+    assert_eq!(
+        STATUS_NOTIFIER_WATCHER_DESTINATION_KDE,
+        "org.kde.StatusNotifierWatcher"
+    );
+    assert_eq!(
+        STATUS_NOTIFIER_WATCHER_DESTINATION_FDO,
+        "org.freedesktop.StatusNotifierWatcher"
+    );
+    assert_eq!(STATUS_NOTIFIER_WATCHER_PATH, "/StatusNotifierWatcher");
+    assert_eq!(
+        STATUS_NOTIFIER_WATCHER_INTERFACE,
+        "org.kde.StatusNotifierWatcher"
+    );
+    assert_eq!(
+        STATUS_NOTIFIER_WATCHER_FDO_INTERFACE,
+        "org.freedesktop.StatusNotifierWatcher"
+    );
+    assert_eq!(STATUS_NOTIFIER_ITEM_INTERFACE, "org.kde.StatusNotifierItem");
+    assert_eq!(
+        STATUS_NOTIFIER_ITEM_FDO_INTERFACE,
+        "org.freedesktop.StatusNotifierItem"
+    );
+    assert_eq!(STATUS_NOTIFIER_ITEM_DEFAULT_PATH, "/StatusNotifierItem");
+
+    let default_info = TrayItemInfo::default();
+    assert_eq!(default_info.id, "");
+    assert_eq!(default_info.window_id, 0);
+
+    let info = TrayItemInfo {
+        id: ":1.42/StatusNotifierItem".to_string(),
+        title: "Test Tray Item".to_string(),
+        status: "Active".to_string(),
+        icon_name: "test-tray-icon".to_string(),
+        icon_theme_path: "/usr/share/icons".to_string(),
+        icon_pixmap: vec![0xFF, 0x11, 0x22, 0x33],
+        icon_pixmap_width: 1,
+        icon_pixmap_height: 1,
+        tooltip_title: "Tooltip Headline".to_string(),
+        tooltip_text: "Tooltip Description".to_string(),
+        is_menu: false,
+        window_id: 1234,
+        has_attention: true,
+        attention_icon_name: "att-icon".to_string(),
+        attention_pixmap: vec![0xFF, 0x44, 0x55, 0x66],
+        attention_pixmap_width: 1,
+        attention_pixmap_height: 1,
+    };
+
+    let cloned = info.clone();
+    assert_eq!(info, cloned);
+    assert_ne!(info, default_info);
+    assert_eq!(cloned.id, ":1.42/StatusNotifierItem");
+    assert_eq!(cloned.window_id, 1234);
+    assert!(cloned.has_attention);
+    assert_eq!(cloned.icon_pixmap_width, 1);
+    assert_eq!(cloned.attention_icon_name, "att-icon");
+}

@@ -13,8 +13,6 @@
 )]
 
 use core::pin::Pin;
-use std::collections::HashMap;
-use std::sync::RwLock;
 
 use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant};
@@ -25,67 +23,33 @@ use kynex_ipc::tray::{
     TRAY_PATH,
 };
 use kynex_ipc::DAEMON_DESTINATION;
-use kynex_shell_core::tray::{TrayUiItem, TrayUiState};
+use kynex_shell_core::coordinates::{
+    map_to_screen_coordinates, OutputGeometry, PanelSize, Point, SurfaceAnchors,
+};
+pub use kynex_shell_core::tray::{
+    handle_tray_event, tray_item_role_value, tray_role_names, TrayEvent, TrayPixmapCache,
+    TrayRoleValue, TrayUiItem, TrayUiState, ROLE_HAS_PIXMAP, ROLE_ICON_NAME, ROLE_ID,
+    ROLE_IS_ATTENTION, ROLE_IS_MENU, ROLE_LETTER_BADGE, ROLE_PIXMAP_ID, ROLE_STATUS, ROLE_TITLE,
+    ROLE_TOOLTIP_TEXT, ROLE_TOOLTIP_TITLE, ROLE_WINDOW_ID,
+};
 use tracing::{info, warn};
 use zbus::fdo::DBusProxy;
 use zbus::message::Type;
 use zbus::{MatchRule, MessageStream};
 
-/// Role ID for item unique identifier.
-pub const ROLE_ID: i32 = 257;
-/// Role ID for item title.
-pub const ROLE_TITLE: i32 = 258;
-/// Role ID for item status (`"Passive"`, `"Active"`, `"NeedsAttention"`).
-pub const ROLE_STATUS: i32 = 259;
-/// Role ID for icon name.
-pub const ROLE_ICON_NAME: i32 = 260;
-/// Role ID for whether an in-memory pixmap is present.
-pub const ROLE_HAS_PIXMAP: i32 = 261;
-/// Role ID for pixmap identifier (used with `image://kynex-tray/<id>`).
-pub const ROLE_PIXMAP_ID: i32 = 262;
-/// Role ID for tooltip headline.
-pub const ROLE_TOOLTIP_TITLE: i32 = 263;
-/// Role ID for tooltip body text.
-pub const ROLE_TOOLTIP_TEXT: i32 = 264;
-/// Role ID for whether the item requests attention.
-pub const ROLE_IS_ATTENTION: i32 = 265;
-/// Role ID for single-character fallback letter badge.
-pub const ROLE_LETTER_BADGE: i32 = 266;
-/// Role ID for whether item is menu-only.
-pub const ROLE_IS_MENU: i32 = 267;
-/// Role ID for associated window ID.
-pub const ROLE_WINDOW_ID: i32 = 268;
-
-static TRAY_PIXMAP_CACHE: RwLock<Option<HashMap<String, (i32, i32, Vec<u8>)>>> = RwLock::new(None);
-
 /// Updates or inserts a pixmap in the global tray pixmap cache.
 pub fn update_pixmap_cache(id: &str, width: i32, height: i32, pixmap: &[u8]) {
-    if let Ok(mut lock) = TRAY_PIXMAP_CACHE.write() {
-        let map = lock.get_or_insert_with(HashMap::new);
-        if pixmap.is_empty() || width <= 0 || height <= 0 {
-            map.remove(id);
-        } else {
-            map.insert(id.to_string(), (width, height, pixmap.to_vec()));
-        }
-    }
+    TrayPixmapCache::global().update(id, width, height, pixmap);
 }
 
 /// Removes a pixmap from the global tray pixmap cache.
 pub fn remove_from_pixmap_cache(id: &str) {
-    if let Ok(mut lock) = TRAY_PIXMAP_CACHE.write() {
-        if let Some(map) = lock.as_mut() {
-            map.remove(id);
-        }
-    }
+    TrayPixmapCache::global().remove(id);
 }
 
 /// Clears the global tray pixmap cache.
 pub fn clear_pixmap_cache() {
-    if let Ok(mut lock) = TRAY_PIXMAP_CACHE.write() {
-        if let Some(map) = lock.as_mut() {
-            map.clear();
-        }
-    }
+    TrayPixmapCache::global().clear();
 }
 
 /// Copies cached tray icon pixmap bytes for a given item id into `out_buf`.
@@ -115,38 +79,18 @@ pub unsafe extern "C" fn kynex_get_tray_pixmap(
         return 0;
     };
 
-    if let Ok(lock) = TRAY_PIXMAP_CACHE.read() {
-        if let Some(map) = lock.as_ref() {
-            if let Some((width, height, data)) = map.get(c_str) {
-                *out_width = *width;
-                *out_height = *height;
-                let copy_len = data.len().min(max_buf_len);
-                std::ptr::copy_nonoverlapping(data.as_ptr(), out_buf, copy_len);
-                return copy_len;
-            }
-        }
-    }
-
-    0
+    let slice = std::slice::from_raw_parts_mut(out_buf, max_buf_len);
+    TrayPixmapCache::global().copy_to_slice(c_str, &mut *out_width, &mut *out_height, slice)
 }
 
 /// Converts a tray item and role ID into a `QVariant`.
 #[must_use]
 pub fn tray_item_role_variant(item: &TrayUiItem, role: i32) -> QVariant {
-    match role {
-        ROLE_ID => QVariant::from(&QString::from(&item.id)),
-        ROLE_TITLE => QVariant::from(&QString::from(&item.title)),
-        ROLE_STATUS => QVariant::from(&QString::from(&item.status)),
-        ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
-        ROLE_HAS_PIXMAP => QVariant::from(&item.has_pixmap),
-        ROLE_PIXMAP_ID => QVariant::from(&QString::from(&item.pixmap_id)),
-        ROLE_TOOLTIP_TITLE => QVariant::from(&QString::from(&item.tooltip_title)),
-        ROLE_TOOLTIP_TEXT => QVariant::from(&QString::from(&item.tooltip_text)),
-        ROLE_IS_ATTENTION => QVariant::from(&item.is_attention),
-        ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
-        ROLE_IS_MENU => QVariant::from(&item.is_menu),
-        ROLE_WINDOW_ID => QVariant::from(&item.window_id),
-        _ => QVariant::default(),
+    match tray_item_role_value(item, role) {
+        Some(TrayRoleValue::Text(s)) => QVariant::from(&QString::from(&s)),
+        Some(TrayRoleValue::Bool(b)) => QVariant::from(&b),
+        Some(TrayRoleValue::Int(i)) => QVariant::from(&i),
+        None => QVariant::default(),
     }
 }
 
@@ -154,18 +98,9 @@ pub fn tray_item_role_variant(item: &TrayUiItem, role: i32) -> QVariant {
 #[must_use]
 pub fn create_tray_role_names() -> QHash<QHashPair_i32_QByteArray> {
     let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-    roles.insert(ROLE_ID, QByteArray::from("id"));
-    roles.insert(ROLE_TITLE, QByteArray::from("title"));
-    roles.insert(ROLE_STATUS, QByteArray::from("status"));
-    roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
-    roles.insert(ROLE_HAS_PIXMAP, QByteArray::from("hasPixmap"));
-    roles.insert(ROLE_PIXMAP_ID, QByteArray::from("pixmapId"));
-    roles.insert(ROLE_TOOLTIP_TITLE, QByteArray::from("tooltipTitle"));
-    roles.insert(ROLE_TOOLTIP_TEXT, QByteArray::from("tooltipText"));
-    roles.insert(ROLE_IS_ATTENTION, QByteArray::from("isAttention"));
-    roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
-    roles.insert(ROLE_IS_MENU, QByteArray::from("isMenu"));
-    roles.insert(ROLE_WINDOW_ID, QByteArray::from("windowId"));
+    for &(role_id, role_name) in tray_role_names() {
+        roles.insert(role_id, QByteArray::from(role_name));
+    }
     roles
 }
 
@@ -360,24 +295,69 @@ impl qobject::TrayModel {
     /// Invokes primary activation on target item.
     pub fn activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
         let id_str = id.to_string();
+        let (screen_x, screen_y) = map_to_screen_coordinates(
+            SurfaceAnchors::top_panel(),
+            PanelSize {
+                width: 1920.0,
+                height: 40.0,
+            },
+            OutputGeometry {
+                x: 0.0,
+                y: 0.0,
+                width: 1920.0,
+                height: 1080.0,
+                scale: 1.0,
+            },
+            Point::new(f64::from(x), f64::from(y)),
+        );
         tokio::spawn(async move {
-            let _ = send_activate_call(&id_str, x, y).await;
+            let _ = send_activate_call(&id_str, screen_x, screen_y).await;
         });
     }
 
     /// Invokes secondary activation on target item.
     pub fn secondary_activate(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
         let id_str = id.to_string();
+        let (screen_x, screen_y) = map_to_screen_coordinates(
+            SurfaceAnchors::top_panel(),
+            PanelSize {
+                width: 1920.0,
+                height: 40.0,
+            },
+            OutputGeometry {
+                x: 0.0,
+                y: 0.0,
+                width: 1920.0,
+                height: 1080.0,
+                scale: 1.0,
+            },
+            Point::new(f64::from(x), f64::from(y)),
+        );
         tokio::spawn(async move {
-            let _ = send_secondary_activate_call(&id_str, x, y).await;
+            let _ = send_secondary_activate_call(&id_str, screen_x, screen_y).await;
         });
     }
 
     /// Invokes context menu on target item with window coordinates.
     pub fn context_menu(self: Pin<&mut Self>, id: &QString, x: i32, y: i32) {
         let id_str = id.to_string();
+        let (screen_x, screen_y) = map_to_screen_coordinates(
+            SurfaceAnchors::top_panel(),
+            PanelSize {
+                width: 1920.0,
+                height: 40.0,
+            },
+            OutputGeometry {
+                x: 0.0,
+                y: 0.0,
+                width: 1920.0,
+                height: 1080.0,
+                scale: 1.0,
+            },
+            Point::new(f64::from(x), f64::from(y)),
+        );
         tokio::spawn(async move {
-            let _ = send_context_menu_call(&id_str, x, y).await;
+            let _ = send_context_menu_call(&id_str, screen_x, screen_y).await;
         });
     }
 
@@ -488,32 +468,31 @@ pub fn handle_tray_signal_message(state: &mut TrayUiState, msg: &zbus::Message) 
     };
 
     match member.as_str() {
-        "ItemAdded" | "ItemChanged" => {
+        "ItemAdded" => {
             if let Ok(info) = msg.body().deserialize::<TrayItemInfo>() {
-                if !info.icon_pixmap.is_empty()
-                    && info.icon_pixmap_width > 0
-                    && info.icon_pixmap_height > 0
-                {
-                    update_pixmap_cache(
-                        &info.id,
-                        info.icon_pixmap_width,
-                        info.icon_pixmap_height,
-                        &info.icon_pixmap,
-                    );
-                } else {
-                    remove_from_pixmap_cache(&info.id);
-                }
-                let item = TrayUiItem::from_ipc(&info);
-                state.upsert(item);
-                true
+                handle_tray_event(
+                    state,
+                    TrayPixmapCache::global(),
+                    TrayEvent::ItemAdded(Box::new(info)),
+                )
+            } else {
+                false
+            }
+        }
+        "ItemChanged" => {
+            if let Ok(info) = msg.body().deserialize::<TrayItemInfo>() {
+                handle_tray_event(
+                    state,
+                    TrayPixmapCache::global(),
+                    TrayEvent::ItemChanged(Box::new(info)),
+                )
             } else {
                 false
             }
         }
         "ItemRemoved" => {
             if let Ok(id) = msg.body().deserialize::<String>() {
-                remove_from_pixmap_cache(&id);
-                state.remove(&id).is_some()
+                handle_tray_event(state, TrayPixmapCache::global(), TrayEvent::ItemRemoved(id))
             } else {
                 false
             }
@@ -527,9 +506,11 @@ pub fn handle_tray_signal_message(state: &mut TrayUiState, msg: &zbus::Message) 
 pub fn handle_name_owner_changed_event(state: &mut TrayUiState, new_owner: Option<&str>) -> bool {
     if new_owner.as_ref().is_none_or(|o| o.is_empty()) {
         info!("kynex-daemon left the bus; resetting tray state");
-        state.items.clear();
-        clear_pixmap_cache();
-        true
+        handle_tray_event(
+            state,
+            TrayPixmapCache::global(),
+            TrayEvent::DaemonDisconnected,
+        )
     } else {
         false
     }

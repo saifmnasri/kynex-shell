@@ -31,12 +31,15 @@ use kynex_tray::{
     sanitize_icon_name, sanitize_id, sanitize_title, sanitize_tooltip_text, sanitize_tooltip_title,
     RefreshRateLimiter, TrayError,
 };
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, Semaphore};
 use tracing::{debug, info, warn};
-use zbus::fdo::DBusProxy;
+use zbus::fdo::{DBusProxy, PropertiesProxy};
 use zbus::message::Header;
 use zbus::object_server::SignalEmitter;
 use zbus::{interface, Connection, MatchRule, MessageStream};
+
+/// Bounded maximum concurrent property fetch tasks.
+const MAX_CONCURRENT_FETCHES: usize = 16;
 
 /// Shared runtime state for the tray subsystem.
 pub struct TraySharedState {
@@ -58,6 +61,10 @@ pub struct TraySharedState {
     pub fdo_name_acquired: AtomicBool,
     /// Cancellation senders for active item signal listener tasks.
     pub item_cancellers: Mutex<HashMap<ItemKey, tokio::sync::oneshot::Sender<()>>>,
+    /// Tracked well-known bus names mapped to their registered item keys.
+    pub well_known_owners: Mutex<HashMap<String, Vec<ItemKey>>>,
+    /// Semaphore enforcing a bounded cap on concurrent property fetches.
+    pub fetch_semaphore: Arc<Semaphore>,
 }
 
 impl TraySharedState {
@@ -74,6 +81,8 @@ impl TraySharedState {
             kde_name_acquired: AtomicBool::new(false),
             fdo_name_acquired: AtomicBool::new(false),
             item_cancellers: Mutex::new(HashMap::new()),
+            well_known_owners: Mutex::new(HashMap::new()),
+            fetch_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_FETCHES)),
         }
     }
 
@@ -462,57 +471,58 @@ async fn handle_register_item(
         .await
         .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to connect to dbus daemon: {e}")))?;
 
-    // Authenticate sender
-    let key = TrayRegistry::resolve_registration(sender, service_or_path, |name| {
-        // Synchronously or blockingly query owner; in async we can query via dbus proxy
-        // Since resolve_registration accepts a closure, we resolve it first
-        let name_owned = name.to_string();
-        // Fallback for closure: caller handles lookup below
-        Some(name_owned)
-    });
+    let trimmed = service_or_path.trim();
+    if trimmed.is_empty() {
+        return Err(zbus::fdo::Error::InvalidArgs(
+            "Service or path argument cannot be empty".to_string(),
+        ));
+    }
 
-    // Check if well-known name lookup needed
-    let key = match key {
-        Ok(k) => {
-            // If the service was a well-known name, verify actual bus owner
-            if !service_or_path.trim().starts_with('/') && !service_or_path.trim().starts_with(':')
-            {
-                let svc_name = if let Some(idx) = service_or_path.find('/') {
-                    &service_or_path[..idx]
-                } else {
-                    service_or_path.trim()
-                };
-                match dbus_proxy
-                    .get_name_owner(svc_name.try_into().map_err(|_| {
-                        zbus::fdo::Error::InvalidArgs("Invalid well-known name".to_string())
-                    })?)
-                    .await
-                {
-                    Ok(owner) if owner.as_str() == sender => k,
-                    _ => {
-                        return Err(zbus::fdo::Error::AccessDenied(
-                            "Sender does not own the registered service name".to_string(),
-                        ));
-                    }
-                }
-            } else {
-                k
-            }
-        }
-        Err(TrayError::SenderMismatch) => {
+    let (target_service, object_path) = if trimmed.starts_with('/') {
+        (sender.to_string(), trimmed.to_string())
+    } else if let Some(idx) = trimmed.find('/') {
+        let (svc, path) = trimmed.split_at(idx);
+        (svc.to_string(), path.to_string())
+    } else {
+        (trimmed.to_string(), "/StatusNotifierItem".to_string())
+    };
+
+    if !object_path.starts_with('/') || object_path.contains(' ') || object_path.contains('\0') {
+        return Err(zbus::fdo::Error::InvalidArgs(format!(
+            "Invalid object path: {object_path}"
+        )));
+    }
+
+    // Authenticate sender
+    let well_known_name: Option<String> = if target_service.starts_with(':') {
+        if target_service != sender {
             return Err(zbus::fdo::Error::AccessDenied(
                 "Sender does not own the registered service name".to_string(),
             ));
         }
-        Err(TrayError::InvalidObjectPath(p)) => {
-            return Err(zbus::fdo::Error::InvalidArgs(format!(
-                "Invalid object path: {p}"
-            )));
+        None
+    } else {
+        let bus_name_arg = target_service
+            .as_str()
+            .try_into()
+            .map_err(|_| zbus::fdo::Error::InvalidArgs("Invalid well-known name".to_string()))?;
+        let owner = match dbus_proxy.get_name_owner(bus_name_arg).await {
+            Ok(owner) => owner.as_str().to_string(),
+            Err(_) => {
+                return Err(zbus::fdo::Error::AccessDenied(
+                    "Service name is not owned".to_string(),
+                ));
+            }
+        };
+        if owner != sender {
+            return Err(zbus::fdo::Error::AccessDenied(
+                "Sender does not own the registered service name".to_string(),
+            ));
         }
-        Err(e) => {
-            return Err(zbus::fdo::Error::Failed(e.to_string()));
-        }
+        Some(target_service)
     };
+
+    let key = ItemKey::new(sender, object_path);
 
     // Check capacity limits
     {
@@ -530,14 +540,27 @@ async fn handle_register_item(
         }
     }
 
-    // Asynchronously fetch item properties with a 2-second timeout
-    let item_state = fetch_item_properties(&conn, &key).await?;
+    // Asynchronously fetch item properties with a 2-second timeout and bounded concurrency
+    let item_state = {
+        let _permit = shared.fetch_semaphore.acquire().await.map_err(|e| {
+            zbus::fdo::Error::Failed(format!("Failed to acquire fetch permit: {e}"))
+        })?;
+        fetch_item_properties(&conn, &key).await?
+    };
 
     // Upsert into registry
     {
         let mut reg = shared.registry.write().await;
         if let Err(e) = reg.upsert(item_state.clone()) {
             return Err(zbus::fdo::Error::LimitsExceeded(e.to_string()));
+        }
+    }
+
+    if let Some(wk_name) = well_known_name {
+        let mut wk_map = shared.well_known_owners.lock().await;
+        let list = wk_map.entry(wk_name).or_default();
+        if !list.contains(&key) {
+            list.push(key.clone());
         }
     }
 
@@ -613,37 +636,85 @@ async fn handle_register_host(
     Ok(())
 }
 
-/// Asynchronously fetches and sanitizes properties from target StatusNotifierItem with 2s timeout.
+/// Asynchronously fetches and sanitizes properties from target StatusNotifierItem with 2s timeout
+/// using a single `org.freedesktop.DBus.Properties.GetAll` call.
 async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::Result<ItemState> {
-    let proxy = StatusNotifierItemProxy::builder(conn)
+    let props_proxy = PropertiesProxy::builder(conn)
         .destination(key.bus_name.as_str())
         .path(key.object_path.as_str())
-        .cache_properties(zbus::proxy::CacheProperties::No)
         .build()
         .await
-        .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to build item proxy: {e}")))?;
+        .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to build properties proxy: {e}")))?;
 
     let fetch_fut = async {
-        let raw_id = proxy.id().await.unwrap_or_default();
-        let raw_title = proxy.title().await.unwrap_or_default();
-        let raw_status = proxy
-            .status()
-            .await
-            .unwrap_or_else(|_| "Active".to_string());
-        let window_id = proxy.window_id().await.unwrap_or(0);
-        let raw_icon_theme_path = proxy.icon_theme_path().await.ok();
-        let raw_icon_name = proxy.icon_name().await.unwrap_or_default();
-        let raw_pixmaps = proxy.icon_pixmap().await.unwrap_or_default();
-        let raw_attention_icon_name = proxy.attention_icon_name().await.unwrap_or_default();
-        let raw_attention_pixmaps = proxy.attention_icon_pixmap().await.unwrap_or_default();
-        let is_menu = proxy.item_is_menu().await.unwrap_or(false);
-
-        let (tt_title, tt_text) = match proxy.tool_tip().await {
-            Ok((_, _, t_title, t_text)) => (t_title, t_text),
-            Err(_) => (String::new(), String::new()),
+        let kde_iface = "org.kde.StatusNotifierItem"
+            .try_into()
+            .map_err(|e| zbus::fdo::Error::Failed(format!("Invalid interface name: {e}")))?;
+        let props = if let Ok(p) = props_proxy.get_all(kde_iface).await {
+            p
+        } else {
+            let fdo_iface = "org.freedesktop.StatusNotifierItem"
+                .try_into()
+                .map_err(|e| zbus::fdo::Error::Failed(format!("Invalid interface name: {e}")))?;
+            props_proxy.get_all(fdo_iface).await.map_err(|e| {
+                zbus::fdo::Error::Failed(format!("Failed to fetch properties via GetAll: {e}"))
+            })?
         };
 
-        (
+        let raw_id: String = props
+            .get("Id")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let raw_title: String = props
+            .get("Title")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let raw_status: String = props
+            .get("Status")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_else(|| "Active".to_string());
+        let window_id: i32 = props
+            .get("WindowId")
+            .and_then(|v| {
+                v.clone().try_into().ok().or_else(|| {
+                    let u: Option<u32> = v.clone().try_into().ok();
+                    u.map(|val| val.cast_signed())
+                })
+            })
+            .unwrap_or(0);
+        let raw_icon_theme_path: Option<String> = props
+            .get("IconThemePath")
+            .and_then(|v| v.clone().try_into().ok());
+        let raw_icon_name: String = props
+            .get("IconName")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let raw_pixmaps: Vec<RawPixmapTuple> = props
+            .get("IconPixmap")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let raw_attention_icon_name: String = props
+            .get("AttentionIconName")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let raw_attention_pixmaps: Vec<RawPixmapTuple> = props
+            .get("AttentionIconPixmap")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or_default();
+        let is_menu: bool = props
+            .get("ItemIsMenu")
+            .and_then(|v| v.clone().try_into().ok())
+            .unwrap_or(false);
+
+        let (raw_tt_title, raw_tt_text) = match props.get("ToolTip").and_then(|v| {
+            let tt: Result<(String, Vec<RawPixmapTuple>, String, String), _> = v.clone().try_into();
+            tt.ok()
+        }) {
+            Some((_, _, t_title, t_text)) => (t_title, t_text),
+            None => (String::new(), String::new()),
+        };
+
+        Ok::<_, zbus::fdo::Error>((
             raw_id,
             raw_title,
             raw_status,
@@ -654,9 +725,9 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
             raw_attention_icon_name,
             raw_attention_pixmaps,
             is_menu,
-            tt_title,
-            tt_text,
-        )
+            raw_tt_title,
+            raw_tt_text,
+        ))
     };
 
     let (
@@ -676,7 +747,7 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
         .await
         .map_err(|_| {
             zbus::fdo::Error::Timeout("Timed out fetching item properties after 2s".to_string())
-        })?;
+        })??;
 
     let item_id = sanitize_id(&raw_id);
     let title = sanitize_title(&raw_title);
@@ -737,6 +808,10 @@ async fn fetch_item_properties(conn: &Connection, key: &ItemKey) -> zbus::fdo::R
 }
 
 /// Listens for item property change signals and triggers rate-limited refresh.
+///
+/// Signal ingestion is decoupled from property fetching via a channel of size 1 (coalescing).
+/// The stream reader loop never blocks on D-Bus fetches, preventing connection congestion.
+/// Background fetch tasks are capped by `fetch_semaphore` and time-bounded by the 2s timeout.
 async fn run_item_signal_listener(
     shared: Arc<TraySharedState>,
     conn: Connection,
@@ -766,6 +841,70 @@ async fn run_item_signal_listener(
 
     let item_id_str = key.as_id_string();
 
+    // Channel of size 1 for coalescing incoming refresh signals
+    let (dirty_tx, mut dirty_rx) = tokio::sync::mpsc::channel::<()>(1);
+
+    // Spawn the background coalesced property fetch worker
+    let worker_shared = Arc::clone(&shared);
+    let worker_conn = conn.clone();
+    let worker_key = key.clone();
+    let worker_item_id = item_id_str.clone();
+    let worker_dirty_tx = dirty_tx.clone();
+
+    let fetch_worker = tokio::spawn(async move {
+        while dirty_rx.recv().await.is_some() {
+            // Check if item is still tracked
+            if worker_shared
+                .registry
+                .read()
+                .await
+                .get(&worker_key)
+                .is_none()
+            {
+                break;
+            }
+
+            // Evaluate token-bucket rate limit (10/s)
+            let now = Instant::now();
+            let allowed = worker_shared
+                .rate_limiter
+                .lock()
+                .await
+                .check_and_consume(&worker_item_id, now)
+                .is_ok();
+
+            if !allowed {
+                debug!("Rate limit reached for '{worker_item_id}', debouncing trailing fetch");
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                // Re-mark dirty to guarantee final state is fetched
+                let _ = worker_dirty_tx.try_send(());
+                continue;
+            }
+
+            // Acquire bounded concurrency permit
+            let Ok(permit) = worker_shared.fetch_semaphore.acquire().await else {
+                break;
+            };
+
+            // Fetch properties with 2s timeout
+            if let Ok(updated_state) = fetch_item_properties(&worker_conn, &worker_key).await {
+                drop(permit);
+
+                let mut reg = worker_shared.registry.write().await;
+                if reg.get(&worker_key).is_some() {
+                    let info = item_state_to_info(&updated_state);
+                    let _ = reg.upsert(updated_state);
+                    drop(reg);
+
+                    if let Some(emitter) = worker_shared.tray1_emitter.lock().await.as_ref() {
+                        let _ = TrayServer::item_changed(emitter, &info).await;
+                    }
+                }
+            }
+        }
+    });
+
+    // Stream reader loop: purely ingests signals and triggers coalesced dirty notifications
     loop {
         let msg = tokio::select! {
             _ = &mut cancel_rx => {
@@ -799,49 +938,17 @@ async fn run_item_signal_listener(
             continue;
         }
 
-        // Check if item is still tracked
-        let tracked = shared.registry.read().await.get(&key).is_some();
-        if !tracked {
-            break;
-        }
-
-        // Evaluate token-bucket rate limit (10/s)
-        let now = Instant::now();
-        let allowed = shared
-            .rate_limiter
-            .lock()
-            .await
-            .check_and_consume(&item_id_str, now)
-            .is_ok();
-
-        if !allowed {
-            debug!(
-                "Dropped rapid refresh signal '{member}' for '{item_id_str}' (rate limit exceeded)"
-            );
-            continue;
-        }
-
-        // Re-fetch properties with 2s timeout
-        if let Ok(updated_state) = fetch_item_properties(&conn, &key).await {
-            let mut reg = shared.registry.write().await;
-            if reg.get(&key).is_some() {
-                let info = item_state_to_info(&updated_state);
-                let _ = reg.upsert(updated_state);
-
-                drop(reg);
-
-                if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
-                    let _ = TrayServer::item_changed(emitter, &info).await;
-                }
-            }
-        }
+        // Notify coalescing channel (non-blocking)
+        let _ = dirty_tx.try_send(());
     }
 
+    // Terminate worker
+    fetch_worker.abort();
     shared.item_cancellers.lock().await.remove(&key);
 }
 
 /// Runs the D-Bus NameOwnerChanged listener to automatically remove tray items
-/// and unregister visualization hosts when clients disconnect.
+/// and unregister visualization hosts when clients disconnect or release well-known names.
 pub async fn run_tray_dbus_name_watcher(shared: Arc<TraySharedState>, conn: Connection) {
     let Ok(rule) = MatchRule::builder()
         .msg_type(zbus::message::Type::Signal)
@@ -864,61 +971,109 @@ pub async fn run_tray_dbus_name_watcher(shared: Arc<TraySharedState>, conn: Conn
 
     while let Some(msg) = stream.next().await {
         let Ok(msg) = msg else { continue };
-        let Ok((name, _old_owner, new_owner)) =
-            msg.body().deserialize::<(String, String, String)>()
+        let Ok((name, old_owner, new_owner)) = msg.body().deserialize::<(String, String, String)>()
         else {
             continue;
         };
 
-        // Disconnect occurs when new_owner is empty
-        if !new_owner.is_empty() {
-            continue;
-        }
+        // Case 1: A client's unique bus name disconnected (new_owner is empty)
+        if name.starts_with(':') && new_owner.is_empty() {
+            let removed_items = {
+                let mut reg = shared.registry.write().await;
+                reg.remove_sender(&name)
+            };
 
-        // 1. Check if name was an item sender
-        let removed_items = {
-            let mut reg = shared.registry.write().await;
-            reg.remove_sender(&name)
-        };
-
-        for item in removed_items {
-            let id = item.key.as_id_string();
-            info!("Tray item owner vanished: removing '{id}'");
-            shared.rate_limiter.lock().await.remove(&id);
-            if let Some(tx) = shared.item_cancellers.lock().await.remove(&item.key) {
-                let _ = tx.send(());
+            // Clean up any well-known name mappings for these removed items
+            {
+                let mut wk_map = shared.well_known_owners.lock().await;
+                for item in &removed_items {
+                    for items in wk_map.values_mut() {
+                        items.retain(|k| k != &item.key);
+                    }
+                }
+                wk_map.retain(|_, v| !v.is_empty());
             }
 
-            if let Some(emitter) = shared.watcher_emitter.lock().await.as_ref() {
-                let _ =
-                    StatusNotifierWatcherServer::status_notifier_item_unregistered(emitter, &id)
-                        .await;
-            }
-            if let Some(emitter) = shared.fdo_watcher_emitter.lock().await.as_ref() {
-                let _ =
-                    FdoStatusNotifierWatcherServer::status_notifier_item_unregistered(emitter, &id)
-                        .await;
-            }
-            if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
-                let _ = TrayServer::item_removed(emitter, &id).await;
-            }
-        }
+            for item in removed_items {
+                let id = item.key.as_id_string();
+                info!("Tray item owner vanished: removing '{id}'");
+                shared.rate_limiter.lock().await.remove(&id);
+                if let Some(tx) = shared.item_cancellers.lock().await.remove(&item.key) {
+                    let _ = tx.send(());
+                }
 
-        // 2. Check if name was a host
-        let last_host_left = {
-            let mut reg = shared.registry.write().await;
-            reg.unregister_host(&name)
-        };
-
-        if last_host_left {
-            info!("Last tray host vanished ('{name}')");
-            if let Some(emitter) = shared.watcher_emitter.lock().await.as_ref() {
-                let _ =
-                    StatusNotifierWatcherServer::status_notifier_host_unregistered(emitter).await;
-            }
-            if let Some(emitter) = shared.fdo_watcher_emitter.lock().await.as_ref() {
-                let _ = FdoStatusNotifierWatcherServer::status_notifier_host_unregistered(emitter)
+                if let Some(emitter) = shared.watcher_emitter.lock().await.as_ref() {
+                    let _ = StatusNotifierWatcherServer::status_notifier_item_unregistered(
+                        emitter, &id,
+                    )
                     .await;
+                }
+                if let Some(emitter) = shared.fdo_watcher_emitter.lock().await.as_ref() {
+                    let _ = FdoStatusNotifierWatcherServer::status_notifier_item_unregistered(
+                        emitter, &id,
+                    )
+                    .await;
+                }
+                if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
+                    let _ = TrayServer::item_removed(emitter, &id).await;
+                }
+            }
+
+            // Check if name was a host
+            let last_host_left = {
+                let mut reg = shared.registry.write().await;
+                reg.unregister_host(&name)
+            };
+
+            if last_host_left {
+                info!("Last tray host vanished ('{name}')");
+                if let Some(emitter) = shared.watcher_emitter.lock().await.as_ref() {
+                    let _ = StatusNotifierWatcherServer::status_notifier_host_unregistered(emitter)
+                        .await;
+                }
+                if let Some(emitter) = shared.fdo_watcher_emitter.lock().await.as_ref() {
+                    let _ =
+                        FdoStatusNotifierWatcherServer::status_notifier_host_unregistered(emitter)
+                            .await;
+                }
+            }
+        } else if !name.starts_with(':') && new_owner != old_owner {
+            // Case 2: A well-known service name changed owners or was released
+            let keys_to_remove = {
+                let mut wk_map = shared.well_known_owners.lock().await;
+                wk_map.remove(&name).unwrap_or_default()
+            };
+
+            for key in keys_to_remove {
+                let removed = {
+                    let mut reg = shared.registry.write().await;
+                    reg.unregister(&key)
+                };
+
+                if let Some(item) = removed {
+                    let id = item.key.as_id_string();
+                    info!("Well-known name '{name}' owner changed: removing '{id}'");
+                    shared.rate_limiter.lock().await.remove(&id);
+                    if let Some(tx) = shared.item_cancellers.lock().await.remove(&item.key) {
+                        let _ = tx.send(());
+                    }
+
+                    if let Some(emitter) = shared.watcher_emitter.lock().await.as_ref() {
+                        let _ = StatusNotifierWatcherServer::status_notifier_item_unregistered(
+                            emitter, &id,
+                        )
+                        .await;
+                    }
+                    if let Some(emitter) = shared.fdo_watcher_emitter.lock().await.as_ref() {
+                        let _ = FdoStatusNotifierWatcherServer::status_notifier_item_unregistered(
+                            emitter, &id,
+                        )
+                        .await;
+                    }
+                    if let Some(emitter) = shared.tray1_emitter.lock().await.as_ref() {
+                        let _ = TrayServer::item_removed(emitter, &id).await;
+                    }
+                }
             }
         }
     }

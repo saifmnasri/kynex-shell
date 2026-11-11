@@ -258,11 +258,11 @@ LayerSurface {
                     color: trayMouseArea.pressed
                         ? Style.colors.surfaceRaised
                         : (trayMouseArea.containsMouse ? Style.colors.surface : "transparent")
-                    border.color: isAttention ? Style.colors.warning : "transparent"
-                    border.width: isAttention ? 1 : 0
+                    border.color: trayBtn.isAttention ? Style.colors.warning : "transparent"
+                    border.width: trayBtn.isAttention ? 1 : 0
 
                     Accessible.role: Accessible.Button
-                    Accessible.name: title.length > 0 ? title : id
+                    Accessible.name: trayBtn.title.length > 0 ? trayBtn.title : trayBtn.id
                     Accessible.focusable: true
 
                     Image {
@@ -270,9 +270,9 @@ LayerSurface {
                         anchors.centerIn: parent
                         width: Style.spacing.large
                         height: Style.spacing.large
-                        source: hasPixmap
-                            ? ("image://kynex-tray/" + pixmapId)
-                            : (iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : "")
+                        source: trayBtn.hasPixmap
+                            ? ("image://kynex-tray/" + trayBtn.pixmapId)
+                            : (trayBtn.iconName.length > 0 ? ("image://kynex-icon/" + trayBtn.iconName + "?size=24&scale=1") : "")
                         fillMode: Image.PreserveAspectFit
                         visible: status === Image.Ready && source.toString().length > 0
                         asynchronous: false
@@ -281,7 +281,7 @@ LayerSurface {
                     Text {
                         id: trayBadgeText
                         anchors.centerIn: parent
-                        text: letterBadge
+                        text: trayBtn.letterBadge
                         font.family: Style.typography.family
                         font.pixelSize: Style.typography.basePx
                         font.bold: true
@@ -292,10 +292,10 @@ LayerSurface {
 
                     Rectangle {
                         id: attentionDot
-                        visible: isAttention
+                        visible: trayBtn.isAttention
                         width: Style.spacing.small
                         height: Style.spacing.small
-                        radius: Style.spacing.small / 2
+                        radius: Style.radius.small
                         color: Style.colors.warning
                         anchors.top: parent.top
                         anchors.topMargin: Style.spacing.unit
@@ -310,19 +310,22 @@ LayerSurface {
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
 
                         onClicked: function(mouse) {
+                            var globalPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
+                            var gx = Math.round(globalPos.x);
+                            var gy = Math.round(globalPos.y);
                             if (mouse.button === Qt.LeftButton) {
-                                trayModel.activate(id, mouse.x, mouse.y);
+                                trayModel.activate(trayBtn.id, gx, gy);
                             } else if (mouse.button === Qt.MiddleButton) {
-                                trayModel.secondaryActivate(id, mouse.x, mouse.y);
+                                trayModel.secondaryActivate(trayBtn.id, gx, gy);
                             } else if (mouse.button === Qt.RightButton) {
-                                trayModel.contextMenu(id, mouse.x, mouse.y);
+                                trayModel.contextMenu(trayBtn.id, gx, gy);
                             }
                         }
 
                         onWheel: function(wheel) {
                             var delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
                             var orient = wheel.angleDelta.y !== 0 ? "vertical" : "horizontal";
-                            trayModel.scroll(id, delta, orient);
+                            trayModel.scroll(trayBtn.id, delta, orient);
                         }
 
                         Loader {
@@ -331,14 +334,14 @@ LayerSurface {
                             sourceComponent: Component {
                                 KynexTooltip {
                                     text: {
-                                        if (tooltipTitle.length > 0 && tooltipText.length > 0) {
-                                            return tooltipTitle + "\n" + tooltipText;
-                                        } else if (tooltipTitle.length > 0) {
-                                            return tooltipTitle;
-                                        } else if (tooltipText.length > 0) {
-                                            return tooltipText;
+                                        if (trayBtn.tooltipTitle.length > 0 && trayBtn.tooltipText.length > 0) {
+                                            return trayBtn.tooltipTitle + "\n" + trayBtn.tooltipText;
+                                        } else if (trayBtn.tooltipTitle.length > 0) {
+                                            return trayBtn.tooltipTitle;
+                                        } else if (trayBtn.tooltipText.length > 0) {
+                                            return trayBtn.tooltipText;
                                         } else {
-                                            return title.length > 0 ? title : id;
+                                            return trayBtn.title.length > 0 ? trayBtn.title : trayBtn.id;
                                         }
                                     }
                                     visible: true

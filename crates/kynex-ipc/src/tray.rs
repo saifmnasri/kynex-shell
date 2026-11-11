@@ -297,3 +297,67 @@ pub trait StatusNotifierItem {
     #[zbus(signal)]
     fn new_status(&self, status: &str) -> zbus::Result<()>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tray_item_info_operations() {
+        let def = TrayItemInfo::default();
+        assert_eq!(def.id, "");
+        assert_eq!(def.window_id, 0);
+
+        let info = TrayItemInfo {
+            id: ":1.100/StatusNotifierItem".to_string(),
+            title: "Test Tray Item".to_string(),
+            status: "Active".to_string(),
+            icon_name: "test-icon".to_string(),
+            icon_theme_path: "/tmp".to_string(),
+            icon_pixmap: vec![0, 1, 2, 3],
+            icon_pixmap_width: 1,
+            icon_pixmap_height: 1,
+            tooltip_title: "Title".to_string(),
+            tooltip_text: "Desc".to_string(),
+            is_menu: false,
+            window_id: 42,
+            has_attention: true,
+            attention_icon_name: "att-icon".to_string(),
+            attention_pixmap: vec![4, 5, 6, 7],
+            attention_pixmap_width: 1,
+            attention_pixmap_height: 1,
+        };
+
+        let cloned = info.clone();
+        assert_eq!(info, cloned);
+        assert_ne!(info, def);
+        assert_eq!(cloned.id, ":1.100/StatusNotifierItem");
+
+        // Constants
+        assert_eq!(TRAY_INTERFACE, "org.kynexos.Daemon.Tray1");
+        assert_eq!(TRAY_PATH, "/org/kynexos/Daemon/Tray");
+        assert_eq!(
+            STATUS_NOTIFIER_WATCHER_DESTINATION_KDE,
+            "org.kde.StatusNotifierWatcher"
+        );
+        assert_eq!(
+            STATUS_NOTIFIER_WATCHER_DESTINATION_FDO,
+            "org.freedesktop.StatusNotifierWatcher"
+        );
+        assert_eq!(STATUS_NOTIFIER_WATCHER_PATH, "/StatusNotifierWatcher");
+        assert_eq!(
+            STATUS_NOTIFIER_WATCHER_INTERFACE,
+            "org.kde.StatusNotifierWatcher"
+        );
+        assert_eq!(
+            STATUS_NOTIFIER_WATCHER_FDO_INTERFACE,
+            "org.freedesktop.StatusNotifierWatcher"
+        );
+        assert_eq!(STATUS_NOTIFIER_ITEM_INTERFACE, "org.kde.StatusNotifierItem");
+        assert_eq!(
+            STATUS_NOTIFIER_ITEM_FDO_INTERFACE,
+            "org.freedesktop.StatusNotifierItem"
+        );
+        assert_eq!(STATUS_NOTIFIER_ITEM_DEFAULT_PATH, "/StatusNotifierItem");
+    }
+}

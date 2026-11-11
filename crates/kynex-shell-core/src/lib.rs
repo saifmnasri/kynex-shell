@@ -2,10 +2,16 @@
 //!
 //! Pure-Rust business logic for the shell presentation layer, decoupled from Qt Quick / CXX-Qt.
 
+pub mod coordinates;
 pub mod launcher;
 pub mod matching;
 pub mod taskbar;
 pub mod tray;
+
+pub use coordinates::{
+    map_to_physical_screen_coordinates, map_to_screen_coordinates, OutputGeometry, PanelSize,
+    Point, SurfaceAnchors,
+};
 
 pub use launcher::{
     compute_letter_badge, sanitize_app_item, sanitize_display_text, sanitize_query, AppDisplayItem,

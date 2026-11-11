@@ -89,6 +89,7 @@ struct FakeItem {
     status: Arc<RwLock<String>>,
     tooltip: Arc<RwLock<(String, Vec<(i32, i32, Vec<u8>)>, String, String)>>,
     hang_property: Arc<AtomicBool>,
+    delay_ms: Arc<RwLock<u64>>,
     attention_icon_name: Arc<RwLock<String>>,
     attention_icon_pixmap: Arc<RwLock<Vec<(i32, i32, Vec<u8>)>>>,
     last_activated: Arc<RwLock<Option<(i32, i32)>>>,
@@ -127,6 +128,10 @@ impl FakeItem {
 
     #[zbus(property)]
     async fn title(&self) -> String {
+        let delay = *self.delay_ms.read().await;
+        if delay > 0 {
+            tokio::time::sleep(Duration::from_millis(delay)).await;
+        }
         if self.hang_property.load(Ordering::SeqCst) {
             tokio::time::sleep(Duration::from_secs(30)).await;
         }
@@ -234,9 +239,12 @@ impl TestHarness {
         let kde_watcher = StatusNotifierWatcherServer::new(Arc::clone(&shared_state));
         let fdo_watcher = FdoStatusNotifierWatcherServer::new(Arc::clone(&shared_state));
         let tray_server = TrayServer::new(Arc::clone(&shared_state));
+        let daemon_server =
+            kynex_daemon::server::DaemonServer::new(Arc::new(AtomicBool::new(true)));
 
         let daemon_conn = zbus::connection::Builder::address(bus.address())
             .name(DAEMON_DESTINATION)
+            .serve_at(kynex_ipc::DAEMON_PATH, daemon_server)
             .serve_at(STATUS_NOTIFIER_WATCHER_PATH, kde_watcher.clone())
             .serve_at(STATUS_NOTIFIER_WATCHER_PATH, fdo_watcher.clone())
             .serve_at(TRAY_PATH, tray_server.clone())
@@ -303,6 +311,14 @@ impl TestHarness {
         Tray1Proxy::builder(&self.client_a_conn)
             .destination(DAEMON_DESTINATION)
             .path(TRAY_PATH)
+            .build()
+            .await
+    }
+
+    async fn core1_client(&self) -> zbus::Result<kynex_ipc::Core1Proxy<'_>> {
+        kynex_ipc::Core1Proxy::builder(&self.client_b_conn)
+            .destination(DAEMON_DESTINATION)
+            .path(kynex_ipc::DAEMON_PATH)
             .build()
             .await
     }
@@ -922,6 +938,413 @@ async fn test_watcher_name_acquisition_and_default_state() -> Result<(), Box<dyn
     // Test TraySharedState::default()
     let def_state = kynex_daemon::services::tray::TraySharedState::default();
     assert!(!def_state.registry.read().await.is_host_registered());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_by_own_well_known_name_ok() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+    let tray1 = harness.tray1_client().await?;
+
+    let wk_name = "org.kde.StatusNotifierItem.TestAppA";
+    harness
+        .client_a_conn
+        .request_name_with_flags(wk_name, zbus::fdo::RequestNameFlags::DO_NOT_QUEUE)
+        .await?;
+
+    let item = FakeItem::default();
+    *item.title.write().await = "App A".to_string();
+    *item.status.write().await = "Active".to_string();
+    harness
+        .client_a_conn
+        .object_server()
+        .at("/StatusNotifierItem", item)
+        .await?;
+
+    watcher.register_status_notifier_item(wk_name).await?;
+
+    let items = watcher.registered_status_notifier_items().await?;
+    assert_eq!(items.len(), 1);
+    assert_eq!(tray1.get_items().await?.len(), 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_by_another_clients_well_known_name_rejected() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let wk_name = "org.kde.StatusNotifierItem.TestAppA2";
+    harness
+        .client_a_conn
+        .request_name_with_flags(wk_name, zbus::fdo::RequestNameFlags::DO_NOT_QUEUE)
+        .await?;
+
+    let client_b_watcher = StatusNotifierWatcherProxy::builder(&harness.client_b_conn)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+
+    let res = client_b_watcher
+        .register_status_notifier_item(wk_name)
+        .await;
+    assert!(
+        res.is_err(),
+        "Registering another client's well-known name must be rejected"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_by_unowned_well_known_name_rejected() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+
+    let res = watcher
+        .register_status_notifier_item("org.kde.StatusNotifierItem.UnownedServiceXYZ")
+        .await;
+    assert!(
+        res.is_err(),
+        "Registering unowned well-known name must be rejected"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_by_object_path_ok() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+
+    let item = FakeItem::default();
+    *item.title.write().await = "Path Only".to_string();
+    *item.status.write().await = "Active".to_string();
+    harness
+        .client_a_conn
+        .object_server()
+        .at("/CustomTrayPath", item)
+        .await?;
+
+    watcher
+        .register_status_notifier_item("/CustomTrayPath")
+        .await?;
+
+    let items = watcher.registered_status_notifier_items().await?;
+    assert_eq!(items.len(), 1);
+    assert!(items[0].ends_with("/CustomTrayPath"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_by_own_unique_name_ok() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+
+    let item = FakeItem::default();
+    *item.title.write().await = "Unique Name".to_string();
+    *item.status.write().await = "Active".to_string();
+    harness
+        .client_a_conn
+        .object_server()
+        .at("/StatusNotifierItem", item)
+        .await?;
+
+    let my_unique = harness.client_a_conn.unique_name().unwrap().as_str();
+    watcher.register_status_notifier_item(my_unique).await?;
+
+    let items = watcher.registered_status_notifier_items().await?;
+    assert_eq!(items.len(), 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_register_well_known_name_owner_changes_mid_way() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+
+    let dedicated_conn = zbus::connection::Builder::address(harness._bus.address())
+        .build()
+        .await?;
+    let wk_name = "org.kde.StatusNotifierItem.TransientOwnerApp";
+    dedicated_conn
+        .request_name_with_flags(wk_name, zbus::fdo::RequestNameFlags::DO_NOT_QUEUE)
+        .await?;
+
+    let item = FakeItem::default();
+    *item.title.write().await = "Transient App".to_string();
+    *item.status.write().await = "Active".to_string();
+    dedicated_conn
+        .object_server()
+        .at("/StatusNotifierItem", item)
+        .await?;
+
+    let dedicated_watcher = StatusNotifierWatcherProxy::builder(&dedicated_conn)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+
+    dedicated_watcher
+        .register_status_notifier_item(wk_name)
+        .await?;
+
+    assert_eq!(watcher.registered_status_notifier_items().await?.len(), 1);
+
+    // Release well-known name mid-way
+    dedicated_conn.release_name(wk_name).await?;
+
+    // Wait for NameOwnerChanged to unregister item
+    let mut cleared = false;
+    for _ in 0..30 {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        if watcher.registered_status_notifier_items().await?.is_empty() {
+            cleared = true;
+            break;
+        }
+    }
+    assert!(
+        cleared,
+        "Item must be automatically unregistered when well-known name owner changes"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_signal_flood_decoupled_resilience() -> Result<(), Box<dyn Error>> {
+    use std::time::Instant;
+
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+    let tray1 = harness.tray1_client().await?;
+
+    // 1. Export Fast Item on client_a_conn
+    let fast_item = FakeItem::default();
+    *fast_item.title.write().await = "Fast Item Initial".to_string();
+    *fast_item.status.write().await = "Active".to_string();
+    *fast_item.icon_name.write().await = "fast-icon-init".to_string();
+    harness
+        .client_a_conn
+        .object_server()
+        .at("/FastItem", fast_item.clone())
+        .await?;
+    watcher.register_status_notifier_item("/FastItem").await?;
+
+    // 2. Export Slow Answering Item on client_b_conn (1 second delay on property fetch)
+    let slow_item = FakeItem::default();
+    *slow_item.title.write().await = "Slow Item Initial".to_string();
+    *slow_item.status.write().await = "Active".to_string();
+    *slow_item.icon_name.write().await = "slow-icon-init".to_string();
+    *slow_item.delay_ms.write().await = 1000;
+    harness
+        .client_b_conn
+        .object_server()
+        .at("/SlowItem", slow_item.clone())
+        .await?;
+
+    let client_b_watcher = StatusNotifierWatcherProxy::builder(&harness.client_b_conn)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+    client_b_watcher
+        .register_status_notifier_item("/SlowItem")
+        .await?;
+
+    // Trigger Slow Item refresh so it begins a 1s property fetch
+    let slow_emitter = SignalEmitter::new(&harness.client_b_conn, "/SlowItem")?;
+    let _ = FakeItem::new_icon(&slow_emitter).await;
+
+    // 3. Flood Fast Item with 10,000 NewIcon signals in background
+    let fast_conn = harness.client_a_conn.clone();
+    let fast_emitter = SignalEmitter::new(&fast_conn, "/FastItem")?;
+    let flood_handle = tokio::spawn(async move {
+        for _ in 0..10_000 {
+            let _ = FakeItem::new_icon(&fast_emitter).await;
+        }
+    });
+
+    // 4. Meanwhile, Client C connects, calls Core1.Ping() and registers a new item
+    let client_c_conn = zbus::connection::Builder::address(harness._bus.address())
+        .build()
+        .await?;
+    let client_c_core1 = kynex_ipc::Core1Proxy::builder(&client_c_conn)
+        .destination(DAEMON_DESTINATION)
+        .path(kynex_ipc::DAEMON_PATH)
+        .build()
+        .await?;
+    let client_c_watcher = StatusNotifierWatcherProxy::builder(&client_c_conn)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+
+    // Ping check: must finish under 100 ms
+    let harness_core1 = harness.core1_client().await?;
+    let _ = harness_core1.ping().await?;
+
+    let t_ping = Instant::now();
+    let pong = client_c_core1.ping().await?;
+    let ping_duration = t_ping.elapsed();
+    assert_eq!(pong, "pong");
+    assert!(
+        ping_duration < Duration::from_millis(100),
+        "Core1.Ping took {ping_duration:?}, exceeding 100 ms during signal flood"
+    );
+
+    // Register new item check: must finish under 100 ms
+    let new_item_c = FakeItem::default();
+    *new_item_c.title.write().await = "New Item C".to_string();
+    *new_item_c.status.write().await = "Active".to_string();
+    client_c_conn
+        .object_server()
+        .at("/NewItemC", new_item_c)
+        .await?;
+
+    let t_reg = Instant::now();
+    client_c_watcher
+        .register_status_notifier_item("/NewItemC")
+        .await?;
+    let reg_duration = t_reg.elapsed();
+    assert!(
+        reg_duration < Duration::from_millis(100),
+        "Registering item took {reg_duration:?}, exceeding 100 ms during signal flood"
+    );
+
+    // Wait for signal emission to complete
+    flood_handle.await?;
+
+    // Set final states on fast and slow items
+    *fast_item.title.write().await = "Fast Item Final".to_string();
+    *fast_item.icon_name.write().await = "fast-icon-final".to_string();
+    let fast_emitter_final = SignalEmitter::new(&harness.client_a_conn, "/FastItem")?;
+    let _ = FakeItem::new_icon(&fast_emitter_final).await;
+
+    *slow_item.delay_ms.write().await = 0;
+    *slow_item.title.write().await = "Slow Item Final".to_string();
+    *slow_item.icon_name.write().await = "slow-icon-final".to_string();
+    let slow_emitter_final = SignalEmitter::new(&harness.client_b_conn, "/SlowItem")?;
+    let _ = FakeItem::new_icon(&slow_emitter_final).await;
+
+    // Wait for debounced trailing fetches to settle
+    let mut final_state_correct = false;
+    for _ in 0..40 {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let items = tray1.get_items().await?;
+        if items.len() == 3 {
+            let fast_ok = items
+                .iter()
+                .any(|i| i.title == "Fast Item Final" && i.icon_name == "fast-icon-final");
+            let slow_ok = items
+                .iter()
+                .any(|i| i.title == "Slow Item Final" && i.icon_name == "slow-icon-final");
+            let new_c_ok = items.iter().any(|i| i.title == "New Item C");
+            if fast_ok && slow_ok && new_c_ok {
+                final_state_correct = true;
+                break;
+            }
+        }
+    }
+
+    assert!(
+        final_state_correct,
+        "Final state of all items must be correct after signal flood and slow item completion"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_multi_client_65_items_global_cap_enforced() -> Result<(), Box<dyn Error>> {
+    let harness = TestHarness::new().await?;
+    let watcher = harness.kde_watcher_client().await?;
+
+    // Create 16 distinct client connections registering 4 items each = 64 items total
+    let mut client_conns = Vec::new();
+    for s in 0..16 {
+        let conn = zbus::connection::Builder::address(harness._bus.address())
+            .build()
+            .await?;
+        for i in 1..=4 {
+            let path = format!("/Item{i}");
+            let item = FakeItem::default();
+            *item.title.write().await = format!("Client {s} Item {i}");
+            *item.status.write().await = "Active".to_string();
+            conn.object_server().at(path.as_str(), item).await?;
+
+            let client_watcher = StatusNotifierWatcherProxy::builder(&conn)
+                .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+                .path(STATUS_NOTIFIER_WATCHER_PATH)
+                .cache_properties(zbus::proxy::CacheProperties::No)
+                .build()
+                .await?;
+            client_watcher
+                .register_status_notifier_item(path.as_str())
+                .await?;
+        }
+        client_conns.push(conn);
+    }
+
+    let items = watcher.registered_status_notifier_items().await?;
+    assert_eq!(
+        items.len(),
+        64,
+        "Expected exactly 64 items registered across 16 clients"
+    );
+
+    // 17th client connection attempts to register the 65th item
+    let client_17 = zbus::connection::Builder::address(harness._bus.address())
+        .build()
+        .await?;
+    let item65 = FakeItem::default();
+    *item65.title.write().await = "Item 65".to_string();
+    *item65.status.write().await = "Active".to_string();
+    client_17.object_server().at("/Item65", item65).await?;
+
+    let watcher_17 = StatusNotifierWatcherProxy::builder(&client_17)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+
+    let res65 = watcher_17.register_status_notifier_item("/Item65").await;
+    assert!(
+        res65.is_err(),
+        "The 65th item must be rejected by total capacity limit (max 64)"
+    );
+
+    // Also verify per-sender cap: Client 0 attempts to register a 5th item
+    let client_0 = &client_conns[0];
+    let item_extra = FakeItem::default();
+    *item_extra.title.write().await = "Client 0 Item 5".to_string();
+    *item_extra.status.write().await = "Active".to_string();
+    client_0.object_server().at("/Item5", item_extra).await?;
+
+    let watcher_0 = StatusNotifierWatcherProxy::builder(client_0)
+        .destination(STATUS_NOTIFIER_WATCHER_DESTINATION_KDE)
+        .path(STATUS_NOTIFIER_WATCHER_PATH)
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await?;
+
+    let res_extra = watcher_0.register_status_notifier_item("/Item5").await;
+    assert!(
+        res_extra.is_err(),
+        "5th item from a single sender must be rejected (max 4 per sender)"
+    );
+
+    // Total count remains 64
+    assert_eq!(watcher.registered_status_notifier_items().await?.len(), 64);
 
     Ok(())
 }

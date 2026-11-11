@@ -407,6 +407,57 @@ mod tests {
     }
 
     #[test]
+    fn test_total_capacity_limit_across_senders() {
+        let mut reg = TrayRegistry::new();
+        // 16 distinct senders register 4 items each = 64 items total
+        for s in 0..16 {
+            let sender = format!(":1.{s}");
+            for i in 0..4 {
+                let key = ItemKey::new(&sender, format!("/item/{i}"));
+                let item = ItemState {
+                    key,
+                    item_id: format!("id-{s}-{i}"),
+                    title: "Title".to_string(),
+                    status: ItemStatus::Active,
+                    icon_name: None,
+                    icon_theme_path: None,
+                    icon_pixmap: None,
+                    tooltip_title: String::new(),
+                    tooltip_text: String::new(),
+                    is_menu: false,
+                    window_id: 0,
+                    attention_icon_name: None,
+                    attention_pixmap: None,
+                };
+                assert!(reg.upsert(item).is_ok());
+            }
+        }
+        assert_eq!(reg.item_count(), MAX_TOTAL_ITEMS);
+
+        // 17th sender tries to register 1 item -> rejected with TotalLimitExceeded
+        let key65 = ItemKey::new(":1.16", "/item/0");
+        let item65 = ItemState {
+            key: key65,
+            item_id: "id-65".to_string(),
+            title: "Title".to_string(),
+            status: ItemStatus::Active,
+            icon_name: None,
+            icon_theme_path: None,
+            icon_pixmap: None,
+            tooltip_title: String::new(),
+            tooltip_text: String::new(),
+            is_menu: false,
+            window_id: 0,
+            attention_icon_name: None,
+            attention_pixmap: None,
+        };
+        assert_eq!(
+            reg.upsert(item65),
+            Err(TrayError::TotalLimitExceeded(MAX_TOTAL_ITEMS))
+        );
+    }
+
+    #[test]
     fn test_host_registration_lifecycle() {
         let mut reg = TrayRegistry::new();
         assert!(!reg.is_host_registered());

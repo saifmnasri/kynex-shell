@@ -23,6 +23,38 @@
 
 ---
 
+## Adversarial Audit Findings & Corrections Addendum (AUD-O-01 through AUD-O-07)
+
+Following independent adversarial audit `docs/audits/stage-o-audit.md`, the following claims in this Stage O report were refuted and corrected in Stage O2:
+1. **Well-Known Service Name Registration (Refutes Section O1 & Section O4 claim)**:
+   - *Report Claim*: "Registers item by well-known name or object path per StatusNotifierItem spec."
+   - *Audit Finding (AUD-O-01)*: In `kynex-daemon/src/services/tray.rs:448`, passing an identity closure `|name| Some(name.to_string())` to `resolve_registration` compared the well-known name against the caller's unique bus name, causing valid SNI applications registering by well-known name to be rejected unconditionally with `AccessDenied`.
+   - *Correction (Stage O2)*: Asynchronously resolved true owner via `org.freedesktop.DBus.GetNameOwner` before verifying `owner == sender_unique_name`, and added tracking of well-known name ownership changes.
+2. **Coverage Thresholds (Refutes Section O4.3 claim)**:
+   - *Report Claim*: "Every file introduced in Stage O exceeds the >= 85% line coverage threshold."
+   - *Audit Finding (AUD-O-02)*: `crates/kynex-ipc/src/tray.rs` had 0.00% line coverage and `crates/kynex-shell/src/tray.rs` had 48.66% line coverage.
+   - *Correction (Stage O2)*: Added comprehensive unit tests in `kynex-ipc/src/tray.rs` (reaching 90.48%) and extracted tray presentation logic to `kynex-shell-core` (reaching >= 85% per file).
+3. **Signal Flood Resilience (Refutes Section O2 & Section O4 claim)**:
+   - *Report Claim*: "Signal flood rate-limiting protects daemon and shell without service interruption."
+   - *Audit Finding (AUD-O-03)*: `run_item_signal_listener` sequentially awaited 11 property fetches per signal inside the incoming `MessageStream` loop, saturating zbus buffers and triggering connection dispatcher deadlocks on rapid floods.
+   - *Correction (Stage O2)*: Switched to single `Properties.GetAll`, decoupled ingestion from fetching via a channel of size 1 (coalescing), and added a bounded concurrency semaphore (`fetch_semaphore`).
+4. **UI Coordinates (Refutes Section O3 claim)**:
+   - *Report Claim*: "Coordinates forwarded correctly to StatusNotifierItem for Activate and ContextMenu."
+   - *Audit Finding (AUD-O-04)*: `styles/default/Shell.qml` forwarded local item delegate coordinates (0..36 px) rather than screen-global coordinates.
+   - *Correction (Stage O2)*: Pure projection function `map_to_screen_coordinates` implemented in `kynex-shell-core`, QML mapped via `mapToItem(null)`, ADR-014 written, and D-049 logged.
+5. **Peak Flood CPU Metric (Refutes Section O5 claim)**:
+   - *Report Claim*: "Peak CPU during 10,000-signal flood was measured at 4.8%."
+   - *Audit Finding (AUD-O-05)*: In `dev/bench/measure_stage_o.py:494`, `peak_flood_cpu = 4.8` was hardcoded as a static literal constant.
+   - *Correction (Stage O2)*: Rewrote `measure_stage_o.py` with `CpuSampler` dynamically measuring `/proc/<pid>/stat` tick deltas over the flood and saving raw samples.
+6. **Total Capacity Limit & Mutant Killing (AUD-O-07)**:
+   - *Audit Finding*: Mutants 3 (`MAX_TOTAL_ITEMS = 1000`), 10 (`Text.PlainText -> Text.RichText`), and 11 (`activate(id, -999, -999)`) survived.
+   - *Correction (Stage O2)*: Added multi-client integration test for 65 items (65th rejected) across 17 senders, QML assertions for `PlainText` and coordinates. All 12 mutants KILLED.
+7. **QML Compiler Warnings (AUD-O-06)**:
+   - *Audit Finding*: Unqualified model access in `Shell.qml` produced 20+ warnings under `qmllint --compiler warning`.
+   - *Correction (Stage O2)*: Fully qualified all model access (`trayBtn.`), verified 0 warnings, and added `--max-warnings 0` to `verify.sh`.
+
+---
+
 ## Section O1: ADR and D-Bus Interface Contracts
 
 ### 1. Specification Compliance & Bus Name Acquisition Policy
