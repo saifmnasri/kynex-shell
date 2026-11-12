@@ -217,8 +217,10 @@ def verify_guard_changes(report_path, content, report_name):
     sub_env["GIT_CONFIG_COUNT"] = "1"
     sub_env["GIT_CONFIG_KEY_0"] = "safe.directory"
     sub_env["GIT_CONFIG_VALUE_0"] = "*"
-    sub_env["GIT_DIR"] = os.path.join(ROOT_DIR, ".git")
-    sub_env["GIT_WORK_TREE"] = ROOT_DIR
+    git_dir = os.path.join(ROOT_DIR, ".git")
+    if os.path.isdir(git_dir):
+        sub_env["GIT_DIR"] = git_dir
+        sub_env["GIT_WORK_TREE"] = ROOT_DIR
 
     res = subprocess.run([guard_script, "--list"], cwd=ROOT_DIR, env=sub_env, capture_output=True, text=True)
     if res.returncode != 0:
