@@ -2,6 +2,11 @@
 # The quality gate. Usage: scripts/verify.sh [--fast] ; STRICT=1 turns SKIPs into failures.
 cd "$(dirname "$0")/.." || exit 1
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.directory
+export GIT_CONFIG_VALUE_0="*"
+command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
+command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
 FAST=0; [[ "${1:-}" == "--fast" ]] && FAST=1
 pass=(); failed=(); skipped=()
 

@@ -4,13 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-# Wrap git to unconditionally trust repository directories in containerized CI environments
-git() {
-    command git -c safe.directory=* "$@"
-}
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.directory
+export GIT_CONFIG_VALUE_0="*"
+export GIT_DIR="${ROOT_DIR}/.git"
+export GIT_WORK_TREE="${ROOT_DIR}"
 
-git config --global --add safe.directory "${ROOT_DIR}" 2>/dev/null || true
-git config --global --add safe.directory "*" 2>/dev/null || true
+command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
+command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
 
 BASE="origin/main"
 if ! git rev-parse --verify "${BASE}" >/dev/null 2>&1; then
