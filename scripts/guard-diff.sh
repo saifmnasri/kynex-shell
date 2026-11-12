@@ -4,7 +4,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-# Ensure safe.directory is configured in containerized CI environments (where container user != checkout user)
+# Wrap git to unconditionally trust repository directories in containerized CI environments
+git() {
+    command git -c safe.directory=* "$@"
+}
+
 git config --global --add safe.directory "${ROOT_DIR}" 2>/dev/null || true
 git config --global --add safe.directory "*" 2>/dev/null || true
 
@@ -14,6 +18,8 @@ if ! git rev-parse --verify "${BASE}" >/dev/null 2>&1; then
         BASE="main"
     elif git rev-parse --verify remotes/origin/main >/dev/null 2>&1; then
         BASE="remotes/origin/main"
+    elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+        BASE="HEAD~1"
     fi
 fi
 
