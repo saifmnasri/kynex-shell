@@ -89,17 +89,52 @@ pub fn menu_item_role_value(item: &MenuItemDto, role: i32) -> Option<MenuRoleVal
     }
 }
 
+/// Screen edge on which a panel is docked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PanelEdge {
+    /// Anchored to the top edge of the display.
+    Top,
+    /// Anchored to the bottom edge of the display.
+    Bottom,
+    /// Anchored to the left edge of the display.
+    Left,
+    /// Anchored to the right edge of the display.
+    Right,
+}
+
+/// Derives the panel edge from surface anchors.
+///
+/// Priority rule:
+/// - `bottom && !top` => `Bottom`
+/// - `top && !bottom` => `Top`
+/// - `left && !right` => `Left`
+/// - `right && !left` => `Right`
+/// - anything else => `Bottom` (documented fallback for unanchored or ambiguous configurations).
+#[must_use]
+pub fn derive_panel_edge(anchors: SurfaceAnchors) -> PanelEdge {
+    if anchors.bottom && !anchors.top {
+        PanelEdge::Bottom
+    } else if anchors.top && !anchors.bottom {
+        PanelEdge::Top
+    } else if anchors.left && !anchors.right {
+        PanelEdge::Left
+    } else if anchors.right && !anchors.left {
+        PanelEdge::Right
+    } else {
+        PanelEdge::Bottom
+    }
+}
+
 /// Computes the clamped and flipped popup position for a menu relative to its panel anchor.
 ///
 /// Returns coordinates relative to the output window top-left `(0.0, 0.0)`.
 ///
 /// # Placement & Flipping Rules:
-/// - Bottom-anchored panel: opens ABOVE the panel (`y = anchor_y - menu_height`).
-/// - Top-anchored panel: opens BELOW the panel (`y = anchor_y + anchor_height`).
-/// - Left-anchored panel: opens to the RIGHT of the panel (`x = anchor_x + anchor_width`).
-/// - Right-anchored panel: opens to the LEFT of the panel (`x = anchor_x - menu_width`).
-/// - Horizontal flip: if menu extends past screen right edge, flips so menu right edge aligns with anchor right edge.
-/// - Vertical flip: if vertical placement extends past screen boundary and opposite side fits, flips to opposite side.
+/// - Derived edge drives placement:
+///   - `Bottom`: opens ABOVE the panel (`y = anchor_y - menu_height`); flips horizontally if clipping right edge.
+///   - `Top`: opens BELOW the panel (`y = anchor_y + anchor_height`); flips horizontally if clipping right edge.
+///   - `Left`: opens to the RIGHT beside the icon (`x = anchor_x + anchor_width`); flips vertically (bottom-aligning to icon) if clipping bottom edge.
+///   - `Right`: opens to the LEFT beside the icon (`x = anchor_x - menu_width`); flips vertically (bottom-aligning to icon) if clipping bottom edge.
 /// - Clamping: result coordinates are strictly clamped inside `[0.0, (screen.width - menu_width).max(0.0)]`
 ///   and `[0.0, (screen.height - menu_height).max(0.0)]`.
 #[must_use]
@@ -114,78 +149,75 @@ pub fn compute_menu_placement(
     menu_height: f64,
     screen: OutputGeometry,
 ) -> Point {
+    let edge = derive_panel_edge(anchors);
+
     // 1. Calculate panel origin relative to output (0, 0)
-    let panel_rel_x = if anchors.left && !anchors.right {
-        0.0
-    } else if anchors.right && !anchors.left {
-        (screen.width - panel.width).max(0.0)
-    } else {
-        0.0
+    let panel_rel_x = match edge {
+        PanelEdge::Right => (screen.width - panel.width).max(0.0),
+        _ => 0.0,
     };
 
-    let panel_rel_y = if anchors.top && !anchors.bottom {
-        0.0
-    } else if anchors.bottom && !anchors.top {
-        (screen.height - panel.height).max(0.0)
-    } else {
-        0.0
+    let panel_rel_y = match edge {
+        PanelEdge::Bottom => (screen.height - panel.height).max(0.0),
+        _ => 0.0,
     };
 
     let anchor_x = panel_rel_x + anchor_local.x;
     let anchor_y = panel_rel_y + anchor_local.y;
 
-    let (mut x, mut y) = if anchors.bottom && !anchors.top {
-        // Bottom panel: opens ABOVE
-        let y_open = anchor_y - menu_height;
-        let y_pos = if y_open < 0.0 && (anchor_y + anchor_height + menu_height <= screen.height) {
-            anchor_y + anchor_height
-        } else {
-            y_open
-        };
-        (anchor_x, y_pos)
-    } else if anchors.top && !anchors.bottom {
-        // Top panel: opens BELOW
-        let y_open = anchor_y + anchor_height;
-        let y_pos = if (y_open + menu_height > screen.height) && (anchor_y - menu_height >= 0.0) {
-            anchor_y - menu_height
-        } else {
-            y_open
-        };
-        (anchor_x, y_pos)
-    } else if anchors.left && !anchors.right {
-        // Left panel: opens to the RIGHT
-        let x_open = anchor_x + anchor_width;
-        let x_pos = if (x_open + menu_width > screen.width) && (anchor_x - menu_width >= 0.0) {
-            anchor_x - menu_width
-        } else {
-            x_open
-        };
-        (x_pos, anchor_y)
-    } else if anchors.right && !anchors.left {
-        // Right panel: opens to the LEFT
-        let x_open = anchor_x - menu_width;
-        let x_pos = if (x_open < 0.0) && (anchor_x + anchor_width + menu_width <= screen.width) {
-            anchor_x + anchor_width
-        } else {
-            x_open
-        };
-        (x_pos, anchor_y)
-    } else {
-        // Default to bottom panel behavior
-        (anchor_x, anchor_y - menu_height)
+    let (mut x, mut y) = match edge {
+        PanelEdge::Bottom => {
+            // Bottom panel: opens ABOVE
+            let y_open = anchor_y - menu_height;
+            let y_pos = if y_open < 0.0 && (anchor_y + anchor_height + menu_height <= screen.height)
+            {
+                anchor_y + anchor_height
+            } else {
+                y_open
+            };
+            (anchor_x, y_pos)
+        }
+        PanelEdge::Top => {
+            // Top panel: opens BELOW
+            let y_open = anchor_y + anchor_height;
+            let y_pos = if (y_open + menu_height > screen.height) && (anchor_y - menu_height >= 0.0)
+            {
+                anchor_y - menu_height
+            } else {
+                y_open
+            };
+            (anchor_x, y_pos)
+        }
+        PanelEdge::Left => {
+            // Left panel: opens to the RIGHT beside the icon
+            let x_open = anchor_x + anchor_width;
+            let x_pos = if (x_open + menu_width > screen.width) && (anchor_x - menu_width >= 0.0) {
+                anchor_x - menu_width
+            } else {
+                x_open
+            };
+            (x_pos, anchor_y)
+        }
+        PanelEdge::Right => {
+            // Right panel: opens to the LEFT beside the icon
+            let x_open = anchor_x - menu_width;
+            let x_pos = if (x_open < 0.0) && (anchor_x + anchor_width + menu_width <= screen.width)
+            {
+                anchor_x + anchor_width
+            } else {
+                x_open
+            };
+            (x_pos, anchor_y)
+        }
     };
 
     // Horizontal flipping for top/bottom panels
-    if (anchors.top || anchors.bottom) && (x + menu_width > screen.width) {
+    if matches!(edge, PanelEdge::Top | PanelEdge::Bottom) && (x + menu_width > screen.width) {
         x = anchor_x + anchor_width - menu_width;
     }
 
-    // Vertical flipping for left/right panels
-    if (anchors.left || anchors.right)
-        && !anchors.top
-        && !anchors.bottom
-        && (y + menu_height > screen.height)
-    {
+    // Vertical flipping for left/right panels (bottom-aligning to the icon when it would overflow)
+    if matches!(edge, PanelEdge::Left | PanelEdge::Right) && (y + menu_height > screen.height) {
         y = anchor_y + anchor_height - menu_height;
     }
 
@@ -798,32 +830,161 @@ mod tests {
 
     #[test]
     fn test_placement_vertical_flip_at_screen_edge() {
-        let panel = PanelSize {
-            width: 1920.0,
-            height: 48.0,
-        };
-        // Top panel with anchor near bottom of a tiny screen
-        let small_screen = OutputGeometry {
+        let screen = OutputGeometry {
             x: 0.0,
             y: 0.0,
-            width: 800.0,
-            height: 400.0,
+            width: 1920.0,
+            height: 1080.0,
             scale: 1.0,
         };
-        // Top panel at top (y=48). Menu height 380.
-        // Opens below: 48 + 380 = 428 > 400.
-        // Cannot flip above (48 - 380 < 0), so clamped to 400 - 380 = 20.
-        let pos = compute_menu_placement(
-            SurfaceAnchors::top_panel(),
+        let panel = PanelSize {
+            width: 48.0,
+            height: 1080.0,
+        };
+        // Left panel (top and bottom both true) with icon near bottom edge (y=1000)
+        let pos_left = compute_menu_placement(
+            SurfaceAnchors::left_panel(),
             panel,
-            Point::new(100.0, 16.0),
+            Point::new(8.0, 1000.0),
             32.0,
             32.0,
             200.0,
-            380.0,
-            small_screen,
+            350.0,
+            screen,
         );
-        assert_eq!(pos.y, 20.0, "Clamped to bottom edge");
+        // Flipped Y: 1000 + 32 - 350 = 682
+        assert_eq!(
+            pos_left.y, 682.0,
+            "Left panel menu near bottom edge must flip vertically (bottom-align to icon)"
+        );
+        assert_eq!(pos_left.x, 40.0);
+
+        // Right panel (top and bottom both true) with icon near bottom edge (y=1000)
+        let pos_right = compute_menu_placement(
+            SurfaceAnchors::right_panel(),
+            panel,
+            Point::new(8.0, 1000.0),
+            32.0,
+            32.0,
+            200.0,
+            350.0,
+            screen,
+        );
+        assert_eq!(
+            pos_right.y, 682.0,
+            "Right panel menu near bottom edge must flip vertically (bottom-align to icon)"
+        );
+        assert_eq!(pos_right.x, 1680.0);
+    }
+
+    #[test]
+    fn test_mutant_placement_edge_derivation() {
+        assert_eq!(
+            derive_panel_edge(SurfaceAnchors::left_panel()),
+            PanelEdge::Left
+        );
+        assert_eq!(
+            derive_panel_edge(SurfaceAnchors::right_panel()),
+            PanelEdge::Right
+        );
+        assert_eq!(
+            derive_panel_edge(SurfaceAnchors::top_panel()),
+            PanelEdge::Top
+        );
+        assert_eq!(
+            derive_panel_edge(SurfaceAnchors::bottom_panel()),
+            PanelEdge::Bottom
+        );
+        // Fallback for unanchored or ambiguous configurations
+        assert_eq!(
+            derive_panel_edge(SurfaceAnchors::default()),
+            PanelEdge::Bottom
+        );
+
+        let screen = OutputGeometry {
+            x: 0.0,
+            y: 0.0,
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+        };
+        let panel_v = PanelSize {
+            width: 48.0,
+            height: 1080.0,
+        };
+        let pos_left = compute_menu_placement(
+            SurfaceAnchors::left_panel(),
+            panel_v,
+            Point::new(8.0, 200.0),
+            32.0,
+            32.0,
+            200.0,
+            300.0,
+            screen,
+        );
+        assert_eq!(
+            pos_left.x, 40.0,
+            "Mutant killed: Left panel menu opens to the right of icon (8 + 32 = 40)"
+        );
+
+        let pos_right = compute_menu_placement(
+            SurfaceAnchors::right_panel(),
+            panel_v,
+            Point::new(8.0, 200.0),
+            32.0,
+            32.0,
+            200.0,
+            300.0,
+            screen,
+        );
+        assert_eq!(
+            pos_right.x, 1680.0,
+            "Mutant killed: Right panel menu opens to the left of icon (1880 - 200 = 1680)"
+        );
+    }
+
+    #[test]
+    fn test_mutant_placement_no_vertical_flip() {
+        let screen = OutputGeometry {
+            x: 0.0,
+            y: 0.0,
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+        };
+        let panel = PanelSize {
+            width: 48.0,
+            height: 1080.0,
+        };
+        let pos_left = compute_menu_placement(
+            SurfaceAnchors::left_panel(),
+            panel,
+            Point::new(8.0, 1000.0),
+            32.0,
+            32.0,
+            200.0,
+            350.0,
+            screen,
+        );
+        assert_eq!(
+            pos_left.y, 682.0,
+            "Mutant killed: Vertical flip must bottom-align menu to icon at 682.0, not clamp at 730.0"
+        );
+
+        let pos_right = compute_menu_placement(
+            SurfaceAnchors::right_panel(),
+            panel,
+            Point::new(8.0, 1000.0),
+            32.0,
+            32.0,
+            200.0,
+            350.0,
+            screen,
+        );
+        assert_eq!(
+            pos_right.y, 682.0,
+            "Mutant killed: Right panel vertical flip must bottom-align menu to icon at 682.0"
+        );
     }
 
     #[test]
@@ -1072,5 +1233,388 @@ mod tests {
 
         // Cannot leave root
         assert!(!state.leave_submenu());
+    }
+
+    #[cfg(test)]
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        prop_compose! {
+            fn arb_output_geometry()(
+                x in -3840.0..3840.0,
+                y in -2160.0..2160.0,
+                width in 640.0..3840.0,
+                height in 480.0..2160.0,
+                scale in prop_oneof![Just(1.0), Just(1.25), Just(1.5), Just(2.0)],
+            ) -> OutputGeometry {
+                OutputGeometry { x, y, width, height, scale }
+            }
+        }
+
+        prop_compose! {
+            fn arb_anchors()(
+                choice in 0..4
+            ) -> SurfaceAnchors {
+                match choice {
+                    0 => SurfaceAnchors::bottom_panel(),
+                    1 => SurfaceAnchors::top_panel(),
+                    2 => SurfaceAnchors::left_panel(),
+                    _ => SurfaceAnchors::right_panel(),
+                }
+            }
+        }
+
+        proptest! {
+            #![proptest_config(ProptestConfig::with_cases(500))]
+
+            #[test]
+            fn prop_menu_within_screen_when_it_fits(
+                screen in arb_output_geometry(),
+                anchors in arb_anchors(),
+                panel_thickness in 24.0f64..80.0f64,
+                icon_dim in 16.0f64..48.0f64,
+                menu_w in 50.0f64..400.0f64,
+                menu_h in 50.0f64..600.0f64,
+            ) {
+                let edge = derive_panel_edge(anchors);
+                let panel = match edge {
+                    PanelEdge::Top | PanelEdge::Bottom => PanelSize {
+                        width: screen.width,
+                        height: panel_thickness.min(screen.height / 4.0),
+                    },
+                    PanelEdge::Left | PanelEdge::Right => PanelSize {
+                        width: panel_thickness.min(screen.width / 4.0),
+                        height: screen.height,
+                    },
+                };
+
+                let icon_w = icon_dim.min(panel.width);
+                let icon_h = icon_dim.min(panel.height);
+                let icon_local = Point::new(
+                    (panel.width - icon_w) / 2.0,
+                    (panel.height - icon_h) / 2.0,
+                );
+
+                let pos = compute_menu_placement(
+                    anchors,
+                    panel,
+                    icon_local,
+                    icon_w,
+                    icon_h,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+
+                if menu_w <= screen.width {
+                    prop_assert!(pos.x >= 0.0, "pos.x ({}) < 0.0", pos.x);
+                    prop_assert!(
+                        pos.x + menu_w <= screen.width + 1e-4,
+                        "pos.x + menu_w ({}) > screen.width ({})",
+                        pos.x + menu_w,
+                        screen.width
+                    );
+                }
+                if menu_h <= screen.height {
+                    prop_assert!(pos.y >= 0.0, "pos.y ({}) < 0.0", pos.y);
+                    prop_assert!(
+                        pos.y + menu_h <= screen.height + 1e-4,
+                        "pos.y + menu_h ({}) > screen.height ({})",
+                        pos.y + menu_h,
+                        screen.height
+                    );
+                }
+
+                let global = compute_menu_placement_global(
+                    anchors,
+                    panel,
+                    icon_local,
+                    icon_w,
+                    icon_h,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+                prop_assert!((global.x - (screen.x + pos.x)).abs() < 1e-4);
+                prop_assert!((global.y - (screen.y + pos.y)).abs() < 1e-4);
+            }
+
+            #[test]
+            fn prop_menu_never_overlaps_icon_and_avoids_panel_strip(
+                screen in arb_output_geometry(),
+                anchors in arb_anchors(),
+                panel_thickness in 24.0f64..80.0f64,
+                icon_pos_pct in 0.05f64..0.95f64,
+                icon_dim in 16.0f64..48.0f64,
+                menu_w in 50.0f64..300.0f64,
+                menu_h in 50.0f64..400.0f64,
+                icon_at_inner_edge in proptest::bool::ANY,
+            ) {
+                let edge = derive_panel_edge(anchors);
+                let (panel, icon_local) = match edge {
+                    PanelEdge::Top => {
+                        let p = PanelSize {
+                            width: screen.width,
+                            height: panel_thickness.min(screen.height / 4.0),
+                        };
+                        let i_w = icon_dim.min(p.height);
+                        let i_h = icon_dim.min(p.height);
+                        let local_y = if icon_at_inner_edge {
+                            p.height - i_h
+                        } else {
+                            (p.height - i_h) * 0.5
+                        };
+                        let local = Point::new((screen.width - i_w) * icon_pos_pct, local_y);
+                        (p, local)
+                    }
+                    PanelEdge::Bottom => {
+                        let p = PanelSize {
+                            width: screen.width,
+                            height: panel_thickness.min(screen.height / 4.0),
+                        };
+                        let i_w = icon_dim.min(p.height);
+                        let i_h = icon_dim.min(p.height);
+                        let local_y = if icon_at_inner_edge {
+                            0.0
+                        } else {
+                            (p.height - i_h) * 0.5
+                        };
+                        let local = Point::new((screen.width - i_w) * icon_pos_pct, local_y);
+                        (p, local)
+                    }
+                    PanelEdge::Left => {
+                        let p = PanelSize {
+                            width: panel_thickness.min(screen.width / 4.0),
+                            height: screen.height,
+                        };
+                        let i_w = icon_dim.min(p.width);
+                        let i_h = icon_dim.min(p.width);
+                        let local_x = if icon_at_inner_edge {
+                            p.width - i_w
+                        } else {
+                            (p.width - i_w) * 0.5
+                        };
+                        let local = Point::new(local_x, (screen.height - i_h) * icon_pos_pct);
+                        (p, local)
+                    }
+                    PanelEdge::Right => {
+                        let p = PanelSize {
+                            width: panel_thickness.min(screen.width / 4.0),
+                            height: screen.height,
+                        };
+                        let i_w = icon_dim.min(p.width);
+                        let i_h = icon_dim.min(p.width);
+                        let local_x = if icon_at_inner_edge {
+                            0.0
+                        } else {
+                            (p.width - i_w) * 0.5
+                        };
+                        let local = Point::new(local_x, (screen.height - i_h) * icon_pos_pct);
+                        (p, local)
+                    }
+                };
+
+                let icon_w = icon_dim.min(panel.width);
+                let icon_h = icon_dim.min(panel.height);
+
+                let pos = compute_menu_placement(
+                    anchors,
+                    panel,
+                    icon_local,
+                    icon_w,
+                    icon_h,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+
+                let panel_rel_x = match edge {
+                    PanelEdge::Right => (screen.width - panel.width).max(0.0),
+                    _ => 0.0,
+                };
+                let panel_rel_y = match edge {
+                    PanelEdge::Bottom => (screen.height - panel.height).max(0.0),
+                    _ => 0.0,
+                };
+
+                let icon_x = panel_rel_x + icon_local.x;
+                let icon_y = panel_rel_y + icon_local.y;
+
+                let overlap = |r1: (f64, f64, f64, f64), r2: (f64, f64, f64, f64)| -> bool {
+                    r1.0 < r2.2 - 1e-4 && r1.2 > r2.0 + 1e-4 && r1.1 < r2.3 - 1e-4 && r1.3 > r2.1 + 1e-4
+                };
+
+                let menu_rect = (pos.x, pos.y, pos.x + menu_w, pos.y + menu_h);
+                let icon_rect = (icon_x, icon_y, icon_x + icon_w, icon_y + icon_h);
+
+                // Invariant 2: Menu never overlaps icon rectangle when there is room outside it
+                let fits_beside_icon = match edge {
+                    PanelEdge::Top | PanelEdge::Bottom => {
+                        icon_y >= menu_h || (screen.height - (icon_y + icon_h) >= menu_h)
+                    }
+                    PanelEdge::Left | PanelEdge::Right => {
+                        icon_x >= menu_w || (screen.width - (icon_x + icon_w) >= menu_w)
+                    }
+                };
+                if fits_beside_icon {
+                    prop_assert!(
+                        !overlap(menu_rect, icon_rect),
+                        "Menu rect {:?} overlaps icon rect {:?}",
+                        menu_rect,
+                        icon_rect
+                    );
+                }
+
+                // Invariant 3: Menu never overlaps panel strip when avoidable:
+                // (a) When icon is docked at inner edge, menu completely avoids panel strip
+                if icon_at_inner_edge {
+                    let panel_rect = match edge {
+                        PanelEdge::Top => (0.0, 0.0, screen.width, panel.height),
+                        PanelEdge::Bottom => (0.0, screen.height - panel.height, screen.width, screen.height),
+                        PanelEdge::Left => (0.0, 0.0, panel.width, screen.height),
+                        PanelEdge::Right => (screen.width - panel.width, 0.0, screen.width, screen.height),
+                    };
+                    let avoidable = match edge {
+                        PanelEdge::Top | PanelEdge::Bottom => menu_h <= screen.height - panel.height,
+                        PanelEdge::Left | PanelEdge::Right => menu_w <= screen.width - panel.width,
+                    };
+                    if avoidable {
+                        prop_assert!(
+                            !overlap(menu_rect, panel_rect),
+                            "Menu rect {:?} overlaps panel strip {:?} (edge: {:?})",
+                            menu_rect,
+                            panel_rect,
+                            edge
+                        );
+                    }
+                }
+
+                // (b) For all icon configurations, menu never penetrates deeper into panel strip than the icon anchor
+                match edge {
+                    PanelEdge::Bottom => {
+                        if menu_h <= icon_y {
+                            prop_assert!(pos.y + menu_h <= icon_y + 1e-4);
+                        }
+                    }
+                    PanelEdge::Top => {
+                        if icon_y + icon_h + menu_h <= screen.height {
+                            prop_assert!(pos.y >= icon_y + icon_h - 1e-4);
+                        }
+                    }
+                    PanelEdge::Left => {
+                        if icon_x + icon_w + menu_w <= screen.width {
+                            prop_assert!(pos.x >= icon_x + icon_w - 1e-4);
+                        }
+                    }
+                    PanelEdge::Right => {
+                        if menu_w <= icon_x {
+                            prop_assert!(pos.x + menu_w <= icon_x + 1e-4);
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn prop_mirrored_geometries_mirror_results(
+                screen_w in 800.0f64..2560.0f64,
+                screen_h in 600.0f64..1440.0f64,
+                panel_thickness in 24.0f64..64.0f64,
+                icon_dim in 16.0f64..32.0f64,
+                menu_w in 100.0f64..300.0f64,
+                menu_h in 100.0f64..400.0f64,
+                offset_ratio in 0.05f64..0.95f64,
+            ) {
+                let screen = OutputGeometry {
+                    x: 0.0,
+                    y: 0.0,
+                    width: screen_w,
+                    height: screen_h,
+                    scale: 1.0,
+                };
+
+                // A. Left vs Right panel horizontal mirroring
+                let v_panel = PanelSize {
+                    width: panel_thickness,
+                    height: screen_h,
+                };
+                let icon_y = (screen_h - icon_dim) * offset_ratio;
+                let left_icon = Point::new((panel_thickness - icon_dim) / 2.0, icon_y);
+                let right_icon = Point::new((panel_thickness - icon_dim) / 2.0, icon_y);
+
+                let pos_left = compute_menu_placement(
+                    SurfaceAnchors::left_panel(),
+                    v_panel,
+                    left_icon,
+                    icon_dim,
+                    icon_dim,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+                let pos_right = compute_menu_placement(
+                    SurfaceAnchors::right_panel(),
+                    v_panel,
+                    right_icon,
+                    icon_dim,
+                    icon_dim,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+
+                prop_assert!(
+                    (pos_right.x - (screen_w - pos_left.x - menu_w)).abs() < 1e-4,
+                    "Left/Right X mirroring: left_x={}, right_x={}, expected={}",
+                    pos_left.x, pos_right.x, screen_w - pos_left.x - menu_w
+                );
+                prop_assert!(
+                    (pos_right.y - pos_left.y).abs() < 1e-4,
+                    "Left/Right Y invariant: left_y={}, right_y={}",
+                    pos_left.y, pos_right.y
+                );
+
+                // B. Top vs Bottom panel vertical mirroring
+                let h_panel = PanelSize {
+                    width: screen_w,
+                    height: panel_thickness,
+                };
+                let icon_x = (screen_w - icon_dim) * offset_ratio;
+                let top_icon = Point::new(icon_x, (panel_thickness - icon_dim) / 2.0);
+                let bottom_icon = Point::new(icon_x, (panel_thickness - icon_dim) / 2.0);
+
+                let pos_top = compute_menu_placement(
+                    SurfaceAnchors::top_panel(),
+                    h_panel,
+                    top_icon,
+                    icon_dim,
+                    icon_dim,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+                let pos_bottom = compute_menu_placement(
+                    SurfaceAnchors::bottom_panel(),
+                    h_panel,
+                    bottom_icon,
+                    icon_dim,
+                    icon_dim,
+                    menu_w,
+                    menu_h,
+                    screen,
+                );
+
+                prop_assert!(
+                    (pos_bottom.y - (screen_h - pos_top.y - menu_h)).abs() < 1e-4,
+                    "Top/Bottom Y mirroring: top_y={}, bottom_y={}, expected={}",
+                    pos_top.y, pos_bottom.y, screen_h - pos_top.y - menu_h
+                );
+                prop_assert!(
+                    (pos_bottom.x - pos_top.x).abs() < 1e-4,
+                    "Top/Bottom X invariant: top_x={}, bottom_x={}",
+                    pos_top.x, pos_bottom.x
+                );
+            }
+        }
     }
 }

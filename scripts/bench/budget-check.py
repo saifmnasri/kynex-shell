@@ -6,6 +6,7 @@ Usage: scripts/bench/budget-check.py [benchmark.json] [--budgets scripts/bench/b
 
 import argparse
 import json
+import math
 import os
 import sys
 import tomllib
@@ -23,6 +24,12 @@ def load_budgets(path):
         sys.exit(f"ERROR: Budgets file not found: {path}")
     with open(path, "rb") as f:
         return tomllib.load(f)
+
+
+NS_PER_MS = 1_000_000.0
+PERCENT = 100.0
+KB_PER_MB = 1024.0
+MAX_INVALID_PCT = 5.0
 
 
 def validate_and_compute_metric(bench, key, alt_keys=()):
@@ -59,14 +66,6 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         )
         sys.exit(1)
 
-    for s in val["samples"]:
-        if not isinstance(s, (int, float)):
-            print(
-                f"ERROR: Metric '{found_key}' samples must contain only numbers, found {s}!",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
     if "method" not in val or not isinstance(val["method"], str) or len(val["method"].strip()) == 0:
         print(
             f"ERROR: Metric '{found_key}' is missing a valid 'method' description string!",
@@ -74,17 +73,78 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         )
         sys.exit(1)
 
-    samples = sorted(val["samples"])
+    raw_samples = val["samples"]
+    valid_samples = []
+    invalid_count = 0
+
+    for s in raw_samples:
+        if isinstance(s, dict):
+            start = s.get("start_ns", s.get("start"))
+            end = s.get("end_ns", s.get("end"))
+            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                invalid_count += 1
+            elif end < start:
+                invalid_count += 1
+            else:
+                lat_ms = (end - start) / NS_PER_MS
+                valid_samples.append(lat_ms)
+        elif isinstance(s, (list, tuple)) and len(s) == 2:
+            start, end = s[0], s[1]
+            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                invalid_count += 1
+            elif end < start:
+                invalid_count += 1
+            else:
+                lat_ms = (end - start) / NS_PER_MS
+                valid_samples.append(lat_ms)
+        elif isinstance(s, (int, float)):
+            if s < 0:
+                invalid_count += 1
+            else:
+                valid_samples.append(float(s))
+        else:
+            invalid_count += 1
+
+    total_samples = len(valid_samples) + invalid_count
+    invalid_pct = (invalid_count / total_samples * PERCENT) if total_samples > 0 else 0.0
+
+    print(
+        f"  [metric: {found_key}] total={total_samples}, valid={len(valid_samples)}, invalid_discarded={invalid_count} ({invalid_pct:.2f}%)"
+    )
+
+    if invalid_pct > MAX_INVALID_PCT:
+        print(
+            f"ERROR: Metric '{found_key}' exceeded invalid sample threshold: {invalid_count}/{total_samples} ({invalid_pct:.2f}% > {MAX_INVALID_PCT}%)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not valid_samples:
+        print(
+            f"ERROR: Metric '{found_key}' has zero valid samples!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    samples = sorted(valid_samples)
     n = len(samples)
 
     def calc_percentile(p):
         if n == 1:
             return float(samples[0])
-        k = (n - 1) * (p / 100.0)
+        k = (n - 1) * (p / PERCENT)
         f = int(k)
         c = min(f + 1, n - 1)
         d = k - f
         return float(samples[f] + d * (samples[c] - samples[f]))
+
+    mean_val = sum(samples) / float(n)
+    variance_val = (
+        sum((x - mean_val) ** 2 for x in samples) / (n - 1)
+        if n > 1
+        else 0.0
+    )
+    stdev_val = math.sqrt(variance_val)
 
     return {
         "samples": samples,
@@ -92,9 +152,13 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         "p50": calc_percentile(50),
         "p95": calc_percentile(95),
         "p99": calc_percentile(99),
-        "mean": sum(samples) / float(n),
+        "mean": mean_val,
+        "variance": variance_val,
+        "stdev": stdev_val,
         "max": max(samples),
         "min": min(samples),
+        "invalid_count": invalid_count,
+        "total_samples": total_samples,
     }
 
 
@@ -153,7 +217,7 @@ def main():
     gnome_baseline = budgets["session_idle_pss"]["gnome_baseline_mb"]
     ratio_ceiling = budgets["session_idle_pss"]["ratio_ceiling"]
     max_allowed_pss = gnome_baseline * ratio_ceiling
-    pct_of_gnome = (total_pss / gnome_baseline) * 100.0 if gnome_baseline > 0 else 0.0
+    pct_of_gnome = (total_pss / gnome_baseline) * PERCENT if gnome_baseline > 0 else 0.0
     pss_status = "MET" if total_pss <= max_allowed_pss else "NOT MET"
     pss_measured = (
         f"**{total_pss:.1f} MB PSS** (`kwin_wayland` {kwin_pss:.1f} MB + "

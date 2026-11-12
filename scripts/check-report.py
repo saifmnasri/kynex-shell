@@ -4,6 +4,7 @@
 import glob
 import os
 import re
+import subprocess
 import sys
 import tomllib
 
@@ -16,10 +17,11 @@ def find_newest_report():
     reports = glob.glob(os.path.join(ROOT_DIR, "docs/work/*-report.md"))
     if not reports:
         return None
-    # If stage-p2-report.md exists, prioritize it for the active stage
-    p2 = os.path.join(ROOT_DIR, "docs/work/stage-p2-report.md")
-    if os.path.isfile(p2):
-        return p2
+    # Prioritize active stage reports
+    for stage in ("stage-p3", "stage-p2"):
+        p = os.path.join(ROOT_DIR, f"docs/work/{stage}-report.md")
+        if os.path.isfile(p):
+            return p
     # Sort by mtime descending
     reports.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     return reports[0]
@@ -174,6 +176,70 @@ def verify_claims(report_path, content, report_name):
     return True
 
 
+def verify_guard_changes(report_path, content, report_name):
+    # Only enforce for stage-p3 or reports containing GUARD CHANGES
+    guard_match = re.search(
+        r"^#+\s+(?:\d+\.\s*)?GUARD CHANGES[^\n]*\n([\s\S]*?)(?=^#+\s+|\Z)",
+        content,
+        re.MULTILINE | re.IGNORECASE,
+    )
+
+    is_p3 = any(tok in report_name for tok in ("p3", "stage-p3"))
+    if not guard_match:
+        if is_p3:
+            print(f"ERROR: GUARD CHANGES section not found in {report_name}!", file=sys.stderr)
+            return False
+        return True
+
+    guard_text = guard_match.group(1)
+    bullet_pattern = re.compile(r"^\s*(?:[-*]|\d+\.)\s+(.+)$", re.MULTILINE)
+    bullets = bullet_pattern.findall(guard_text)
+
+    files_in_report = set()
+    for b in bullets:
+        m = re.search(
+            r"^\s*`?([a-zA-Z0-9_\-\./]+(?:\.[a-zA-Z0-9]+|\.toml|\.txt|\.sh|\.py|\.md|\.yaml|\.json))`?\s*[:\-]",
+            b,
+        )
+        if m:
+            files_in_report.add(m.group(1).strip())
+        else:
+            backticked = re.findall(r"`([^`]+)`", b)
+            if backticked:
+                files_in_report.add(backticked[0].strip())
+
+    guard_script = os.path.join(ROOT_DIR, "scripts/guard-diff.sh")
+    if not os.path.isfile(guard_script):
+        print(f"ERROR: scripts/guard-diff.sh not found for guard verification!", file=sys.stderr)
+        return False
+
+    res = subprocess.run([guard_script, "--list"], capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"ERROR: scripts/guard-diff.sh --list failed with code {res.returncode}:\n{res.stderr}", file=sys.stderr)
+        return False
+
+    expected_files = set(line.strip() for line in res.stdout.splitlines() if line.strip())
+
+    print(f"Checking GUARD CHANGES in {report_name} against scripts/guard-diff.sh...")
+    missing_in_report = expected_files - files_in_report
+    extra_in_report = files_in_report - expected_files
+
+    if missing_in_report:
+        print(f"ERROR: Changed guard files missing from GUARD CHANGES in {report_name}:", file=sys.stderr)
+        for f in sorted(missing_in_report):
+            print(f"  - {f}", file=sys.stderr)
+        return False
+
+    if extra_in_report:
+        print(f"ERROR: Files listed in GUARD CHANGES were not reported by scripts/guard-diff.sh:", file=sys.stderr)
+        for f in sorted(extra_in_report):
+            print(f"  - {f}", file=sys.stderr)
+        return False
+
+    print(f"SUCCESS: All {len(expected_files)} guard changes in {report_name} match scripts/guard-diff.sh exactly.")
+    return True
+
+
 def verify_report(report_path):
     if not os.path.isfile(report_path):
         print(f"ERROR: Report file not found: {report_path}", file=sys.stderr)
@@ -181,7 +247,7 @@ def verify_report(report_path):
 
     report_name = os.path.basename(report_path)
     file_size = os.path.getsize(report_path)
-    if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2")) and file_size > 150 * 1024:
+    if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")) and file_size > 150 * 1024:
         print(
             f"ERROR: Report {report_name} exceeds 150 KB limit ({file_size / 1024:.1f} KB)!",
             file=sys.stderr,
@@ -195,6 +261,10 @@ def verify_report(report_path):
     if not verify_claims(report_path, content, report_name):
         return False
 
+    # Guard changes verification
+    if not verify_guard_changes(report_path, content, report_name):
+        return False
+
     # Match code blocks starting with ```raw:<id> or ```raw:<id>:L<a>-L<b>
     pattern = re.compile(
         r"^(`{3,})raw:([a-zA-Z0-9_\.\-]+)(?::L(\d+)-L(\d+))?[^\n]*\n([\s\S]*?)\n\1",
@@ -206,7 +276,7 @@ def verify_report(report_path):
 
     if not matches:
         # If this is stage-n2-report.md or later, require at least one raw block
-        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2", "p2", "stage-p2")):
+        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")):
             print(f"ERROR: No ```raw:<id> blocks found in {report_name}!", file=sys.stderr)
             return False
         print(f"Notice: No ```raw:<id> blocks found in legacy report {report_name} (skipped).")
@@ -275,7 +345,7 @@ def verify_report(report_path):
                     f"  ✓ ```raw:{evidence_id}:L{start_line}-L{end_line} verified verbatim ({num_lines} lines)"
                 )
         else:
-            if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2")):
+            if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")):
                 print(
                     f"  FAILED: Block ```raw:{evidence_id} in {report_name} must specify explicit line range :L<a>-L<b> (<= 60 lines)!",
                     file=sys.stderr,

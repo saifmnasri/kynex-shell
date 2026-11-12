@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Tests for AST-based numeric literal checker and evasion prevention.
+"""Tests for AST-based numeric literal checker, evasion prevention, and padding rejection.
 
 Verifies that scripts/check-bench-literals.py detects and rejects all metric evasion attempts:
-- scalar literal
-- list-wrapped value
-- tuple value
-- dict value
-- default argument
-- conditional fallback
-- string converted to float/int
-- old Stage P fallback [12.45]
+1. scalar literal
+2. list-wrapped value
+3. tuple value
+4. dict value
+5. default argument
+6. conditional fallback
+7. string converted to float
+8. string converted to int
+9. old Stage P fallback [12.45] rejected against allowlist
+10. legitimate operational delay accepted in allowlist
+11-14. padding patterns (+ 1.2, + 0.8, += 1.2, allowlist bypass attempt) strictly rejected
 """
 
 import importlib.util
@@ -30,8 +33,14 @@ def check_snippet(code_snippet, allowlist=None):
         allowlist = set()
     lines = code_snippet.splitlines(keepends=True)
     hits = checker.find_numeric_literals("dummy.py", lines)
+    forbidden = checker.find_forbidden_measurement_arithmetic("dummy.py", lines)
     violations = []
     seen = set()
+    for lineno, line_text, reason in forbidden:
+        if lineno in seen:
+            continue
+        seen.add(lineno)
+        violations.append((lineno, line_text, reason))
     for lineno, line_text, val_desc in hits:
         if lineno in seen:
             continue
@@ -121,6 +130,39 @@ def test_allowlisted_operational_literals_accepted():
     print("PASS: test_allowlisted_operational_literals_accepted")
 
 
+def test_padding_pattern_binop_shell_lat():
+    code = "e2e_ms = shell_lat_ms + 1.2\n"
+    v = check_snippet(code)
+    assert len(v) >= 1, f"Expected padding pattern (+ 1.2) to be rejected, got: {v}"
+    assert any("FORBIDDEN_MEASUREMENT_ARITHMETIC" in desc or "1.2" in desc for _, _, desc in v)
+    print("PASS: test_padding_pattern_binop_shell_lat")
+
+
+def test_padding_pattern_binop_reverse():
+    code = "e2e_ms = 0.8 + shell_lat_ms\n"
+    v = check_snippet(code)
+    assert len(v) >= 1, f"Expected padding pattern (0.8 +) to be rejected, got: {v}"
+    assert any("FORBIDDEN_MEASUREMENT_ARITHMETIC" in desc or "0.8" in desc for _, _, desc in v)
+    print("PASS: test_padding_pattern_binop_reverse")
+
+
+def test_padding_pattern_augassign():
+    code = "latency_ms += 1.2\n"
+    v = check_snippet(code)
+    assert len(v) >= 1, f"Expected padding pattern (+= 1.2) to be rejected, got: {v}"
+    assert any("FORBIDDEN_MEASUREMENT_ARITHMETIC" in desc or "1.2" in desc for _, _, desc in v)
+    print("PASS: test_padding_pattern_augassign")
+
+
+def test_padding_pattern_cannot_be_allowlisted():
+    allowlist = {("dummy.py", "e2e_ms = shell_lat_ms + 1.2")}
+    code = "e2e_ms = shell_lat_ms + 1.2\n"
+    v = check_snippet(code, allowlist=allowlist)
+    assert len(v) >= 1, f"Padding pattern must FAIL even if attempted in allowlist, got: {v}"
+    assert any("FORBIDDEN_MEASUREMENT_ARITHMETIC" in desc for _, _, desc in v)
+    print("PASS: test_padding_pattern_cannot_be_allowlisted")
+
+
 def main():
     test_evasion_scalar()
     test_evasion_list_wrapped()
@@ -132,9 +174,12 @@ def main():
     test_evasion_string_converted_to_int()
     test_old_code_literal_rejected_against_real_allowlist()
     test_allowlisted_operational_literals_accepted()
-    print("\nALL 10 check-bench-literals evasion tests PASSED!")
+    test_padding_pattern_binop_shell_lat()
+    test_padding_pattern_binop_reverse()
+    test_padding_pattern_augassign()
+    test_padding_pattern_cannot_be_allowlisted()
+    print("\nALL 14 check-bench-literals evasion and padding tests PASSED!")
 
 
 if __name__ == "__main__":
     main()
-

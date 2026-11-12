@@ -1,108 +1,291 @@
 {
   "menu_open_latency_cold": {
-    "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 cold samples)",
+    "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 raw timestamp samples)",
     "samples": [
-      10.43,
-      20.11,
-      7.91,
-      10.29,
-      8.37,
-      9.19,
-      9.94,
-      10.56,
-      7.12,
-      7.78,
-      15.38,
-      7.74,
-      16.24,
-      7.21,
-      7.24,
-      7.45,
-      13.62,
-      6.73,
-      13.21,
-      6.88,
-      10.33,
-      12.88,
-      8.2,
-      13.37,
-      6.79,
-      10.81,
-      7.22,
-      8.46,
-      6.54,
-      8.89
+      {
+        "start_ns": 167485501344978,
+        "end_ns": 167485507957096
+      },
+      {
+        "start_ns": 167486368399351,
+        "end_ns": 167486394943654
+      },
+      {
+        "start_ns": 167487257161909,
+        "end_ns": 167487263084210
+      },
+      {
+        "start_ns": 167488117595903,
+        "end_ns": 167488143728356
+      },
+      {
+        "start_ns": 167488991364996,
+        "end_ns": 167488997473361
+      },
+      {
+        "start_ns": 167489852497789,
+        "end_ns": 167489866750341
+      },
+      {
+        "start_ns": 167490720733319,
+        "end_ns": 167490725828174
+      },
+      {
+        "start_ns": 167491579280136,
+        "end_ns": 167491585319032
+      },
+      {
+        "start_ns": 167492453949890,
+        "end_ns": 167492459017075
+      },
+      {
+        "start_ns": 167493316539324,
+        "end_ns": 167493322465507
+      },
+      {
+        "start_ns": 167494177789705,
+        "end_ns": 167494188864731
+      },
+      {
+        "start_ns": 167495047760383,
+        "end_ns": 167495053732699
+      },
+      {
+        "start_ns": 167495909692230,
+        "end_ns": 167495921313033
+      },
+      {
+        "start_ns": 167496775475936,
+        "end_ns": 167496780372270
+      },
+      {
+        "start_ns": 167497636481257,
+        "end_ns": 167497645536577
+      },
+      {
+        "start_ns": 167498499680611,
+        "end_ns": 167498504910614
+      },
+      {
+        "start_ns": 167499373459093,
+        "end_ns": 167499389615794
+      },
+      {
+        "start_ns": 167500248442338,
+        "end_ns": 167500253735039
+      },
+      {
+        "start_ns": 167501112556166,
+        "end_ns": 167501121541159
+      },
+      {
+        "start_ns": 167501975378880,
+        "end_ns": 167501986729570
+      },
+      {
+        "start_ns": 167502844148856,
+        "end_ns": 167502850329219
+      },
+      {
+        "start_ns": 167503707026955,
+        "end_ns": 167503719531990
+      },
+      {
+        "start_ns": 167504570463696,
+        "end_ns": 167504576753295
+      },
+      {
+        "start_ns": 167505431816679,
+        "end_ns": 167505447530565
+      },
+      {
+        "start_ns": 167506299164772,
+        "end_ns": 167506305199606
+      },
+      {
+        "start_ns": 167507161913773,
+        "end_ns": 167507186998683
+      },
+      {
+        "start_ns": 167508046153072,
+        "end_ns": 167508051823588
+      },
+      {
+        "start_ns": 167508908972129,
+        "end_ns": 167508920449300
+      },
+      {
+        "start_ns": 167509778364485,
+        "end_ns": 167509783764075
+      },
+      {
+        "start_ns": 167510640169400,
+        "end_ns": 167510649723237
+      }
     ]
   },
   "menu_open_latency_warm": {
-    "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 warm samples)",
+    "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 raw timestamp samples)",
     "samples": [
-      10.76,
-      17.58,
-      13.35,
-      7.17,
-      12.55,
-      11.56,
-      11.22,
-      11.1,
-      4.32,
-      3.7,
-      12.43,
-      11.15,
-      11.98,
-      10.33,
-      13.08,
-      12.33,
-      5.88,
-      14.82,
-      5.61,
-      15.22,
-      6.82,
-      5.95,
-      11.89,
-      12.92,
-      5.58,
-      5.35,
-      13.21,
-      11.6,
-      13.99,
-      14.36
+      {
+        "start_ns": 167512203583909,
+        "end_ns": 167512211354974
+      },
+      {
+        "start_ns": 167512258185850,
+        "end_ns": 167512305585027
+      },
+      {
+        "start_ns": 167512312497952,
+        "end_ns": 167512334764328
+      },
+      {
+        "start_ns": 167512367388152,
+        "end_ns": 167512384197656
+      },
+      {
+        "start_ns": 167512423267531,
+        "end_ns": 167512426961448
+      },
+      {
+        "start_ns": 167512479871393,
+        "end_ns": 167512487756887
+      },
+      {
+        "start_ns": 167512533945748,
+        "end_ns": 167512541832280
+      },
+      {
+        "start_ns": 167512588228781,
+        "end_ns": 167512596039660
+      },
+      {
+        "start_ns": 167512641461561,
+        "end_ns": 167512649725276
+      },
+      {
+        "start_ns": 167512695207574,
+        "end_ns": 167512704435280
+      },
+      {
+        "start_ns": 167512749511597,
+        "end_ns": 167512757903416
+      },
+      {
+        "start_ns": 167512803018101,
+        "end_ns": 167512810953338
+      },
+      {
+        "start_ns": 167512857505343,
+        "end_ns": 167512866362863
+      },
+      {
+        "start_ns": 167512911487614,
+        "end_ns": 167512919545855
+      },
+      {
+        "start_ns": 167512965193859,
+        "end_ns": 167512973015526
+      },
+      {
+        "start_ns": 167513020121795,
+        "end_ns": 167513027854312
+      },
+      {
+        "start_ns": 167513073773060,
+        "end_ns": 167513081794874
+      },
+      {
+        "start_ns": 167513131802056,
+        "end_ns": 167513139664709
+      },
+      {
+        "start_ns": 167513186424580,
+        "end_ns": 167513194683691
+      },
+      {
+        "start_ns": 167513240197225,
+        "end_ns": 167513247632907
+      },
+      {
+        "start_ns": 167513293482412,
+        "end_ns": 167513301810540
+      },
+      {
+        "start_ns": 167513346579594,
+        "end_ns": 167513354572113
+      },
+      {
+        "start_ns": 167513401282647,
+        "end_ns": 167513409845770
+      },
+      {
+        "start_ns": 167513455026177,
+        "end_ns": 167513463387031
+      },
+      {
+        "start_ns": 167513508455809,
+        "end_ns": 167513516366581
+      },
+      {
+        "start_ns": 167513562205884,
+        "end_ns": 167513570800920
+      },
+      {
+        "start_ns": 167513616377153,
+        "end_ns": 167513624397025
+      },
+      {
+        "start_ns": 167513670217777,
+        "end_ns": 167513678207136
+      },
+      {
+        "start_ns": 167513724930354,
+        "end_ns": 167513732629964
+      },
+      {
+        "start_ns": 167513779638914,
+        "end_ns": 167513788381916
+      }
     ]
   },
   "menu_500_items_latency": {
     "method": "clock_gettime(CLOCK_MONOTONIC) 500-item menu parsing and first frame presentation",
     "samples": [
-      21.17
+      {
+        "start_ns": 167513837399015,
+        "end_ns": 167513851794206
+      }
     ]
   },
   "menu_idle_daemon_pss": {
     "method": "/proc/<pid>/smaps_rollup PSS plateau after 100 menu open/close cycles (10 samples)",
     "samples": [
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63,
-      10.63
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125,
+      9.7080078125
     ]
   },
   "menu_idle_shell_pss": {
     "method": "/proc/<pid>/smaps_rollup PSS plateau after 100 menu open/close cycles (10 samples)",
     "samples": [
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26,
-      101.26
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625,
+      101.2509765625
     ]
   },
   "menu_flood_cpu": {
@@ -111,22 +294,22 @@
       0.0
     ]
   },
-  "pidstat_output": "Linux 7.0.0-42-generic (saif-QEMU-Virtual-Machine) \t11/12/2026 \t_aarch64_\t(6 CPU)\n\n05:23:13 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:14 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n05:23:14 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:13 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:14 AM  1000   1125183      1.98      0.00  kynex-daemon\n05:23:14 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:14 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:15 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n05:23:15 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:14 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:15 AM  1000   1125183      1.00      0.00  kynex-daemon\n05:23:15 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:15 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:16 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n05:23:16 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:15 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:16 AM  1000   1125183      4.00      0.00  kynex-daemon\n05:23:16 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:16 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:17 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n05:23:17 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:16 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:17 AM  1000   1125183      1.00      0.00  kynex-daemon\n05:23:17 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:17 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:18 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n05:23:18 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:17 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:18 AM  1000   1125183      3.00      0.00  kynex-daemon\n05:23:18 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:18 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:19 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     4  kynex-daemon\n05:23:19 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:18 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:19 AM  1000   1125183      0.00      0.00  kynex-daemon\n05:23:19 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:19 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:20 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n05:23:20 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:19 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:20 AM  1000   1125183      4.00      0.00  kynex-daemon\n05:23:20 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:20 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:21 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n05:23:21 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:20 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:21 AM  1000   1125183      0.00      0.00  kynex-daemon\n05:23:21 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:21 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:22 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n05:23:22 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:21 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:22 AM  1000   1125183      3.00      0.00  kynex-daemon\n05:23:22 AM  1000   1125725      0.00      0.00  kynex-shell\n\n05:23:22 AM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n05:23:23 AM  1000   1125183    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n05:23:23 AM  1000   1125725    0.00    0.00    0.00    0.00    0.00     0  kynex-shell\n\n05:23:22 AM   UID       PID   cswch/s nvcswch/s  Command\n05:23:23 AM  1000   1125183      0.00      0.00  kynex-daemon\n05:23:23 AM  1000   1125725      0.00      0.00  kynex-shell\n\nAverage:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\nAverage:     1000   1125183    0.00    0.00    0.00    0.00    0.00     -  kynex-daemon\nAverage:     1000   1125725    0.00    0.00    0.00    0.00    0.00     -  kynex-shell\n\nAverage:      UID       PID   cswch/s nvcswch/s  Command\nAverage:     1000   1125183      1.79      0.00  kynex-daemon\nAverage:     1000   1125725      0.00      0.00  kynex-shell\n",
+  "pidstat_output": "Linux 7.0.0-42-generic (saif-QEMU-Virtual-Machine) \t11/12/2026 \t_aarch64_\t(6 CPU)\n\n04:50:54 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:50:55 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon\n04:50:55 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:50:54 PM   UID       PID   cswch/s nvcswch/s  Command\n04:50:55 PM  1000   1347360      0.00      0.00  kynex-daemon\n04:50:55 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:50:55 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:50:56 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n04:50:56 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:50:55 PM   UID       PID   cswch/s nvcswch/s  Command\n04:50:56 PM  1000   1347360      3.00      0.00  kynex-daemon\n04:50:56 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:50:56 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:50:57 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n04:50:57 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:50:56 PM   UID       PID   cswch/s nvcswch/s  Command\n04:50:57 PM  1000   1347360      0.00      0.00  kynex-daemon\n04:50:57 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:50:57 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:50:58 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n04:50:58 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:50:57 PM   UID       PID   cswch/s nvcswch/s  Command\n04:50:58 PM  1000   1347360      5.00      0.00  kynex-daemon\n04:50:58 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:50:58 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:50:59 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     3  kynex-daemon\n04:50:59 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:50:58 PM   UID       PID   cswch/s nvcswch/s  Command\n04:50:59 PM  1000   1347360      0.00      0.00  kynex-daemon\n04:50:59 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:50:59 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:51:00 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon\n04:51:00 PM  1000   1347923    1.00    0.00    0.00    0.00    1.00     2  kynex-shell\n\n04:50:59 PM   UID       PID   cswch/s nvcswch/s  Command\n04:51:00 PM  1000   1347360      3.00      0.00  kynex-daemon\n04:51:00 PM  1000   1347923      7.00      0.00  kynex-shell\n\n04:51:00 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:51:01 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon\n04:51:01 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:51:00 PM   UID       PID   cswch/s nvcswch/s  Command\n04:51:01 PM  1000   1347360      0.00      0.00  kynex-daemon\n04:51:01 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:51:01 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:51:02 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon\n04:51:02 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:51:01 PM   UID       PID   cswch/s nvcswch/s  Command\n04:51:02 PM  1000   1347360      3.96      0.00  kynex-daemon\n04:51:02 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:51:02 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:51:03 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     1  kynex-daemon\n04:51:03 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:51:02 PM   UID       PID   cswch/s nvcswch/s  Command\n04:51:03 PM  1000   1347360      0.00      0.00  kynex-daemon\n04:51:03 PM  1000   1347923      0.00      0.00  kynex-shell\n\n04:51:03 PM   UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\n04:51:04 PM  1000   1347360    0.00    0.00    0.00    0.00    0.00     2  kynex-daemon\n04:51:04 PM  1000   1347923    0.00    0.00    0.00    0.00    0.00     2  kynex-shell\n\n04:51:03 PM   UID       PID   cswch/s nvcswch/s  Command\n04:51:04 PM  1000   1347360      3.00      0.00  kynex-daemon\n04:51:04 PM  1000   1347923      0.00      0.00  kynex-shell\n\nAverage:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command\nAverage:     1000   1347360    0.00    0.00    0.00    0.00    0.00     -  kynex-daemon\nAverage:     1000   1347923    0.10    0.00    0.00    0.00    0.10     -  kynex-shell\n\nAverage:      UID       PID   cswch/s nvcswch/s  Command\nAverage:     1000   1347360      1.80      0.00  kynex-daemon\nAverage:     1000   1347923      0.70      0.00  kynex-shell\n",
   "exclusions": "Pre-call client setup before time.monotonic_ns() timestamp (connection establishment and payload construction) is excluded; timed region begins immediately prior to calling org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem on the D-Bus proxy and ends at the first frameSwapped event logged by C++ std::chrono::steady_clock in the shell shim.",
   "procs": {
     "kynex-daemon": {
-      "pss_mb_avg": 7.8408203125,
-      "rss_mb_avg": 11.76123046875,
+      "pss_mb_avg": 9.7080078125,
+      "rss_mb_avg": 11.12109375,
       "cpu_pct_avg": 0.0
     },
     "kynex-shell": {
-      "pss_mb_avg": 101.26,
-      "rss_mb_avg": 65.0,
+      "pss_mb_avg": 101.2509765625,
+      "rss_mb_avg": 155.078125,
       "cpu_pct_avg": 0.0
     },
     "kwin_wayland": {
-      "pss_mb_avg": 96.0,
-      "rss_mb_avg": 120.0,
+      "pss_mb_avg": 0.0,
+      "rss_mb_avg": 0.0,
       "cpu_pct_avg": 0.0
     }
   }

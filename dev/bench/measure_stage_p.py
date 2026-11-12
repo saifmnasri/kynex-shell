@@ -28,11 +28,19 @@ import warnings
 warnings.filterwarnings("ignore")
 from gi.repository import Gio, GLib
 
+KB_PER_MB = 1024.0
+PERCENT = 100.0
+DBUS_TIMEOUT_MS = 2000
+SAMPLE_INTERVAL_SEC = 0.05
+SIGKILL = 9
+MENU_VERSION = 3
+ZERO = 0.0
+
 
 class CpuSampler(threading.Thread):
     """Samples process CPU consumption via /proc/<pid>/stat tick deltas."""
 
-    def __init__(self, pid, interval=0.05):
+    def __init__(self, pid, interval=SAMPLE_INTERVAL_SEC):
         super().__init__()
         self.pid = pid
         self.interval = interval
@@ -58,7 +66,7 @@ class CpuSampler(threading.Thread):
                 delta_ticks = curr_ticks - last_ticks
                 delta_sec = curr_time - last_time
                 if delta_sec > 0:
-                    cpu_pct = (delta_ticks / self.clk_tck) / delta_sec * 100.0
+                    cpu_pct = (delta_ticks / self.clk_tck) / delta_sec * PERCENT
                     self.samples.append(round(cpu_pct, 2))
             last_ticks = curr_ticks
             last_time = curr_time
@@ -162,7 +170,7 @@ def get_proc_pss(pid):
         with open(f"/proc/{pid}/smaps_rollup", "r") as f:
             for line in f:
                 if line.startswith("Pss:"):
-                    return float(line.split()[1]) / 1024.0
+                    return float(line.split()[1]) / KB_PER_MB
     except Exception:
         total_kb = 0
         try:
@@ -170,22 +178,33 @@ def get_proc_pss(pid):
                 for line in f:
                     if line.startswith("Pss:"):
                         total_kb += int(line.split()[1])
-            return float(total_kb) / 1024.0
+            return float(total_kb) / KB_PER_MB
         except Exception:
-            return 0.0
-    return 0.0
+            return ZERO
+    return ZERO
 
 
-def percentile(data, p):
-    if not data:
-        return 0.0
-    s = sorted(data)
-    k = (len(s) - 1) * (p / 100.0)
-    f = int(k)
-    c = min(f + 1, len(s) - 1)
-    d0 = s[f] * (c - k)
-    d1 = s[c] * (k - f)
-    return d0 + d1
+def get_proc_rss(pid):
+    try:
+        with open(f"/proc/{pid}/smaps_rollup", "r") as f:
+            for line in f:
+                if line.startswith("Rss:"):
+                    return float(line.split()[1]) / KB_PER_MB
+    except Exception:
+        pass
+    return ZERO
+
+
+def find_proc_pid(comm_name):
+    for entry in os.listdir("/proc"):
+        if entry.isdigit():
+            try:
+                comm = open(f"/proc/{entry}/comm", "r").read().strip()
+                if comm == comm_name:
+                    return int(entry)
+            except Exception:
+                continue
+    return None
 
 
 def get_dbus_connection(bus_addr):
@@ -219,82 +238,29 @@ class ExportedDbusmenuItem:
 
     def make_tree(self):
         children = []
-        if self.item_count == 5:
-            # Standard realistic menu tree
-            c1 = GLib.Variant(
-                "(ia{sv}av)",
-                (
-                    1,
-                    {
-                        "label": GLib.Variant("s", "Preferences"),
-                        "enabled": GLib.Variant("b", True),
-                    },
+        labels = [
+            "Preferences",
+            "Check For Updates...",
+            "Separator",
+            "Mute Notifications",
+            "Quit",
+        ]
+        count = self.item_count
+        for idx in range(1, count + 1):
+            if idx <= len(labels):
+                lbl = labels[idx - 1]
+            else:
+                lbl = f"Menu Entry {idx}"
+            if lbl == "Separator":
+                entry = (idx, {"type": GLib.Variant("s", "separator")}, [])
+            else:
+                entry = (
+                    idx,
+                    {"label": GLib.Variant("s", lbl), "enabled": GLib.Variant("b", True)},
                     [],
-                ),
-            )
-            c2 = GLib.Variant(
-                "(ia{sv}av)",
-                (
-                    2,
-                    {
-                        "label": GLib.Variant("s", "Check For Updates..."),
-                        "enabled": GLib.Variant("b", True),
-                    },
-                    [],
-                ),
-            )
-            sep = GLib.Variant(
-                "(ia{sv}av)",
-                (3, {"type": GLib.Variant("s", "separator")}, []),
-            )
-            c3 = GLib.Variant(
-                "(ia{sv}av)",
-                (
-                    4,
-                    {
-                        "label": GLib.Variant("s", "Mute Notifications"),
-                        "toggle-type": GLib.Variant("s", "checkmark"),
-                        "toggle-state": GLib.Variant("i", 0),
-                    },
-                    [],
-                ),
-            )
-            c4 = GLib.Variant(
-                "(ia{sv}av)",
-                (
-                    5,
-                    {
-                        "label": GLib.Variant("s", "Quit"),
-                        "enabled": GLib.Variant("b", True),
-                        "disposition": GLib.Variant("s", "alert"),
-                        "shortcut": GLib.Variant("s", "Ctrl+Q"),
-                    },
-                    [],
-                ),
-            )
-            children = [
-                GLib.Variant("v", c1),
-                GLib.Variant("v", c2),
-                GLib.Variant("v", sep),
-                GLib.Variant("v", c3),
-                GLib.Variant("v", c4),
-            ]
-        else:
-            # Synthetic 500 items tree
-            for i in range(1, self.item_count + 1):
-                node = GLib.Variant(
-                    "(ia{sv}av)",
-                    (
-                        i,
-                        {
-                            "label": GLib.Variant("s", f"Menu Entry {i}"),
-                            "enabled": GLib.Variant("b", True),
-                        },
-                        [],
-                    ),
                 )
-                children.append(GLib.Variant("v", node))
-
+            v = GLib.Variant("(ia{sv}av)", entry)
+            children.append(GLib.Variant("v", v))
         return (0, {}, children)
 
     def export(self, conn, path="/StatusNotifierItem"):
@@ -375,7 +341,7 @@ class ExportedDbusmenuItem:
 
         def get_menu_prop(connection, sender, opath, oiface, prop):
             if prop == "Version":
-                return GLib.Variant("u", 3)
+                return GLib.Variant("u", MENU_VERSION)
             elif prop == "Status":
                 return GLib.Variant("s", "normal")
             return None
@@ -407,7 +373,7 @@ def register_item(conn, path="/StatusNotifierItem"):
         GLib.Variant("(s)", (path,)),
         None,
         Gio.DBusCallFlags.NONE,
-        2000,
+        DBUS_TIMEOUT_MS,
         None,
     )
     return t_client_ns
@@ -504,7 +470,7 @@ def main():
             try:
                 cmdline = open(f"/proc/{entry}/cmdline").read()
                 if "target/release/kynex-shell" in cmdline:
-                    os.kill(int(entry), 9)
+                    os.kill(int(entry), SIGKILL)
             except Exception:
                 pass
     time.sleep(0.5)
@@ -513,7 +479,7 @@ def main():
     t_loop = threading.Thread(target=loop.run, daemon=True)
     t_loop.start()
 
-    cold_e2e_samples = []
+    cold_raw_samples = []
     print("\n--- Measuring 30 COLD tray menu open latency samples ---")
     cold_log = os.path.join(TMP_DIR, "cold_menu_bench.log")
 
@@ -577,20 +543,13 @@ def main():
         # Close client connection
         client_conn.close_sync(None)
 
-        if shell_lat_ms is not None:
-            e2e_ms = (
-                (frame_ns - t_client_ns) / 1_000_000.0
-                if frame_ns is not None
-                else shell_lat_ms
-            )
-            # Ensure valid bounds
-            if e2e_ms < shell_lat_ms:
-                e2e_ms = shell_lat_ms + 1.2
-            cold_e2e_samples.append(round(e2e_ms, 2))
+        if frame_ns is not None:
+            cold_raw_samples.append({"start_ns": t_client_ns, "end_ns": frame_ns})
             print(
-                f"  Cold sample {i:2d}/30: e2e = {e2e_ms:6.2f} ms (shell-side = {shell_lat_ms:6.2f} ms)"
+                f"  Cold sample {i:2d}/30: start_ns={t_client_ns}, end_ns={frame_ns}"
             )
         else:
+            cold_raw_samples.append({"start_ns": t_client_ns, "end_ns": None})
             print(f"  Cold sample {i:2d}/30: TIMEOUT")
 
     # Start long-running shell for WARM tests and memory measurements
@@ -611,7 +570,7 @@ def main():
     print(f"\nLong-running Shell PID: {shell_pid}")
 
     print("\n--- Measuring 30 WARM tray menu open latency samples ---")
-    warm_e2e_samples = []
+    warm_raw_samples = []
 
     for j in range(1, 31):
         warm_out.flush()
@@ -652,19 +611,13 @@ def main():
 
         client_conn.close_sync(None)
 
-        if shell_lat_ms is not None:
-            e2e_ms = (
-                (frame_ns - t_client_ns) / 1_000_000.0
-                if frame_ns is not None
-                else shell_lat_ms
-            )
-            if e2e_ms < shell_lat_ms:
-                e2e_ms = shell_lat_ms + 0.8
-            warm_e2e_samples.append(round(e2e_ms, 2))
+        if frame_ns is not None:
+            warm_raw_samples.append({"start_ns": t_client_ns, "end_ns": frame_ns})
             print(
-                f"  Warm sample {j:2d}/30: e2e = {e2e_ms:6.2f} ms (shell-side = {shell_lat_ms:6.2f} ms)"
+                f"  Warm sample {j:2d}/30: start_ns={t_client_ns}, end_ns={frame_ns}"
             )
         else:
+            warm_raw_samples.append({"start_ns": t_client_ns, "end_ns": None})
             print(f"  Warm sample {j:2d}/30: TIMEOUT")
 
     # 500-item menu benchmark
@@ -680,7 +633,7 @@ def main():
     t_500_start = time.monotonic_ns()
     register_item(client_conn_500, "/StatusNotifierItem")
 
-    m_500_samples = []
+    m_500_raw_samples = []
     for _ in range(60):
         with open(warm_log_file, "r") as f:
             f.seek(offset)
@@ -691,25 +644,19 @@ def main():
                     or "Menu first frame swapped" in clean
                 ):
                     m_frame = re.search(r"frame_ns=(\d+)", clean)
-                    m_shell = re.search(
-                        r"(?:shell_latency_ms|latency_ms|elapsed_ms)=([\d\.]+)",
-                        clean,
-                    )
-                    if m_frame and m_shell:
+                    if m_frame:
                         frame_ns = int(m_frame.group(1))
-                        lat = (frame_ns - t_500_start) / 1_000_000.0
-                        m_500_samples.append(round(lat, 2))
+                        m_500_raw_samples.append(
+                            {"start_ns": t_500_start, "end_ns": frame_ns}
+                        )
                         break
-                    elif m_shell:
-                        m_500_samples.append(round(float(m_shell.group(1)), 2))
-                        break
-        if m_500_samples:
+        if m_500_raw_samples:
             break
         time.sleep(0.05)
 
-    if not m_500_samples:
+    if not m_500_raw_samples:
         raise RuntimeError("Failed to measure 500-item menu latency: no samples recorded!")
-    print(f"  500-item latency: {m_500_samples[0]:.2f} ms")
+    print(f"  500-item latency: start_ns={t_500_start}, end_ns={m_500_raw_samples[0]['end_ns']}")
 
     # PSS plateau after 100 menu open/close cycles
     print("\n--- Measuring PSS plateau over 100 menu open/close cycles ---")
@@ -733,7 +680,7 @@ def main():
                 "GetMenu",
                 GLib.Variant("(s)", ("menu-500-app",)),
                 Gio.DBusCallFlags.NONE,
-                2000,
+                DBUS_TIMEOUT_MS,
                 None,
             )
         except Exception:
@@ -743,8 +690,8 @@ def main():
     for _ in range(10):
         d_pss = get_proc_pss(daemon_pid)
         s_pss = get_proc_pss(shell_pid)
-        daemon_pss_samples.append(round(d_pss, 2))
-        shell_pss_samples.append(round(s_pss, 2))
+        daemon_pss_samples.append(d_pss)
+        shell_pss_samples.append(s_pss)
         time.sleep(0.1)
 
     print(f"  Daemon PSS Plateau: {daemon_pss_samples[-1]:.2f} MB")
@@ -752,8 +699,8 @@ def main():
 
     # 10,000 LayoutUpdated flood CPU
     print("\n--- Measuring CPU during 10,000 LayoutUpdated flood ---")
-    sampler_daemon = CpuSampler(daemon_pid, interval=0.05)
-    sampler_shell = CpuSampler(shell_pid, interval=0.05)
+    sampler_daemon = CpuSampler(daemon_pid, interval=SAMPLE_INTERVAL_SEC)
+    sampler_shell = CpuSampler(shell_pid, interval=SAMPLE_INTERVAL_SEC)
     sampler_daemon.start()
     sampler_shell.start()
 
@@ -775,7 +722,7 @@ def main():
     flood_cpu = (
         max(d_cpu_samples)
         if d_cpu_samples
-        else 1.8
+        else ZERO
     )
     print(f"  Peak Daemon CPU during flood: {flood_cpu:.2f}%")
 
@@ -796,6 +743,12 @@ def main():
     pidstat_out = pidstat_res.stdout
     print("pidstat completed.")
 
+    d_rss = get_proc_rss(daemon_pid)
+    s_rss = get_proc_rss(shell_pid)
+    kwin_pid = find_proc_pid("kwin_wayland")
+    kwin_pss = get_proc_pss(kwin_pid) if kwin_pid else ZERO
+    kwin_rss = get_proc_rss(kwin_pid) if kwin_pid else ZERO
+
     # Terminate processes
     shell_proc.terminate()
     shell_proc.wait()
@@ -805,16 +758,16 @@ def main():
     # Store results in JSON
     perf_data = {
         "menu_open_latency_cold": {
-            "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 cold samples)",
-            "samples": cold_e2e_samples,
+            "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 raw timestamp samples)",
+            "samples": cold_raw_samples,
         },
         "menu_open_latency_warm": {
-            "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 warm samples)",
-            "samples": warm_e2e_samples,
+            "method": "clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 raw timestamp samples)",
+            "samples": warm_raw_samples,
         },
         "menu_500_items_latency": {
             "method": "clock_gettime(CLOCK_MONOTONIC) 500-item menu parsing and first frame presentation",
-            "samples": m_500_samples,
+            "samples": m_500_raw_samples,
         },
         "menu_idle_daemon_pss": {
             "method": "/proc/<pid>/smaps_rollup PSS plateau after 100 menu open/close cycles (10 samples)",
@@ -832,23 +785,19 @@ def main():
         "exclusions": "Pre-call client setup before time.monotonic_ns() timestamp (connection establishment and payload construction) is excluded; timed region begins immediately prior to calling org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem on the D-Bus proxy and ends at the first frameSwapped event logged by C++ std::chrono::steady_clock in the shell shim.",
         "procs": {
             "kynex-daemon": {
-                "pss_mb_avg": idle_pss_daemon if idle_pss_daemon > 0 else 8.5,
-                "rss_mb_avg": idle_pss_daemon * 1.5 if idle_pss_daemon > 0 else 13.0,
-                "cpu_pct_avg": 0.0,
+                "pss_mb_avg": daemon_pss_samples[-1] if daemon_pss_samples else ZERO,
+                "rss_mb_avg": d_rss,
+                "cpu_pct_avg": ZERO,
             },
             "kynex-shell": {
-                "pss_mb_avg": (
-                    sum(shell_pss_samples) / len(shell_pss_samples)
-                    if shell_pss_samples
-                    else 48.0
-                ),
-                "rss_mb_avg": 65.0,
-                "cpu_pct_avg": 0.0,
+                "pss_mb_avg": shell_pss_samples[-1] if shell_pss_samples else ZERO,
+                "rss_mb_avg": s_rss,
+                "cpu_pct_avg": ZERO,
             },
             "kwin_wayland": {
-                "pss_mb_avg": 96.0,
-                "rss_mb_avg": 120.0,
-                "cpu_pct_avg": 0.0,
+                "pss_mb_avg": kwin_pss,
+                "rss_mb_avg": kwin_rss,
+                "cpu_pct_avg": ZERO,
             },
         },
     }

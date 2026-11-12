@@ -418,3 +418,25 @@ Re-measured dbusmenu performance on real hardware/VM:
 
 ### NOT Verified / Known Environmental Limits
 1. **Physical DRM/KMS Hardware Scanout**: Benchmarks and visual tests executed under virtualized Mesa `llvmpipe` software rasterization. True hardware DRM compositor scanout and PSS < 50 MB require physical GPU hardware.
+
+---
+
+## 12. Stage P2 Audit Notes & Retraction of Overstated Claims
+
+Following the Stage P2 adversarial audit (`docs/audits/stage-p2-audit.md`), the following claims are formally noted as flawed or overstated:
+
+1. **Dead Vertical Flipping on Vertical Panels (AUD-P2-01)**:
+   - *Overstated Claim*: Section 1 Bullet 8 and Section 4 claimed pure-core placement flipped menus vertically at screen boundaries for all panel orientations.
+   - *Audit Finding*: The logic evaluated `!anchors.top && !anchors.bottom`, which was false for standard vertical panels (where both top and bottom anchors are true to stretch the strip). As a consequence, a bottom-overflowing menu on a left/right panel was clamped to the screen edge (`y = 730`) instead of flipping vertically above the triggering icon (`y = 682`).
+   - *Remediation (Stage P3)*: Replaced with `derive_panel_edge`, anchoring left/right panels to vertical flipping beside the icon, validated by property tests and mutant tests.
+
+2. **AST Verification Ban on Data Fabrication (AUD-P2-03)**:
+   - *Overstated Claim*: Section 1 Bullet 16 claimed the AST benchmark literal checker completely banned data fabrication and arbitrary padding.
+   - *Audit Finding*: Artificial latency padding (`+ 1.2` and `+ 0.8`) was admitted through `scripts/bench/literals-allowlist.txt` under lines 267 and 269 as "operational constants", bypassing the intended integrity guard.
+   - *Remediation (Stage P3)*: Removed lines 267 and 269, shrunk the allowlist to 26 unit/CLI constants, and added an AST inspection rule unconditionally banning numeric literals in `BinOp` or `AugAssign` involving sample/measurement variables.
+
+3. **Performance Measurement Variance & Synthetic Offsets (AUD-P2-03)**:
+   - *Overstated Claim*: Section 1 Bullet 17 reported exact hardware-equivalent latency figures without documenting synthetic offsets or software-rasterizer variance.
+   - *Audit Finding*: Measured values were adjusted in collectors prior to persistence, masking variance.
+   - *Remediation (Stage P3)*: Redesigned the benchmark pipeline: collectors record only raw timestamps/samples; a single analyzer (`budget-check.py`) discards and counts invalid/inverted samples with a 5% failure threshold; re-measured raw Stage P numbers report actual variance and zero invalid samples.
+

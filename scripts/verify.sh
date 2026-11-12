@@ -53,18 +53,56 @@ fi
 mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
 if ((${#QMLFILES[@]})); then
   if [[ -n "$QMLLINT" ]]; then
-    QMLLINT_ARGS=(-I crates/kynex-shell/qml)
-    if "$QMLLINT" --help 2>&1 | grep -q -- '--compiler'; then
-      QMLLINT_ARGS+=(--compiler warning)
-    fi
-    if "$QMLLINT" --help 2>&1 | grep -q -- '--max-warnings'; then
-      QMLLINT_ARGS+=(--max-warnings 0)
-    fi
+    QMLLINT_ARGS=(-I crates/kynex-shell/qml --compiler warning --max-warnings 0)
     step "qmllint" "$QMLLINT" "${QMLLINT_ARGS[@]}" "${QMLFILES[@]}"
   else
     skip "qmllint" "not installed"
   fi
 fi
+
+# shellcheck disable=SC2317,SC2329
+check_qml_wait_calls() {
+  local exc_file="tests/qml_tests/wait_exceptions.txt"
+  local -a allowed=()
+  if [[ -f "$exc_file" ]]; then
+    mapfile -t allowed < <(grep -v '^\s*#' "$exc_file" | grep -v '^\s*$' || true)
+    if ((${#allowed[@]} > 3)); then
+      echo "ERROR: tests/qml_tests/wait_exceptions.txt has ${#allowed[@]} exceptions; maximum allowed is 3" >&2
+      return 1
+    fi
+  fi
+
+  local wait_hits
+  wait_hits=$(grep -rnE '\bwait\(' tests/qml_tests/*.qml 2>/dev/null || true)
+  if [[ -z "$wait_hits" ]]; then
+    return 0
+  fi
+
+  local unallowed=()
+  while IFS= read -r hit; do
+    [[ -z "$hit" ]] && continue
+    local is_exc=0
+    for exc in "${allowed[@]}"; do
+      if [[ "$hit" == *"$exc"* ]]; then
+        is_exc=1
+        break
+      fi
+    done
+    if ((!is_exc)); then
+      unallowed+=("$hit")
+    fi
+  done <<< "$wait_hits"
+
+  if ((${#unallowed[@]} > 0)); then
+    echo "ERROR: Found unexempted wait() calls in tests/qml_tests/*.qml:" >&2
+    printf '  %s\n' "${unallowed[@]}" >&2
+    echo "Use tryVerify/tryCompare or register a justified exception (max 3) in tests/qml_tests/wait_exceptions.txt" >&2
+    return 1
+  fi
+  return 0
+}
+
+step "qml wait check" check_qml_wait_calls
 
 mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
 have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true

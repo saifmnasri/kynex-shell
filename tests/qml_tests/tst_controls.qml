@@ -172,6 +172,7 @@ Item {
         }
 
         function init() {
+            LayoutHelper.setRtl(false);
             root.forceActiveFocus();
             button.enabled = true;
             button.primary = false;
@@ -615,31 +616,30 @@ Item {
             verify(!searchField.inputActiveFocus);
 
             searchField.text = "something";
-            wait(20);
-            verify(searchField.hasText);
-            verify(searchField.clearButtonVisible);
+            tryVerify(function() {
+                return searchField.hasText && searchField.clearButtonVisible && searchField.clearButtonItem.x > 0;
+            }, 5000);
 
             searchFieldClearedSpy.clear();
             mouseClick(searchField.clearMouseItem);
-            wait(20);
-            compare(searchField.text, "");
-            verify(!searchField.hasText);
-            verify(!searchField.clearButtonVisible);
+            tryCompare(searchField, "text", "", 5000);
+            tryVerify(function() {
+                return !searchField.hasText && !searchField.clearButtonVisible && searchField.inputActiveFocus;
+            }, 5000);
             compare(searchFieldClearedSpy.count, 1);
-            verify(searchField.inputActiveFocus);
         }
 
         function test_searchfield_focus_ring() {
             searchField.focus = false;
             button.forceActiveFocus();
-            wait(20);
-            compare(searchField.borderWidth, 0);
-            verify(searchField.borderColor !== Style.colors.focusRing);
+            tryVerify(function() {
+                return searchField.borderWidth === 0 && searchField.borderColor !== Style.colors.focusRing;
+            }, 5000);
 
             searchField.forceFieldFocus();
-            wait(20);
-            compare(searchField.borderColor, Style.colors.focusRing);
-            compare(searchField.borderWidth, 1);
+            tryVerify(function() {
+                return searchField.borderColor === Style.colors.focusRing && searchField.borderWidth === 1;
+            }, 5000);
         }
 
         function send_all_inputs(item) {
@@ -1031,20 +1031,20 @@ Item {
             // Border color & width states
             menuItem.selected = false;
             root.forceActiveFocus();
-            wait(10);
-            compare(menuItem.borderWidth, 0);
-            compare(menuItem.borderColor, Style.colors.surface);
+            tryVerify(function() {
+                return menuItem.borderWidth === 0 && menuItem.borderColor === Style.colors.surface;
+            }, 5000);
 
             menuItem.selected = true;
-            wait(10);
-            compare(menuItem.borderWidth, 1);
-            compare(menuItem.borderColor, Style.colors.accent);
+            tryVerify(function() {
+                return menuItem.borderWidth === 1 && menuItem.borderColor === Style.colors.accent;
+            }, 5000);
 
             menuItem.selected = false;
             menuItem.forceActiveFocus();
-            wait(10);
-            compare(menuItem.borderWidth, 1);
-            compare(menuItem.borderColor, Style.colors.focusRing);
+            tryVerify(function() {
+                return menuItem.borderWidth === 1 && menuItem.borderColor === Style.colors.focusRing;
+            }, 5000);
             root.forceActiveFocus();
 
             // Icon visibility
@@ -1149,7 +1149,9 @@ Item {
                 root
             );
 
-            wait(50);
+            tryVerify(function() {
+                return !ltrButton.LayoutMirroring.enabled && ltrButton.iconX < ltrButton.labelX;
+            }, 5000);
 
             verify(!ltrButton.LayoutMirroring.enabled, "LTR button LayoutMirroring must be disabled");
             verify(ltrButton.iconX < ltrButton.labelX, "In LTR, icon must be to the left of label");
@@ -1215,7 +1217,16 @@ Item {
                 root
             );
 
-            wait(50);
+            tryVerify(function() {
+                return rtlButton.LayoutMirroring.enabled &&
+                       rtlSwitch.LayoutMirroring.enabled &&
+                       rtlItem.LayoutMirroring.enabled &&
+                       rtlSlider.LayoutMirroring.enabled &&
+                       rtlTooltip.LayoutMirroring.enabled &&
+                       rtlSearch.LayoutMirroring.enabled &&
+                       rtlMenuItem.LayoutMirroring.enabled &&
+                       rtlButton.iconX > rtlButton.labelX;
+            }, 5000);
 
             verify(rtlButton.LayoutMirroring.enabled, "RTL button LayoutMirroring must be enabled");
             verify(rtlButton.iconX > rtlButton.labelX, "In RTL, icon must be mirrored to the right of label");
@@ -1257,18 +1268,16 @@ Item {
             button.primary = false;
             button.focus = false;
             root.forceActiveFocus(); // unfocus button
-            wait(20);
-            compare(button.backgroundColor, Style.colors.surfaceRaised);
+            tryCompare(button, "backgroundColor", Style.colors.surfaceRaised, 5000);
             compare(button.textColor, Style.colors.text);
             compare(button.borderColor, Style.colors.surfaceRaised);
 
             button.primary = true;
-            wait(50);
-            compare(button.backgroundColor, Style.colors.accent);
+            tryCompare(button, "backgroundColor", Style.colors.accent, 5000);
             compare(button.textColor, Style.colors.surface);
             compare(button.borderColor, Style.colors.surfaceRaised);
             button.primary = false;
-            wait(20);
+            tryCompare(button, "backgroundColor", Style.colors.surfaceRaised, 5000);
 
             // 2. KynexSwitch: indicator token colors
             toggleSwitch.checked = false;

@@ -18,5 +18,9 @@ if [[ -f Cargo.toml ]]; then
   mkdir -p dev/tmp && have cargo-cyclonedx && cargo cyclonedx --format json --override-filename sbom 2>/dev/null && echo "SBOM written" || echo "cargo-cyclonedx not installed"
   echo; echo "### 6. Duplicate crate versions"; cargo tree --workspace -d 2>/dev/null | head -40
 fi
+if [[ -f scripts/test-qml-stress.sh ]]; then
+  echo; echo "### 8. QML suite 20x stress test under CPU load"
+  ./scripts/test-qml-stress.sh || rc=1
+fi
 echo; echo "### 7. Manual review (agent): re-read the diff as a hostile reviewer; fill docs/SECURITY_CHECKLIST.md for new code"
 exit $rc

@@ -1,0 +1,29 @@
+=== COMMAND ===
+cargo test -p kynex-shell-core test_placement_vertical_flip_at_screen_edge
+=== TIMESTAMP: 2026-11-12T13:32:26Z ===
+=== EXIT CODE: 101 ===
+=== RAW OUTPUT ===
+   Compiling kynex-shell-core v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-shell-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.77s
+     Running unittests src/lib.rs (target/debug/deps/kynex_shell_core-2cf6b8301e2359b1)
+
+running 1 test
+test menu::tests::test_placement_vertical_flip_at_screen_edge ... FAILED
+
+failures:
+
+---- menu::tests::test_placement_vertical_flip_at_screen_edge stdout ----
+
+thread 'menu::tests::test_placement_vertical_flip_at_screen_edge' (1318518) panicked at crates/kynex-shell-core/src/menu.rs:824:9:
+assertion `left == right` failed: Left panel menu near bottom edge must flip vertically (bottom-align to icon)
+  left: 730.0
+ right: 682.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    menu::tests::test_placement_vertical_flip_at_screen_edge
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 39 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p kynex-shell-core --lib`

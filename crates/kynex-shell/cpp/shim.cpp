@@ -15,6 +15,7 @@
 #include <QFontDatabase>
 #include <QDir>
 #include <QCoreApplication>
+#include <QGuiApplication>
 
 void kynex_register_core_types()
 {
@@ -155,4 +156,47 @@ uint64_t kynex_steady_clock_ns()
 {
     auto now = std::chrono::steady_clock::now().time_since_epoch();
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+}
+
+bool kynex_test_real_tray_menu_model_open(rust::Str qml_path)
+{
+    static int argc = 1;
+    static char arg0[] = "real_tray_menu_test";
+    static char *argv[] = { arg0, nullptr };
+
+    if (!QCoreApplication::instance()) {
+        qputenv("QT_QPA_PLATFORM", QByteArray("offscreen"));
+        new QGuiApplication(argc, argv);
+    }
+
+    kynex_register_core_types();
+
+    QQmlEngine engine;
+    QString path = QString::fromUtf8(qml_path.data(), static_cast<qsizetype>(qml_path.size()));
+    QQmlComponent component(&engine, QUrl::fromLocalFile(path));
+    if (component.isError()) {
+        for (const auto &err : component.errors()) {
+            qWarning() << "QML Error:" << err.toString();
+        }
+        return false;
+    }
+
+    std::unique_ptr<QObject> obj(component.create());
+    if (!obj) {
+        qWarning() << "Failed to create QML component from:" << path;
+        return false;
+    }
+
+    bool ok = QMetaObject::invokeMethod(obj.get(), "triggerOpen");
+    if (!ok) {
+        qWarning() << "Failed to invoke triggerOpen()";
+        return false;
+    }
+
+    bool callReached = obj->property("callReached").toBool();
+    QString observedItemId = obj->property("observedItemId").toString();
+    double observedX = obj->property("observedX").toDouble();
+    double observedY = obj->property("observedY").toDouble();
+
+    return callReached && observedItemId == QStringLiteral("org.kynexos.ProductionItem") && observedX > 0.0 && observedY > 0.0;
 }

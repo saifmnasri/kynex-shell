@@ -1,0 +1,21 @@
+=== COMMAND ===
+python3 tests/test_check_bench_literals.py
+=== TIMESTAMP: 2026-11-12T15:58:03Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+PASS: test_evasion_scalar
+PASS: test_evasion_list_wrapped
+PASS: test_evasion_tuple
+PASS: test_evasion_dict_value
+PASS: test_evasion_default_argument
+PASS: test_evasion_conditional_fallback
+PASS: test_evasion_string_converted_to_float
+PASS: test_evasion_string_converted_to_int
+PASS: test_old_code_literal_rejected_against_real_allowlist
+PASS: test_allowlisted_operational_literals_accepted
+PASS: test_padding_pattern_binop_shell_lat
+PASS: test_padding_pattern_binop_reverse
+PASS: test_padding_pattern_augassign
+PASS: test_padding_pattern_cannot_be_allowlisted
+
+ALL 14 check-bench-literals evasion and padding tests PASSED!

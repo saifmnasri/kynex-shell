@@ -184,7 +184,7 @@ Item {
             compare(mockModel.count, 0);
             compare(mockModel.selectedIndex, -1);
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Return);
-            wait(50);
+            tryCompare(mockModel, "launchCallCount", 0, 1000);
             compare(mockModel.launchCallCount, 0, "Enter on empty list must not launch anything");
 
             // Case B: Populate items and select last index
@@ -237,9 +237,10 @@ Item {
 
             // Send multiple rapid Enter key presses
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Return);
+            tryVerify(function() { return mockModel.launchCallCount === 1; }, 5000);
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Return);
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Enter);
-            wait(50);
+            tryCompare(mockModel, "launchCallCount", 1, 1000);
 
             compare(mockModel.launchCallCount, 1, "Repeated Enter must not trigger double launch");
             compare(mockModel.lastLaunchedIndex, 0);
@@ -268,16 +269,15 @@ Item {
             // Non-matching keys must NOT toggle pinned state
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_O, Qt.ControlModifier);
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_P, Qt.NoModifier);
-            wait(20);
-            let stillUnpinned = false;
-            children = launcher.listView.contentItem.children;
-            for (let i = 0; i < children.length; ++i) {
-                if (children[i].hasOwnProperty("pinned")) {
-                    stillUnpinned = (children[i].pinned === false);
-                    break;
+            tryVerify(function() {
+                let kids = launcher.listView.contentItem.children;
+                for (let i = 0; i < kids.length; ++i) {
+                    if (kids[i].hasOwnProperty("pinned") && kids[i].pinned === false) {
+                        return true;
+                    }
                 }
-            }
-            verify(stillUnpinned, "Non-Ctrl+P key must not toggle pin");
+                return false;
+            }, 5000, "Non-Ctrl+P key must not toggle pin");
 
             // Send Ctrl+P to toggle pin
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_P, Qt.ControlModifier);
