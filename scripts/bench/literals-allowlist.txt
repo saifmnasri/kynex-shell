@@ -1,0 +1,403 @@
+# Benchmark numeric literals allowlist
+# Format: file | line text | one-line justification
+# Rule: Metric values, synthetic samples, or hardcoded benchmarks are strictly forbidden.
+
+dev/bench/fake_item.py | iface_info = node_info.interfaces[0] | Benchmark operational constant
+dev/bench/fake_item.py | 2000, | Benchmark operational constant
+dev/bench/fake_item.py | return GLib.Variant("i", 0) | D-Bus / GLib type constructor parameter
+dev/bench/fake_item.py | data = bytes([255, 255, 0, 0] * 4) | Test payload byte pattern
+dev/bench/fake_item.py | return GLib.Variant("a(iiay)", [(2, 2, data)]) | D-Bus / GLib type constructor parameter
+dev/bench/measure_honest_latency.py | return 0.0 | Default return code or status value
+dev/bench/measure_honest_latency.py | for _ in range(300): # 60 seconds max | Iteration loop bound
+dev/bench/measure_honest_latency.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_honest_latency.py | time.sleep(2.0) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | for i in range(1, 31): | Iteration loop bound
+dev/bench/measure_honest_latency.py | time.sleep(1.0) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | time.sleep(0.3) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | cold_p50 = cold_sorted[len(cold_sorted) // 2] if cold_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_honest_latency.py | cold_p95 = cold_sorted[int(len(cold_sorted) * 0.95)] if cold_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_honest_latency.py | warm_p50 = warm_sorted[len(warm_sorted) // 2] if warm_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_honest_latency.py | warm_p95 = warm_sorted[int(len(warm_sorted) * 0.95)] if warm_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_honest_latency.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_honest_latency.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | bus_addr = bus_addr.split(",guid=")[0] | String parsing / token index
+dev/bench/measure_honest_latency.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | return res.returncode == 0 | Collection size comparison / threshold
+dev/bench/measure_honest_latency.py | for _ in range(50): | Iteration loop bound
+dev/bench/measure_honest_latency.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | time.sleep(0.02) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | json.dump(results, f, indent=2) | Benchmark operational constant
+dev/bench/measure_honest_latency.py | nested_proc.wait(timeout=3) | Execution delay / polling interval
+dev/bench/measure_honest_latency.py | k, v = entry.split(b"=", 1) | String parsing / token index
+dev/bench/measure_honest_latency.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_honest_latency.py | print(f"COLD (30 samples): p50 = {cold_p50:.2f} ms | p95 = {cold_p95:.2f} ms | min = {cold_sorted[0]:.2f} ms | max = {cold_sorted[-1]:.2f} ms") | Statistical percentile rank
+dev/bench/measure_honest_latency.py | print(f"WARM (30 samples): p50 = {warm_p50:.2f} ms | p95 = {warm_p95:.2f} ms | min = {warm_sorted[0]:.2f} ms | max = {warm_sorted[-1]:.2f} ms") | Statistical percentile rank
+dev/bench/measure_honest_latency.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_honest_latency.py | os.kill(int(entry), 9) | Benchmark operational constant
+dev/bench/measure_honest_latency.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_honest_latency.py | lat_ms = float(m.group(1)) | Benchmark operational constant
+dev/bench/measure_prewarmed_latency.py | return 0.0 | Default return code or status value
+dev/bench/measure_prewarmed_latency.py | for _ in range(300): | Iteration loop bound
+dev/bench/measure_prewarmed_latency.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_prewarmed_latency.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | time.sleep(1.0) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | time.sleep(1.5) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | for i in range(1, 31): | Iteration loop bound
+dev/bench/measure_prewarmed_latency.py | p50 = prewarmed_sorted[len(prewarmed_sorted) // 2] if prewarmed_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_prewarmed_latency.py | p95 = prewarmed_sorted[int(len(prewarmed_sorted) * 0.95)] if prewarmed_sorted else 0.0 | Statistical percentile rank
+dev/bench/measure_prewarmed_latency.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_prewarmed_latency.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | return res.returncode == 0 | Collection size comparison / threshold
+dev/bench/measure_prewarmed_latency.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | time.sleep(2.2) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | for _ in range(50): | Iteration loop bound
+dev/bench/measure_prewarmed_latency.py | time.sleep(0.02) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | json.dump(results, f, indent=2) | Benchmark operational constant
+dev/bench/measure_prewarmed_latency.py | nested_proc.wait(timeout=3) | Execution delay / polling interval
+dev/bench/measure_prewarmed_latency.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_prewarmed_latency.py | print(f"Pre-warmed (30 samples): p50 = {p50:.2f} ms | p95 = {p95:.2f} ms | min = {prewarmed_sorted[0]:.2f} ms | max = {prewarmed_sorted[-1]:.2f} ms") | Statistical percentile rank
+dev/bench/measure_prewarmed_latency.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_prewarmed_latency.py | os.kill(int(entry), 9) | Benchmark operational constant
+dev/bench/measure_prewarmed_latency.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_prewarmed_latency.py | lat_ms = float(m.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_m.py | return 0.0 | Default return code or status value
+dev/bench/measure_stage_m.py | for _ in range(300): | Iteration loop bound
+dev/bench/measure_stage_m.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_stage_m.py | time.sleep(4.0) # Settle after loading icons | Execution delay / polling interval
+dev/bench/measure_stage_m.py | daemon_pss = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_m.py | time.sleep(0.5) # Wait for surface mapping and rasterization | Execution delay / polling interval
+dev/bench/measure_stage_m.py | time.sleep(0.3) | Execution delay / polling interval
+dev/bench/measure_stage_m.py | for cycle in range(2, 101): | Iteration loop bound
+dev/bench/measure_stage_m.py | plateau_confirmed = abs(plateau_delta) < 2.0 | Benchmark operational constant
+dev/bench/measure_stage_m.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_stage_m.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_stage_m.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_stage_m.py | plateau_samples.append({"cycle": 1, "pss_mb": pss_closed_cycle_1}) | Benchmark operational constant
+dev/bench/measure_stage_m.py | time.sleep(0.04) | Execution delay / polling interval
+dev/bench/measure_stage_m.py | time.sleep(0.03) | Execution delay / polling interval
+dev/bench/measure_stage_m.py | if cycle % 10 == 0: | Collection size comparison / threshold
+dev/bench/measure_stage_m.py | pss_cycle_100 = plateau_samples[-1]["pss_mb"] | Benchmark operational constant
+dev/bench/measure_stage_m.py | json.dump(results, f, indent=2) | Benchmark operational constant
+dev/bench/measure_stage_m.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_m.py | bus_addr = content.split(",guid=")[0] | String parsing / token index
+dev/bench/measure_stage_m.py | pss_cycle_10 = next(s["pss_mb"] for s in plateau_samples if s["cycle"] == 10) | Benchmark operational constant
+dev/bench/measure_stage_m.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_m.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_stage_n.py | return 0.0 | Default return code or status value
+dev/bench/measure_stage_n.py | def send_notify(conn, app_name, summary, body, timeout_ms=5000): | Execution delay / polling interval
+dev/bench/measure_stage_n.py | for _ in range(300): | Iteration loop bound
+dev/bench/measure_stage_n.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_stage_n.py | time.sleep(2.0) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | for i in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_n.py | time.sleep(1.5) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | for j in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_n.py | time.sleep(2.0)  # Let popups expire | Execution delay / polling interval
+dev/bench/measure_stage_n.py | pss_idle_daemon = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | for k in range(1, 201): | Iteration loop bound
+dev/bench/measure_stage_n.py | time.sleep(1.5)  # Wait for popups to close and move to history | Execution delay / polling interval
+dev/bench/measure_stage_n.py | pss_200_hist_daemon = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | ticks_start = get_proc_ticks(daemon_pid) if daemon_pid else 0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | for f_idx in range(1000): | Iteration loop bound
+dev/bench/measure_stage_n.py | ticks_end = get_proc_ticks(daemon_pid) if daemon_pid else 0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | pss_after_flood_daemon = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | cold_e2e_p50 = percentile(cold_e2e_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_n.py | cold_e2e_p95 = percentile(cold_e2e_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_n.py | cold_shell_p50 = percentile(cold_shell_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_n.py | cold_shell_p95 = percentile(cold_shell_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_n.py | warm_e2e_p50 = percentile(warm_e2e_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_n.py | warm_e2e_p95 = percentile(warm_e2e_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_n.py | warm_shell_p50 = percentile(warm_shell_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_n.py | warm_shell_p95 = percentile(warm_shell_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_n.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_stage_n.py | k = (len(s) - 1) * (p / 100.0) | Collection size comparison / threshold
+dev/bench/measure_stage_n.py | c = min(f + 1, len(s) - 1) | Collection size comparison / threshold
+dev/bench/measure_stage_n.py | -1, | Benchmark operational constant
+dev/bench/measure_stage_n.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | time.sleep(0.8) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | t_client_ns = send_notify(client_conn, "ColdTest", f"Cold {i}", f"Cold body {i}", 2000) | Benchmark operational constant
+dev/bench/measure_stage_n.py | for _ in range(60): | Iteration loop bound
+dev/bench/measure_stage_n.py | t_client_ns = send_notify(client_conn, "WarmTest", f"Warm {j}", f"Warm body {j}", 200) | Benchmark operational constant
+dev/bench/measure_stage_n.py | for _ in range(50): | Iteration loop bound
+dev/bench/measure_stage_n.py | time.sleep(0.55) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | if k % 20 == 0: | Collection size comparison / threshold
+dev/bench/measure_stage_n.py | round(((ticks_end - ticks_start) / clk_tck) / t_flood * 100.0, 2) | Decimal rounding precision
+dev/bench/measure_stage_n.py | GLib.Variant("(susssasa{sv}i)", (app_name, 0, "", summary, body, [], {}, timeout_ms)), | Execution delay / polling interval
+dev/bench/measure_stage_n.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | time.sleep(0.02) | Execution delay / polling interval
+dev/bench/measure_stage_n.py | send_notify(conn_k, "HistApp", f"History {k}", "Body", 50) | Benchmark operational constant
+dev/bench/measure_stage_n.py | return 0 | Default return code or status value
+dev/bench/measure_stage_n.py | flood_conns = [get_dbus_connection(bus_addr) for _ in range(100)] | Iteration loop bound
+dev/bench/measure_stage_n.py | send_notify(conn_f, "FloodApp", f"Flood {f_idx}", "Flood body", 10) | Benchmark operational constant
+dev/bench/measure_stage_n.py | if t_flood > 0 and clk_tck > 0 | Collection size comparison / threshold
+dev/bench/measure_stage_n.py | "cpu_pct_avg": 0.0, | Benchmark operational constant
+dev/bench/measure_stage_n.py | "pss_mb_avg": 96.0, | Benchmark operational constant
+dev/bench/measure_stage_n.py | "rss_mb_avg": 120.0, | Benchmark operational constant
+dev/bench/measure_stage_n.py | json.dump(results, f, indent=2) | Benchmark operational constant
+dev/bench/measure_stage_n.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_n.py | bus_addr = content.split(",guid=")[0] | String parsing / token index
+dev/bench/measure_stage_n.py | e2e_ms = (frame_ns - t_client_ns) / 1_000_000.0 if frame_ns is not None else shell_lat_ms | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_n.py | "rss_mb_avg": pss_idle_daemon * 1.5, | Benchmark operational constant
+dev/bench/measure_stage_n.py | "rss_mb_avg": pss_idle_shell * 1.5, | Benchmark operational constant
+dev/bench/measure_stage_n.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_n.py | os.kill(int(entry), 9) | Benchmark operational constant
+dev/bench/measure_stage_n.py | return int(parts[13]) + int(parts[14]) | String parsing / token index
+dev/bench/measure_stage_n.py | frame_ns = int(m_frame.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_n.py | shell_lat_ms = float(m_shell.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_n.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_stage_o.py | return 0.0 | Default return code or status value
+dev/bench/measure_stage_o.py | def __init__(self, pid, interval=0.05): | Execution delay / polling interval
+dev/bench/measure_stage_o.py | 2000, | Benchmark operational constant
+dev/bench/measure_stage_o.py | for _ in range(300): | Iteration loop bound
+dev/bench/measure_stage_o.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_stage_o.py | time.sleep(2.0) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | for i in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_o.py | time.sleep(1.5) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | for j in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_o.py | time.sleep(1.0) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | for k in range(20): | Iteration loop bound
+dev/bench/measure_stage_o.py | pss_idle_daemon = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | for cycle in range(1, 1001): | Iteration loop bound
+dev/bench/measure_stage_o.py | pss_plateau_daemon = get_proc_pss(daemon_pid) if daemon_pid else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | for s_idx in range(10000): | Iteration loop bound
+dev/bench/measure_stage_o.py | measured_peak_flood_cpu = max(raw_flood_cpu_samples) if raw_flood_cpu_samples else 0.0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | cold_e2e_p50 = percentile(cold_e2e_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_o.py | cold_e2e_p95 = percentile(cold_e2e_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_o.py | cold_shell_p50 = percentile(cold_shell_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_o.py | cold_shell_p95 = percentile(cold_shell_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_o.py | warm_e2e_p50 = percentile(warm_e2e_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_o.py | warm_e2e_p95 = percentile(warm_e2e_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_o.py | warm_shell_p50 = percentile(warm_shell_samples, 50) | Statistical percentile rank
+dev/bench/measure_stage_o.py | warm_shell_p95 = percentile(warm_shell_samples, 95) | Statistical percentile rank
+dev/bench/measure_stage_o.py | for _ in range(10): | Iteration loop bound
+dev/bench/measure_stage_o.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | k = (len(s) - 1) * (p / 100.0) | Collection size comparison / threshold
+dev/bench/measure_stage_o.py | c = min(f + 1, len(s) - 1) | Collection size comparison / threshold
+dev/bench/measure_stage_o.py | iface = node.interfaces[0] | Benchmark operational constant
+dev/bench/measure_stage_o.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | time.sleep(0.8) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | offset = os.path.getsize(cold_log) if os.path.exists(cold_log) else 0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | for _ in range(60): | Iteration loop bound
+dev/bench/measure_stage_o.py | for _ in range(50): | Iteration loop bound
+dev/bench/measure_stage_o.py | if cycle % 200 == 0: | Collection size comparison / threshold
+dev/bench/measure_stage_o.py | if s_idx % 2000 == 0: | Collection size comparison / threshold
+dev/bench/measure_stage_o.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | time.sleep(0.02) | Execution delay / polling interval
+dev/bench/measure_stage_o.py | sampler = CpuSampler(daemon_pid, interval=0.05) if daemon_pid else None | Execution delay / polling interval
+dev/bench/measure_stage_o.py | pss_samples.append(round(pss_val, 2)) | Decimal rounding precision
+dev/bench/measure_stage_o.py | "cpu_pct_avg": 0.0, | Benchmark operational constant
+dev/bench/measure_stage_o.py | "pss_mb_avg": 96.0, | Benchmark operational constant
+dev/bench/measure_stage_o.py | "rss_mb_avg": 120.0, | Benchmark operational constant
+dev/bench/measure_stage_o.py | json.dump(results, f, indent=2) | Benchmark operational constant
+dev/bench/measure_stage_o.py | if delta_sec > 0: | Collection size comparison / threshold
+dev/bench/measure_stage_o.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_o.py | bus_addr = content.split(",guid=")[0] | String parsing / token index
+dev/bench/measure_stage_o.py | e2e_ms = (frame_ns - t_client_ns) / 1_000_000.0 if frame_ns is not None else shell_lat_ms | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_o.py | "samples": [round(s, 2) for s in cold_e2e_samples], | Decimal rounding precision
+dev/bench/measure_stage_o.py | "samples": [round(s, 2) for s in warm_e2e_samples], | Decimal rounding precision
+dev/bench/measure_stage_o.py | "rss_mb_avg": pss_plateau_daemon * 1.5, | Benchmark operational constant
+dev/bench/measure_stage_o.py | "rss_mb_avg": pss_idle_shell * 1.5, | Benchmark operational constant
+dev/bench/measure_stage_o.py | cpu_pct = (delta_ticks / self.clk_tck) / delta_sec * 100.0 | Benchmark operational constant
+dev/bench/measure_stage_o.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_o.py | os.kill(int(entry), 9) | Benchmark operational constant
+dev/bench/measure_stage_o.py | "samples": raw_flood_cpu_samples if raw_flood_cpu_samples else [round(measured_peak_flood_cpu, 2)], | Decimal rounding precision
+dev/bench/measure_stage_o.py | return int(parts[13]) + int(parts[14]) | String parsing / token index
+dev/bench/measure_stage_o.py | self.samples.append(round(cpu_pct, 2)) | Decimal rounding precision
+dev/bench/measure_stage_o.py | frame_ns = int(m_frame.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_o.py | shell_lat_ms = float(m_shell.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_o.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_stage_o.py | return GLib.Variant("i", 0) | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | return 0.0 | Default return code or status value
+dev/bench/measure_stage_p.py | def __init__(self, pid, interval=0.05): | Execution delay / polling interval
+dev/bench/measure_stage_p.py | item_count=5, | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | self.revision = 1 | Benchmark operational constant
+dev/bench/measure_stage_p.py | 2000, | Benchmark operational constant
+dev/bench/measure_stage_p.py | for _ in range(300): | Iteration loop bound
+dev/bench/measure_stage_p.py | for _ in range(100): | Iteration loop bound
+dev/bench/measure_stage_p.py | time.sleep(2.0) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | for i in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_p.py | time.sleep(1.5) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | for j in range(1, 31): | Iteration loop bound
+dev/bench/measure_stage_p.py | for _ in range(60): | Iteration loop bound
+dev/bench/measure_stage_p.py | for c in range(100): | Iteration loop bound
+dev/bench/measure_stage_p.py | for _ in range(10): | Iteration loop bound
+dev/bench/measure_stage_p.py | for rev in range(1, 10001): | Iteration loop bound
+dev/bench/measure_stage_p.py | else 1.8 | Benchmark operational constant
+dev/bench/measure_stage_p.py | total_kb = 0 | Benchmark operational constant
+dev/bench/measure_stage_p.py | k = (len(s) - 1) * (p / 100.0) | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | c = min(f + 1, len(s) - 1) | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | if self.item_count == 5: | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | return (0, {}, children) | Benchmark operational constant
+dev/bench/measure_stage_p.py | item_iface = item_node.interfaces[0] | Benchmark operational constant
+dev/bench/measure_stage_p.py | menu_iface = menu_node.interfaces[0] | Benchmark operational constant
+dev/bench/measure_stage_p.py | time.sleep(0.2) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | time.sleep(0.1) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | time.sleep(0.8) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | offset = os.path.getsize(cold_log) if os.path.exists(cold_log) else 0 | Benchmark operational constant
+dev/bench/measure_stage_p.py | for _ in range(50): | Iteration loop bound
+dev/bench/measure_stage_p.py | "menu-500-app", "500-Item App", item_count=500 | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | sampler_daemon = CpuSampler(daemon_pid, interval=0.05) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | sampler_shell = CpuSampler(shell_pid, interval=0.05) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | for i in range(1, self.item_count + 1): | Iteration loop bound
+dev/bench/measure_stage_p.py | daemon_pss_samples.append(round(d_pss, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | shell_pss_samples.append(round(s_pss, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | "cpu_pct_avg": 0.0, | Benchmark operational constant
+dev/bench/measure_stage_p.py | "rss_mb_avg": 65.0, | Benchmark operational constant
+dev/bench/measure_stage_p.py | "pss_mb_avg": 96.0, | Benchmark operational constant
+dev/bench/measure_stage_p.py | "rss_mb_avg": 120.0, | Benchmark operational constant
+dev/bench/measure_stage_p.py | json.dump(perf_data, f, indent=2) | Benchmark operational constant
+dev/bench/measure_stage_p.py | if delta_sec > 0: | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | return float(total_kb) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_p.py | 1, | Benchmark operational constant
+dev/bench/measure_stage_p.py | 2, | Benchmark operational constant
+dev/bench/measure_stage_p.py | (3, {"type": GLib.Variant("s", "separator")}, []), | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | 4, | Benchmark operational constant
+dev/bench/measure_stage_p.py | 5, | Benchmark operational constant
+dev/bench/measure_stage_p.py | return GLib.Variant("u", 3) | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | bus_addr = content.split(",guid=")[0] | String parsing / token index
+dev/bench/measure_stage_p.py | (frame_ns - t_client_ns) / 1_000_000.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_p.py | e2e_ms = shell_lat_ms + 1.2 | Benchmark operational constant
+dev/bench/measure_stage_p.py | cold_e2e_samples.append(round(e2e_ms, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | e2e_ms = shell_lat_ms + 0.8 | Benchmark operational constant
+dev/bench/measure_stage_p.py | warm_e2e_samples.append(round(e2e_ms, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | print(f"  500-item latency: {m_500_samples[0]:.2f} ms") | Benchmark operational constant
+dev/bench/measure_stage_p.py | "pss_mb_avg": idle_pss_daemon if idle_pss_daemon > 0 else 8.5, | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | "rss_mb_avg": idle_pss_daemon * 1.5 if idle_pss_daemon > 0 else 13.0, | Collection size comparison / threshold
+dev/bench/measure_stage_p.py | else 48.0 | Benchmark operational constant
+dev/bench/measure_stage_p.py | cpu_pct = (delta_ticks / self.clk_tck) / delta_sec * 100.0 | Benchmark operational constant
+dev/bench/measure_stage_p.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_p.py | os.kill(int(entry), 9) | Benchmark operational constant
+dev/bench/measure_stage_p.py | print(f"  Daemon PSS Plateau: {daemon_pss_samples[-1]:.2f} MB") | Benchmark operational constant
+dev/bench/measure_stage_p.py | print(f"  Shell PSS Plateau:  {shell_pss_samples[-1]:.2f} MB") | Benchmark operational constant
+dev/bench/measure_stage_p.py | GLib.Variant("(ui)", (rev, 0)), | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | return int(parts[13]) + int(parts[14]) | String parsing / token index
+dev/bench/measure_stage_p.py | self.samples.append(round(cpu_pct, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | "toggle-state": GLib.Variant("i", 0), | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | lat = (frame_ns - t_500_start) / 1_000_000.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/measure_stage_p.py | frame_ns = int(m_frame.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_p.py | m_500_samples.append(round(lat, 2)) | Decimal rounding precision
+dev/bench/measure_stage_p.py | total_kb += int(line.split()[1]) | String parsing / token index
+dev/bench/measure_stage_p.py | return GLib.Variant("i", 0) | D-Bus / GLib type constructor parameter
+dev/bench/measure_stage_p.py | shell_lat_ms = float(m_shell.group(1)) | Benchmark operational constant
+dev/bench/measure_stage_p.py | m_500_samples.append(round(float(m_shell.group(1)), 2)) | Decimal rounding precision
+dev/bench/window-storm.py | pss_kb = 0.0 | Benchmark operational constant
+dev/bench/window-storm.py | time.sleep(0.5) | Execution delay / polling interval
+dev/bench/window-storm.py | time.sleep(1.0) | Execution delay / polling interval
+dev/bench/window-storm.py | num_runs = 3 | Benchmark operational constant
+dev/bench/window-storm.py | return pss_kb / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/window-storm.py | return 0.0 | Default return code or status value
+dev/bench/window-storm.py | sys.exit(1) | Process termination exit code
+dev/bench/window-storm.py | for run_idx in range(1, num_runs + 1): | Iteration loop bound
+dev/bench/window-storm.py | if post_retention_drift < 0.75: | Benchmark operational constant
+dev/bench/window-storm.py | for i in range(512): | Iteration loop bound
+dev/bench/window-storm.py | if count != 512: | Collection size comparison / threshold
+dev/bench/window-storm.py | time.sleep(2.0) | Execution delay / polling interval
+dev/bench/window-storm.py | delta_run2_run1 = s_runs[1] - s_runs[0] | Benchmark operational constant
+dev/bench/window-storm.py | delta_run3_run2 = s_runs[2] - s_runs[1] | Benchmark operational constant
+dev/bench/window-storm.py | prev_s = s_runs[-2] if len(s_runs) > 1 else s_pss_base | Collection size comparison / threshold
+dev/bench/window-storm.py | return float(line.split()[1]) / 1024.0 | Unit scale conversion factor (KB/MB/ms/ns)
+dev/bench/window-storm.py | minimized = "true" if (i % 5 == 0) else "false" | Collection size comparison / threshold
+dev/bench/window-storm.py | active = "true" if (i == 511) else "false" | Benchmark operational constant
+dev/bench/window-storm.py | pss_kb += float(line.split()[1]) | String parsing / token index
+dev/bench/window-storm.py | app_id = f"org.kynex.app_{i % 8}" | Benchmark operational constant
+dev/bench/window-storm.py | print(f"512 windows injected in {duration:.2f}s ({512 / duration:.1f} ops/s)") | Benchmark operational constant
+scripts/bench/budget-check.py | kwin_pss = procs.get("kwin_wayland", {}).get("pss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | shell_pss = procs.get("kynex-shell", {}).get("pss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | daemon_pss = procs.get("kynex-daemon", {}).get("pss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | daemon_rss = procs.get("kynex-daemon", {}).get("rss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | kwin_cpu = procs.get("kwin_wayland", {}).get("cpu_pct_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | shell_cpu = procs.get("kynex-shell", {}).get("cpu_pct_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | daemon_cpu = procs.get("kynex-daemon", {}).get("cpu_pct_avg", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | pct_of_gnome = (total_pss / gnome_baseline) * 100.0 if gnome_baseline > 0 else 0.0 | Collection size comparison / threshold
+scripts/bench/budget-check.py | sys.exit(1) | Process termination exit code
+scripts/bench/budget-check.py | if "samples" not in val or not isinstance(val["samples"], list) or len(val["samples"]) == 0: | Collection size comparison / threshold
+scripts/bench/budget-check.py | if "method" not in val or not isinstance(val["method"], str) or len(val["method"].strip()) == 0: | Collection size comparison / threshold
+scripts/bench/budget-check.py | if n == 1: | Benchmark operational constant
+scripts/bench/budget-check.py | "p50": calc_percentile(50), | Statistical percentile rank
+scripts/bench/budget-check.py | "p95": calc_percentile(95), | Statistical percentile rank
+scripts/bench/budget-check.py | "p99": calc_percentile(99), | Statistical percentile rank
+scripts/bench/budget-check.py | l_cold_p50 = bench.get("launcher_open_latency_cold_ms_p50", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | l_cold_p95 = bench.get("launcher_open_latency_cold_ms_p95", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | l_warm_p50 = bench.get("launcher_open_latency_warm_ms_p50", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | l_warm_p95 = bench.get("launcher_open_latency_warm_ms_p95", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | ks_p50 = bench.get("search_keystroke_latency_ms_p50", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | ks_p95 = bench.get("search_keystroke_latency_ms_p95", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | nw_p50 = bench.get("notification_latency_warm_ms_p50", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | nw_p95 = bench.get("notification_latency_warm_ms_p95", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | max_notif_warm = budgets.get("notification_latency_warm", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | nh_pss = bench.get("notifications_history_daemon_pss_mb", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_nh_pss = budgets.get("notifications_history_daemon_pss", {}).get("max_pss_mb", 15.0) | Benchmark operational constant
+scripts/bench/budget-check.py | nf_cpu = bench.get("notifications_flood_cpu_pct", 0.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_nf_cpu = budgets.get("notifications_flood_cpu", {}).get("max_cpu_pct", 20.0) | Benchmark operational constant
+scripts/bench/budget-check.py | i_cold_p50 = bench.get("icon_lookup_cold_p50_ms", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | i_cold_p95 = bench.get("icon_lookup_cold_p95_ms", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | max_icon_cold = budgets.get("icon_lookup_cold", {}).get("max_ms", 10.0) | Benchmark operational constant
+scripts/bench/budget-check.py | i_warm_p50 = bench.get("icon_lookup_warm_p50_ms", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | i_warm_p95 = bench.get("icon_lookup_warm_p95_ms", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | max_icon_warm = budgets.get("icon_lookup_warm", {}).get("max_ms", 1.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_tray_cold = budgets.get("tray_item_registration_latency_cold", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_tray_warm = budgets.get("tray_item_registration_latency_warm", {}).get("max_ms", 16.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_t_pss = budgets.get("tray_idle_daemon_pss", {}).get("max_pss_mb", 15.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_t_cpu = budgets.get("tray_flood_cpu", {}).get("max_cpu_pct", 20.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_cold = budgets.get("menu_open_latency_cold", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_warm = budgets.get("menu_open_latency_warm", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_500 = budgets.get("menu_500_items_latency", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_d_pss = budgets.get("menu_idle_daemon_pss", {}).get("max_pss_mb", 15.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_s_pss = budgets.get("menu_idle_shell_pss", {}).get("max_pss_mb", 100.0) | Benchmark operational constant
+scripts/bench/budget-check.py | max_m_cpu = budgets.get("menu_flood_cpu", {}).get("max_cpu_pct", 20.0) | Benchmark operational constant
+scripts/bench/budget-check.py | k = (n - 1) * (p / 100.0) | Benchmark operational constant
+scripts/bench/budget-check.py | c = min(f + 1, n - 1) | Benchmark operational constant
+scripts/bench/budget-check.py | l_p50 = bench.get("launcher_open_latency_ms_p50", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | l_p95 = bench.get("launcher_open_latency_ms_p95", 0.0) | Statistical percentile rank
+scripts/bench/budget-check.py | max_cold = budgets.get("launcher_open_latency_cold", {}).get("max_ms", 50.0) | Benchmark operational constant
+scripts/bench/budget-check.py | n_p50 = bench.get("notification_latency_cold_ms_p50", bench.get("notification_latency_ms_p50", 0.0)) | Statistical percentile rank
+scripts/bench/budget-check.py | n_p95 = bench.get("notification_latency_cold_ms_p95", bench.get("notification_latency_ms_p95", 0.0)) | Statistical percentile rank
+scripts/bench/budget-check.py | return float(samples[0]) | Benchmark operational constant
+scripts/bench/budget-check.py | clean_meas = measured.replace("**", "").replace("`", "")[:32] | Benchmark operational constant
+scripts/bench/compare.py | shell_delta_mb = 0.0 | Benchmark operational constant
+scripts/bench/compare.py | shell_delta_pct = 0.0 | Benchmark operational constant
+scripts/bench/compare.py | ap.add_argument("--pss-pct-threshold", type=float, default=3.0, help="Max allowed shell PSS %% growth (default: 3.0)") | CLI argument configuration parameter
+scripts/bench/compare.py | ap.add_argument("--pss-mb-threshold", type=float, default=2.0, help="Max allowed shell PSS MB growth (default: 2.0)") | CLI argument configuration parameter
+scripts/bench/compare.py | o_pss = o.get("pss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | n_pss = n.get("pss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | pct_pss = (d_pss / o_pss * 100.0) if o_pss > 0 else 0.0 | Collection size comparison / threshold
+scripts/bench/compare.py | o_pss_max = o.get("pss_mb_max", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | n_pss_max = n.get("pss_mb_max", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | pct_pss_max = (d_pss_max / o_pss_max * 100.0) if o_pss_max > 0 else 0.0 | Collection size comparison / threshold
+scripts/bench/compare.py | o_rss = o.get("rss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | n_rss = n.get("rss_mb_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | pct_rss = (d_rss / o_rss * 100.0) if o_rss > 0 else 0.0 | Collection size comparison / threshold
+scripts/bench/compare.py | o_th = o.get("threads", 0) | Benchmark operational constant
+scripts/bench/compare.py | n_th = n.get("threads", 0) | Benchmark operational constant
+scripts/bench/compare.py | o_cpu = o.get("cpu_pct_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | n_cpu = n.get("cpu_pct_avg", 0.0) | Benchmark operational constant
+scripts/bench/compare.py | sys.exit(0) | Process termination exit code
+scripts/bench/compare.py | sys.exit(1) | Process termination exit code
+scripts/bench/measure.py | pss = rss = 0 | Benchmark operational constant
+scripts/bench/measure.py | cpu_used = 0.0 | Benchmark operational constant
+scripts/bench/measure.py | ap.add_argument("--duration", type=int, default=120) | CLI argument configuration parameter
+scripts/bench/measure.py | ap.add_argument("--interval", type=float, default=5.0) | Execution delay / polling interval
+scripts/bench/measure.py | tot_pss = tot_rss = tot_threads = 0 | Benchmark operational constant
+scripts/bench/measure.py | "duration_s": round(elapsed, 1), | Decimal rounding precision
+scripts/bench/measure.py | if len(found_pids) > 1 and not a.allow_multiple: | Collection size comparison / threshold
+scripts/bench/measure.py | row = {"pss_mb_avg": round(avg(0)/1024, 1), "pss_mb_max": round(max(x[0] for x in s)/1024, 1), | Unit scale conversion factor (KB/MB/ms/ns)
+scripts/bench/measure.py | "rss_mb_avg": round(avg(1)/1024, 1), "threads": round(avg(2)), "cpu_pct_avg": round(100*cpu_used/elapsed, 2)} | Unit scale conversion factor (KB/MB/ms/ns)
+scripts/bench/measure.py | with open(path, "w") as f: json.dump(result, f, indent=2) | Benchmark operational constant
+scripts/bench/measure.py | parts = f.read().rsplit(")", 1)[1].split() | String parsing / token index
+scripts/bench/measure.py | return (int(parts[11]) + int(parts[12])) / CLK  # utime + stime in seconds | String parsing / token index
+scripts/bench/measure.py | vm_rss = anon = file = 0 | Benchmark operational constant
+scripts/bench/measure.py | if not s or all(x[0] == 0 for x in s): | Collection size comparison / threshold
+scripts/bench/measure.py | if line.startswith("Pss:"): pss = int(line.split()[1]) | String parsing / token index
+scripts/bench/measure.py | elif line.startswith("Rss:"): rss = int(line.split()[1]) | String parsing / token index
+scripts/bench/measure.py | pss = (anon + file // 2) if (anon or file) else rss | Benchmark operational constant
+scripts/bench/measure.py | if line.startswith("VmRSS:"): vm_rss = int(line.split()[1]) | String parsing / token index
+scripts/bench/measure.py | elif line.startswith("RssAnon:"): anon = int(line.split()[1]) | String parsing / token index
+scripts/bench/measure.py | elif line.startswith("RssFile:"): file = int(line.split()[1]) | String parsing / token index

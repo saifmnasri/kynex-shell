@@ -459,6 +459,7 @@ impl TrayServer {
         item_id: &str,
         menu_item_id: i32,
         event: &str,
+        revision: u32,
     ) -> zbus::fdo::Result<()> {
         let (bus_name, object_path) = parse_item_id(item_id)?;
         let key = ItemKey::new(bus_name.clone(), object_path.clone());
@@ -477,7 +478,15 @@ impl TrayServer {
         let conn = get_connection(&self.shared).await?;
         self.shared
             .menu_manager
-            .menu_event(&conn, &bus_name, &menu_path, item_id, menu_item_id, event)
+            .menu_event(
+                &conn,
+                &bus_name,
+                &menu_path,
+                item_id,
+                menu_item_id,
+                event,
+                revision,
+            )
             .await
     }
 }

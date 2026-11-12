@@ -708,7 +708,7 @@ def main():
         time.sleep(0.05)
 
     if not m_500_samples:
-        m_500_samples = [12.45]
+        raise RuntimeError("Failed to measure 500-item menu latency: no samples recorded!")
     print(f"  500-item latency: {m_500_samples[0]:.2f} ms")
 
     # PSS plateau after 100 menu open/close cycles

@@ -350,43 +350,56 @@ LayerSurface {
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
 
                         onClicked: function(mouse) {
-                            var globalPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
-                            var gx = Math.round(globalPos.x);
-                            var gy = Math.round(globalPos.y);
+                            var clickPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
+                            var gx = Math.round(clickPos.x);
+                            var gy = Math.round(clickPos.y);
                             if (mouse.button === Qt.LeftButton) {
                                 trayModel.activate(trayBtn.id, gx, gy,
+                                                   panel.anchors,
+                                                   panel.width,
+                                                   panel.height,
                                                    panel.screenVirtualX,
                                                    panel.screenVirtualY,
                                                    panel.screenWidth,
                                                    panel.screenHeight,
-                                                   panel.screenDevicePixelRatio,
-                                                   panel.height);
+                                                   panel.screenDevicePixelRatio);
                             } else if (mouse.button === Qt.MiddleButton) {
                                 trayModel.secondaryActivate(trayBtn.id, gx, gy,
+                                                            panel.anchors,
+                                                            panel.width,
+                                                            panel.height,
                                                             panel.screenVirtualX,
                                                             panel.screenVirtualY,
                                                             panel.screenWidth,
                                                             panel.screenHeight,
-                                                            panel.screenDevicePixelRatio,
-                                                            panel.height);
+                                                            panel.screenDevicePixelRatio);
                             } else if (mouse.button === Qt.RightButton) {
                                 if (trayBtn.hasMenu) {
+                                    var btnPos = trayBtn.mapToItem(null, 0, 0);
+                                    var bx = Math.round(btnPos.x);
+                                    var by = Math.round(btnPos.y);
                                     var menuW = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
                                     var menuH = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
-                                    trayMenuModel.open(trayBtn.id, gx, gy, trayBtn.width, trayBtn.height,
+                                    trayMenuModel.open(trayBtn.id, bx, by, trayBtn.width, trayBtn.height,
                                                        menuW, menuH,
+                                                       panel.anchors,
+                                                       panel.width,
+                                                       panel.height,
                                                        panel.screenVirtualX,
                                                        panel.screenVirtualY,
                                                        panel.screenWidth,
-                                                       panel.screenHeight);
+                                                       panel.screenHeight,
+                                                       panel.screenDevicePixelRatio);
                                 } else {
                                     trayModel.contextMenu(trayBtn.id, gx, gy,
+                                                          panel.anchors,
+                                                          panel.width,
+                                                          panel.height,
                                                           panel.screenVirtualX,
                                                           panel.screenVirtualY,
                                                           panel.screenWidth,
                                                           panel.screenHeight,
-                                                          panel.screenDevicePixelRatio,
-                                                          panel.height);
+                                                          panel.screenDevicePixelRatio);
                                 }
                             }
                         }

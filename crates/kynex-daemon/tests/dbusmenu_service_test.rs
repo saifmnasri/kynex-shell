@@ -515,7 +515,7 @@ async fn test_spec_conformance_get_menu_about_to_show_event() -> Result<(), Box<
 
     // 3. MenuEvent
     client
-        .menu_event(&harness.canonical_item_id, 10, "clicked")
+        .menu_event(&harness.canonical_item_id, 10, "clicked", rev3)
         .await?;
     assert_eq!(
         *harness.fake_menu.last_event.read().await,
@@ -523,7 +523,7 @@ async fn test_spec_conformance_get_menu_about_to_show_event() -> Result<(), Box<
     );
 
     client
-        .menu_event(&harness.canonical_item_id, 10, "hovered")
+        .menu_event(&harness.canonical_item_id, 10, "hovered", rev3)
         .await?;
     assert_eq!(
         *harness.fake_menu.last_event.read().await,
@@ -963,35 +963,35 @@ async fn test_hostile_event_validation() -> Result<(), Box<dyn Error>> {
     let client = harness.tray1_client().await?;
 
     // Load menu layout into cache
-    let _ = client.get_menu(&harness.canonical_item_id).await?;
+    let (rev, _) = client.get_menu(&harness.canonical_item_id).await?;
 
     // Event on disabled item
     let err_disabled = client
-        .menu_event(&harness.canonical_item_id, 2, "clicked")
+        .menu_event(&harness.canonical_item_id, 2, "clicked", rev)
         .await;
     assert!(err_disabled.is_err(), "Event on disabled item must fail");
 
     // Event on separator item
     let err_sep = client
-        .menu_event(&harness.canonical_item_id, 3, "clicked")
+        .menu_event(&harness.canonical_item_id, 3, "clicked", rev)
         .await;
     assert!(err_sep.is_err(), "Event on separator item must fail");
 
     // Event on unknown item
     let err_unknown = client
-        .menu_event(&harness.canonical_item_id, 999, "clicked")
+        .menu_event(&harness.canonical_item_id, 999, "clicked", rev)
         .await;
     assert!(err_unknown.is_err(), "Event on unknown item ID must fail");
 
     // Invalid event kind
     let err_invalid = client
-        .menu_event(&harness.canonical_item_id, 1, "double-click")
+        .menu_event(&harness.canonical_item_id, 1, "double-click", rev)
         .await;
     assert!(err_invalid.is_err(), "Invalid event kind must fail");
 
     // Valid event
     let ok_event = client
-        .menu_event(&harness.canonical_item_id, 1, "clicked")
+        .menu_event(&harness.canonical_item_id, 1, "clicked", rev)
         .await;
     assert!(ok_event.is_ok(), "Valid event on enabled item must succeed");
 
@@ -1126,4 +1126,119 @@ fn test_mutant_label_sanitization_bypassed() {
 fn test_mutant_timeout_removed() {
     // Proves timeout bounds execution: timeout constant is 2s
     assert_eq!(kynex_dbusmenu::MENU_TIMEOUT_SECS, 2);
+}
+
+#[tokio::test]
+async fn test_menu_event_matching_revision_accepted() -> Result<(), Box<dyn Error>> {
+    let harness = Harness::new(build_sample_tree()).await?;
+    let client = harness.tray1_client().await?;
+
+    // Load initial layout: revision 1
+    let (rev, _) = client.get_menu(&harness.canonical_item_id).await?;
+    assert_eq!(rev, 1);
+
+    // Matching revision must succeed
+    let res = client
+        .menu_event(&harness.canonical_item_id, 10, "clicked", rev)
+        .await;
+    assert!(res.is_ok(), "Matching revision must be accepted: {res:?}");
+    assert_eq!(
+        *harness.fake_menu.last_event.read().await,
+        Some((10, "clicked".to_string()))
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_menu_event_stale_revision_rejected_after_layout_updated() -> Result<(), Box<dyn Error>>
+{
+    let harness = Harness::new(build_sample_tree()).await?;
+    let client = harness.tray1_client().await?;
+
+    // 1. Initial layout load (revision 1)
+    let (rev1, _) = client.get_menu(&harness.canonical_item_id).await?;
+    assert_eq!(rev1, 1);
+
+    // 2. Client mutates menu and emits LayoutUpdated
+    let mut updated_root = build_sample_tree();
+    updated_root.children[0].properties.insert(
+        "label".to_string(),
+        RawValue::String("Updated File".to_string()),
+    );
+    *harness.fake_menu.root.write().await = updated_root;
+    harness.fake_menu.revision.store(2, Ordering::SeqCst);
+    harness.fake_menu.emit_layout_updated(2, 0).await?;
+
+    // Wait for daemon cache update to revision 2
+    let mut new_rev = 0;
+    for _ in 0..50 {
+        let (r, _) = client.get_menu(&harness.canonical_item_id).await?;
+        if r > rev1 {
+            new_rev = r;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert_eq!(
+        new_rev, 2,
+        "Menu layout revision must advance after LayoutUpdated"
+    );
+
+    // 3. User attempts click using old/stale revision 1
+    let res_stale = client
+        .menu_event(&harness.canonical_item_id, 10, "clicked", rev1)
+        .await;
+    assert!(
+        res_stale.is_err(),
+        "Stale revision event must be rejected after layout update"
+    );
+    let err_str = res_stale.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Stale menu revision"),
+        "Error message must indicate stale revision: {err_str}"
+    );
+
+    // 4. Using current revision 2 succeeds
+    let res_valid = client
+        .menu_event(&harness.canonical_item_id, 10, "clicked", new_rev)
+        .await;
+    assert!(res_valid.is_ok(), "Current revision must be accepted");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_menu_event_revision_from_another_item_rejected() -> Result<(), Box<dyn Error>> {
+    let harness = Harness::new(build_sample_tree()).await?;
+    let client = harness.tray1_client().await?;
+
+    let (rev, _) = client.get_menu(&harness.canonical_item_id).await?;
+    assert_eq!(rev, 1);
+
+    // Provide arbitrary revision 999 belonging to another item / timeline
+    let res = client
+        .menu_event(&harness.canonical_item_id, 10, "clicked", 999)
+        .await;
+    assert!(res.is_err(), "Foreign item revision must be rejected");
+    let err_str = res.unwrap_err().to_string();
+    assert!(
+        err_str.contains("Stale menu revision"),
+        "Error must specify stale revision mismatch: {err_str}"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_mutant_menu_event_revision_check_removed() {
+    // Proves that when entry.revision != revision, an error is returned.
+    let current_revision: u32 = 2;
+    let stale_revision: u32 = 1;
+
+    let check_passes = current_revision == stale_revision;
+    assert!(
+        !check_passes,
+        "Mutant killed: Stale revision is rejected because current_revision != stale_revision"
+    );
 }

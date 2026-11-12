@@ -136,7 +136,13 @@ pub trait Tray1 {
     fn menu_about_to_show(&self, item_id: &str, menu_item_id: i32) -> zbus::Result<bool>;
 
     /// Dispatches a user interaction event to the item's dbusmenu service.
-    fn menu_event(&self, item_id: &str, menu_item_id: i32, event: &str) -> zbus::Result<()>;
+    fn menu_event(
+        &self,
+        item_id: &str,
+        menu_item_id: i32,
+        event: &str,
+        revision: u32,
+    ) -> zbus::Result<()>;
 
     /// Signal emitted when a new tray item is added.
     #[zbus(signal)]

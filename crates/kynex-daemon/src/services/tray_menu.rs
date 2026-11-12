@@ -367,6 +367,7 @@ impl MenuManager {
     ///
     /// # Errors
     /// Returns `zbus::fdo::Error` on invalid event arguments, item not enabled/found, timeout, or D-Bus failure.
+    #[allow(clippy::too_many_arguments)]
     pub async fn menu_event(
         &self,
         conn: &Connection,
@@ -375,13 +376,21 @@ impl MenuManager {
         item_id: &str,
         menu_item_id: i32,
         event: &str,
+        revision: u32,
     ) -> zbus::fdo::Result<()> {
-        // Validate against current cached layout
+        // Validate against current cached layout and revision
         {
             let cache = self.cache.read().await;
             let entry = cache.get(item_id).ok_or_else(|| {
                 zbus::fdo::Error::InvalidArgs(format!("No active menu loaded for item '{item_id}'"))
             })?;
+
+            if entry.revision != revision {
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Stale menu revision: expected {}, got {revision}",
+                    entry.revision
+                )));
+            }
 
             validate_menu_event(&entry.layout, menu_item_id, event)
                 .map_err(|e| zbus::fdo::Error::InvalidArgs(format!("Invalid menu event: {e}")))?;

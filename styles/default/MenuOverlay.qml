@@ -4,10 +4,17 @@ import Kynex.Shell
 import Kynex.Controls
 
 LayerSurface {
+    // qmllint disable Quick.attached-property-type
     id: root
 
     property TrayMenuModel menuModel: null
     readonly property var model: root.menuModel
+    readonly property alias menuContainer: menuContainer
+    readonly property alias kynexMenu: kynexMenu
+    readonly property alias backdropMouse: backdropMouse
+    readonly property alias escShortcut: escShortcut
+    readonly property alias leftShortcut: leftShortcut
+    readonly property alias rightShortcut: rightShortcut
 
     visible: root.menuModel ? root.menuModel.visible : false
     width: Screen.width
@@ -22,6 +29,9 @@ LayerSurface {
     bottomMargin: 0
     keyboardInteractivity: LayerSurface.KeyboardInteractivityOnDemand
     scope: "menu-overlay"
+
+    LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft
+    LayoutMirroring.childrenInherit: true
 
     // Click outside menu dismisses menu
     MouseArea {
@@ -70,7 +80,11 @@ LayerSurface {
         sequence: "Left"
         onActivated: {
             if (root.model) {
-                root.model.closeSubmenu();
+                if (root.LayoutMirroring.enabled) {
+                    root.model.openSubmenu();
+                } else {
+                    root.model.closeSubmenu();
+                }
             }
         }
     }
@@ -80,7 +94,11 @@ LayerSurface {
         sequence: "Right"
         onActivated: {
             if (root.model) {
-                root.model.openSubmenu();
+                if (root.LayoutMirroring.enabled) {
+                    root.model.closeSubmenu();
+                } else {
+                    root.model.openSubmenu();
+                }
             }
         }
     }
@@ -129,6 +147,8 @@ LayerSurface {
         id: menuContainer
         x: root.menuModel ? root.menuModel.menuX : 0
         y: root.menuModel ? root.menuModel.menuY : 0
+        width: kynexMenu.width
+        height: kynexMenu.height
 
         // Consume clicks inside the menu card so backdrop doesn't trigger
         MouseArea {

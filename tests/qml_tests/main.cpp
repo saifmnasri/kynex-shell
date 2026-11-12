@@ -764,6 +764,8 @@ class MockTrayModel : public QAbstractListModel {
     Q_PROPERTY(double lastScreenHeight READ lastScreenHeight NOTIFY interactionChanged)
     Q_PROPERTY(double lastDevicePixelRatio READ lastDevicePixelRatio NOTIFY interactionChanged)
     Q_PROPERTY(double lastPanelHeight READ lastPanelHeight NOTIFY interactionChanged)
+    Q_PROPERTY(int lastPanelAnchors READ lastPanelAnchors NOTIFY interactionChanged)
+    Q_PROPERTY(double lastPanelWidth READ lastPanelWidth NOTIFY interactionChanged)
 
 public:
     enum Roles {
@@ -857,6 +859,8 @@ public:
     double lastScreenHeight() const { return m_lastScreenHeight; }
     double lastDevicePixelRatio() const { return m_lastDevicePixelRatio; }
     double lastPanelHeight() const { return m_lastPanelHeight; }
+    int lastPanelAnchors() const { return m_lastPanelAnchors; }
+    double lastPanelWidth() const { return m_lastPanelWidth; }
 
     Q_INVOKABLE void init() {}
     Q_INVOKABLE void clear() {
@@ -876,6 +880,8 @@ public:
         m_lastScreenHeight = 0.0;
         m_lastDevicePixelRatio = 0.0;
         m_lastPanelHeight = 0.0;
+        m_lastPanelAnchors = 2 | 4 | 8;
+        m_lastPanelWidth = 1920.0;
         Q_EMIT countChanged();
         Q_EMIT interactionChanged();
     }
@@ -892,50 +898,62 @@ public:
     }
 
     Q_INVOKABLE void activate(const QString &id, int x, int y,
+                              int panelAnchors = 2 | 4 | 8,
+                              double panelWidth = 1920.0, double panelHeight = 48.0,
                               double screenX = 0.0, double screenY = 0.0,
                               double screenWidth = 1920.0, double screenHeight = 1080.0,
-                              double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+                              double devicePixelRatio = 1.0) {
         m_lastActivatedId = id;
         m_lastActivatedX = x;
         m_lastActivatedY = y;
+        m_lastPanelAnchors = panelAnchors;
+        m_lastPanelWidth = panelWidth;
+        m_lastPanelHeight = panelHeight;
         m_lastScreenX = screenX;
         m_lastScreenY = screenY;
         m_lastScreenWidth = screenWidth;
         m_lastScreenHeight = screenHeight;
         m_lastDevicePixelRatio = devicePixelRatio;
-        m_lastPanelHeight = panelHeight;
         Q_EMIT interactionChanged();
     }
 
     Q_INVOKABLE void secondaryActivate(const QString &id, int x, int y,
+                                       int panelAnchors = 2 | 4 | 8,
+                                       double panelWidth = 1920.0, double panelHeight = 48.0,
                                        double screenX = 0.0, double screenY = 0.0,
                                        double screenWidth = 1920.0, double screenHeight = 1080.0,
-                                       double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+                                       double devicePixelRatio = 1.0) {
         m_lastSecondaryActivatedId = id;
         m_lastActivatedX = x;
         m_lastActivatedY = y;
+        m_lastPanelAnchors = panelAnchors;
+        m_lastPanelWidth = panelWidth;
+        m_lastPanelHeight = panelHeight;
         m_lastScreenX = screenX;
         m_lastScreenY = screenY;
         m_lastScreenWidth = screenWidth;
         m_lastScreenHeight = screenHeight;
         m_lastDevicePixelRatio = devicePixelRatio;
-        m_lastPanelHeight = panelHeight;
         Q_EMIT interactionChanged();
     }
 
     Q_INVOKABLE void contextMenu(const QString &id, int x, int y,
+                                 int panelAnchors = 2 | 4 | 8,
+                                 double panelWidth = 1920.0, double panelHeight = 48.0,
                                  double screenX = 0.0, double screenY = 0.0,
                                  double screenWidth = 1920.0, double screenHeight = 1080.0,
-                                 double devicePixelRatio = 1.0, double panelHeight = 40.0) {
+                                 double devicePixelRatio = 1.0) {
         m_lastContextMenuId = id;
         m_lastContextMenuX = x;
         m_lastContextMenuY = y;
+        m_lastPanelAnchors = panelAnchors;
+        m_lastPanelWidth = panelWidth;
+        m_lastPanelHeight = panelHeight;
         m_lastScreenX = screenX;
         m_lastScreenY = screenY;
         m_lastScreenWidth = screenWidth;
         m_lastScreenHeight = screenHeight;
         m_lastDevicePixelRatio = devicePixelRatio;
-        m_lastPanelHeight = panelHeight;
         Q_EMIT interactionChanged();
     }
 
@@ -974,6 +992,8 @@ private:
     double m_lastScreenHeight = 1080.0;
     double m_lastDevicePixelRatio = 1.0;
     double m_lastPanelHeight = 40.0;
+    int m_lastPanelAnchors = 2 | 4 | 8;
+    double m_lastPanelWidth = 1920.0;
 };
 
 class MockTrayMenuModel : public QAbstractListModel {
@@ -982,9 +1002,13 @@ class MockTrayMenuModel : public QAbstractListModel {
     Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
     Q_PROPERTY(double menuX READ menuX NOTIFY geometryChanged)
     Q_PROPERTY(double menuY READ menuY NOTIFY geometryChanged)
+    Q_PROPERTY(double menuWidth READ menuWidth NOTIFY geometryChanged)
+    Q_PROPERTY(double menuHeight READ menuHeight NOTIFY geometryChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int activeParentId READ activeParentId NOTIFY parentChanged)
     Q_PROPERTY(QString itemId READ itemId NOTIFY itemChanged)
+    Q_PROPERTY(int openSubmenuCount READ openSubmenuCount NOTIFY interactionChanged)
+    Q_PROPERTY(int closeSubmenuCount READ closeSubmenuCount NOTIFY interactionChanged)
 
 public:
     enum Roles {
@@ -1057,6 +1081,11 @@ public:
     void setVisible(bool v) { if (m_visible != v) { m_visible = v; Q_EMIT visibleChanged(); } }
     double menuX() const { return m_menuX; }
     double menuY() const { return m_menuY; }
+    double menuWidth() const { return m_menuWidth; }
+    double menuHeight() const { return m_menuHeight; }
+    int lastAnchors() const { return m_lastAnchors; }
+    int openSubmenuCount() const { return m_openSubmenuCount; }
+    int closeSubmenuCount() const { return m_closeSubmenuCount; }
     int selectedIndex() const { return m_selectedIndex; }
     void setSelectedIndex(int idx) {
         if (m_selectedIndex != idx) {
@@ -1082,15 +1111,80 @@ public:
         m_items.clear();
         endResetModel();
         setSelectedIndex(-1);
+        m_openSubmenuCount = 0;
+        m_closeSubmenuCount = 0;
+        m_menuWidth = 0.0;
+        m_menuHeight = 0.0;
+        m_lastAnchors = 0;
         Q_EMIT countChanged();
+        Q_EMIT interactionChanged();
     }
 
     Q_INVOKABLE void init() {}
-    Q_INVOKABLE void open(const QString &id, double ax, double ay, double, double,
-                          double, double, double, double, double, double) {
+    Q_INVOKABLE void open(const QString &id, double ax, double ay, double aw, double ah,
+                          double mw, double mh,
+                          int panelAnchors = 2 | 4 | 8,
+                          double panelWidth = 1920.0, double panelHeight = 48.0,
+                          double screenX = 0.0, double screenY = 0.0,
+                          double screenWidth = 1920.0, double screenHeight = 1080.0,
+                          double = 1.0) {
         m_itemId = id;
-        m_menuX = ax;
-        m_menuY = ay;
+        m_menuWidth = mw;
+        m_menuHeight = mh;
+        m_lastAnchors = panelAnchors;
+
+        double panel_rel_x = 0.0;
+        if ((panelAnchors & 4) && !(panelAnchors & 8)) {
+            panel_rel_x = 0.0;
+        } else if ((panelAnchors & 8) && !(panelAnchors & 4)) {
+            panel_rel_x = std::max(0.0, screenWidth - panelWidth);
+        }
+
+        double panel_rel_y = 0.0;
+        if ((panelAnchors & 1) && !(panelAnchors & 2)) {
+            panel_rel_y = 0.0;
+        } else if ((panelAnchors & 2) && !(panelAnchors & 1)) {
+            panel_rel_y = std::max(0.0, screenHeight - panelHeight);
+        }
+
+        double anchor_x = panel_rel_x + ax;
+        double anchor_y = panel_rel_y + ay;
+
+        double x = anchor_x;
+        double y = anchor_y;
+
+        if ((panelAnchors & 2) && !(panelAnchors & 1)) {
+            // Bottom panel: opens ABOVE
+            double y_open = anchor_y - mh;
+            y = (y_open < 0.0 && anchor_y + ah + mh <= screenHeight) ? (anchor_y + ah) : y_open;
+        } else if ((panelAnchors & 1) && !(panelAnchors & 2)) {
+            // Top panel: opens BELOW
+            double y_open = anchor_y + ah;
+            y = (y_open + mh > screenHeight && anchor_y - mh >= 0.0) ? (anchor_y - mh) : y_open;
+        } else if ((panelAnchors & 4) && !(panelAnchors & 8)) {
+            // Left panel: opens to the RIGHT
+            double x_open = anchor_x + aw;
+            x = (x_open + mw > screenWidth && anchor_x - mw >= 0.0) ? (anchor_x - mw) : x_open;
+        } else if ((panelAnchors & 8) && !(panelAnchors & 4)) {
+            // Right panel: opens to the LEFT
+            double x_open = anchor_x - mw;
+            x = (x_open < 0.0 && anchor_x + aw + mw <= screenWidth) ? (anchor_x + aw) : x_open;
+        } else {
+            y = anchor_y - mh;
+        }
+
+        if (x + mw > screenWidth) {
+            double x_flipped = anchor_x + aw - mw;
+            if (x_flipped >= 0.0) {
+                x = x_flipped;
+            }
+        }
+
+        x = std::clamp(x, 0.0, std::max(0.0, screenWidth - mw));
+        y = std::clamp(y, 0.0, std::max(0.0, screenHeight - mh));
+
+        m_menuX = x;
+        m_menuY = y;
         m_visible = true;
         Q_EMIT visibleChanged();
         Q_EMIT geometryChanged();
@@ -1102,8 +1196,20 @@ public:
     Q_INVOKABLE void selectPrev() {}
     Q_INVOKABLE void selectFirst() {}
     Q_INVOKABLE void selectLast() {}
-    Q_INVOKABLE void openSubmenu() {}
-    Q_INVOKABLE void closeSubmenu() { close(); }
+    Q_INVOKABLE void openSubmenu() {
+        m_openSubmenuCount++;
+        Q_EMIT interactionChanged();
+    }
+    Q_INVOKABLE void closeSubmenu() {
+        m_closeSubmenuCount++;
+        if (m_activeParentId != 0) {
+            m_activeParentId = 0;
+            Q_EMIT parentChanged();
+        } else {
+            close();
+        }
+        Q_EMIT interactionChanged();
+    }
     Q_INVOKABLE void activateSelected() { close(); }
     Q_INVOKABLE void recordFirstFrame() {}
 
@@ -1114,11 +1220,17 @@ Q_SIGNALS:
     void selectedIndexChanged();
     void parentChanged();
     void itemChanged();
+    void interactionChanged();
 
 private:
     bool m_visible;
     double m_menuX;
     double m_menuY;
+    double m_menuWidth = 0.0;
+    double m_menuHeight = 0.0;
+    int m_lastAnchors = 0;
+    int m_openSubmenuCount = 0;
+    int m_closeSubmenuCount = 0;
     int m_selectedIndex;
     int m_activeParentId;
     QString m_itemId;

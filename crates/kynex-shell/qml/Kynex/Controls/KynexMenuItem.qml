@@ -20,6 +20,7 @@ FocusScope {
     readonly property bool down: root.enabled && !root.isSeparator && (mouseArea.pressed || (activeFocus && spaceDown))
     readonly property int cursorShape: mouseArea.cursorShape
     readonly property alias iconVisible: iconImage.visible
+    readonly property alias textFormat: labelText.textFormat
     readonly property alias borderColor: bg.border.color
     readonly property alias borderWidth: bg.border.width
     readonly property color textColor: {

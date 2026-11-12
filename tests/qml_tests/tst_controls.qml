@@ -994,6 +994,7 @@ Item {
             compare(menuItem.Accessible.name, "Menu Action");
             compare(menuItem.activeFocusOnTab, true);
             compare(menuItem.Accessible.focusable, true);
+            compare(menuItem.textFormat, Text.PlainText);
 
             menuItem.enabled = false;
             compare(menuItem.Accessible.focusable, false);

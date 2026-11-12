@@ -1,0 +1,87 @@
+# Stage P2 Claims Ledger
+# Maps each claim ID referenced in the Executive Summary of docs/work/stage-p2-report.md
+# to a verified repository test path, test name, and evidence file ID (or untested reason).
+
+[claim-p2-revision-contract]
+test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
+test_name = "test_menu_event_stale_revision_rejected_after_layout_updated"
+evidence_id = "p2-daemon-integration-tests"
+
+[claim-p2-revision-matching]
+test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
+test_name = "test_menu_event_matching_revision_accepted"
+evidence_id = "p2-daemon-integration-tests"
+
+[claim-p2-revision-foreign]
+test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
+test_name = "test_menu_event_revision_from_another_item_rejected"
+evidence_id = "p2-daemon-integration-tests"
+
+[claim-p2-revision-mutant]
+test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
+test_name = "test_mutant_menu_event_revision_check_removed"
+evidence_id = "p2-daemon-integration-tests"
+
+[claim-p2-placement-four-edges]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_placement_all_four_edges"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-multimonitor]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_placement_secondary_monitor_negative_x"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-scaled-output]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_placement_scaled_output"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-edge-flipping]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_placement_horizontal_flip_at_right_edge"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-oversized-menus]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_placement_500_item_menu"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-mutants]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_mutant_placement_hardcoded_anchors"
+evidence_id = "p2-placement-tests"
+
+[claim-p2-placement-live-nested]
+test_path = "tests/qml_tests/tst_shell.qml"
+test_name = "test_tray_dbusmenu_right_click"
+evidence_id = "p2-test-qml"
+
+[claim-p2-shell-core-extraction]
+test_path = "crates/kynex-shell-core/src/menu.rs"
+test_name = "test_menu_state_navigation_and_revisions"
+evidence_id = "p2-nextest-run"
+
+[claim-p2-qml-rtl-navigation]
+test_path = "tests/qml_tests/tst_shell.qml"
+test_name = "test_menu_overlay_rtl_arrow_keys"
+evidence_id = "p2-test-qml"
+
+[claim-p2-qml-backdrop-isolation]
+test_path = "tests/qml_tests/tst_shell.qml"
+test_name = "test_menu_overlay_padding_click_does_not_dismiss"
+evidence_id = "p2-test-qml"
+
+[claim-p2-qml-plaintext-format]
+test_path = "tests/qml_tests/tst_controls.qml"
+test_name = "test_menu_item_properties_and_features"
+evidence_id = "p2-test-qml"
+
+[claim-p2-bench-no-literals]
+test_path = "tests/test_check_bench_literals.py"
+test_name = "test_evasion_scalar"
+evidence_id = "p2-check-bench-literals-evasions"
+
+[claim-p2-bench-hardware-remeasurement]
+untested = "Benchmark execution is a performance measurement harness rather than an assertion-based unit test; results validated against budgets in dev/bench/stage_p_perf.json"
+

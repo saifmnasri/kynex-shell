@@ -468,3 +468,40 @@ advisories ok, bans ok, licenses ok, sources ok
 === typos ===
 ```
 
+---
+
+## 12. Audit Notes & Retractions (Stage P2 Remediation)
+
+Following the independent adversarial audit (`docs/audits/stage-p-audit.md`), the following claims from this report are formally retracted, clarified, and remediated in Stage P2 (`docs/work/stage-p2-report.md`):
+
+1. **Test Coverage Deficit in Shell UI Model (AUD-P-01)**:
+   - *Original Claim*: "Every File >= 85%" test coverage (Sections 4 and 6).
+   - *Audit Finding*: **REFUTED**. `crates/kynex-shell/src/menu.rs` achieved only 13.18% line coverage (53/402 lines), masking the deficit by presenting coverage figures from `kynex-shell-core`.
+   - *Stage P2 Remediation*: All business logic and projection algorithms were extracted into `crates/kynex-shell-core/src/menu.rs` (93.10% coverage). The CXX-Qt glue in `crates/kynex-shell/src/menu.rs` was equipped with automated unit and model tests exercising `rowCount`, data roles, signal forwarding, and reconnects (53.48% coverage). The blanket "Every file >= 85%" claim is retracted; per-file llvm-cov numbers are explicitly stated.
+
+2. **Missing Stale Revision Event Validation (AUD-P-02)**:
+   - *Original Claim*: Stale revision event rejection and synchronization validation (Section 7 and `docs/DBUS_API.md`).
+   - *Audit Finding*: **REFUTED**. The `org.kynexos.Daemon.Tray1.MenuEvent` D-Bus signature took `(item_id: s, menu_item_id: i, event: s)` without a `revision` parameter, leaving user activation unvalidated against the layout revision seen by the user.
+   - *Stage P2 Remediation*: Updated the D-Bus contract to `MenuEvent(item_id: s, menu_item_id: i, event: s, revision: u)`. The daemon validates that `revision == current_layout_revision` and rejects stale or foreign revisions with `org.freedesktop.DBus.Error.InvalidArgs`.
+
+3. **Inverted RTL Keyboard Submenu Navigation (AUD-P-04)**:
+   - *Original Claim*: "Flawless keyboard navigation and submenus with RTL mirroring" (Section 1).
+   - *Audit Finding*: **OVERSTATED**. `styles/default/MenuOverlay.qml` unconditionally bound `Qt.Key_Right` to open submenus and `Qt.Key_Left` to close submenus, inverting navigation under Right-to-Left locales (`LayoutMirroring.enabled`).
+   - *Stage P2 Remediation*: Dynamically bound submenu keys to `LayoutMirroring.enabled ? Qt.Key_Left : Qt.Key_Right` to open and `LayoutMirroring.enabled ? Qt.Key_Right : Qt.Key_Left` to close, verified via QML tests and 100% mutation kill ratio.
+
+4. **Literal Fallback in Benchmark Script (AUD-P-03)**:
+   - *Original Claim*: "No literal metrics in benchmark scripts" (Section 8).
+   - *Audit Finding*: **REFUTED**. `dev/bench/measure_stage_p.py` embedded a fallback array `m_500_samples = [12.45]` that evaded the scalar regex check in `scripts/verify.sh`.
+   - *Stage P2 Remediation*: Removed the fallback; failed benchmark runs now raise `RuntimeError`. Implemented an AST-based parser (`scripts/check-bench-literals.py`) checking all numeric literals against a strict allowlist (`scripts/bench/literals-allowlist.txt`), verified with 10 evasion tests.
+
+5. **Undocumented dbusmenu Spec Simplifications (AUD-P-07)**:
+   - *Original Claim*: "Complete dbusmenu spec conformance" (Section 1).
+   - *Audit Finding*: **OVERSTATED**. Optional group methods (`GetGroupProperties`, `AboutToShowGroup`, `EventGroup`, `ItemActivationRequested`) and properties (`Version`, `Status`, `IconThemePath`) were omitted without documentation.
+   - *Stage P2 Remediation*: Documented intentional omissions and impact on complex external apps in `docs/DBUS_API.md` and recorded Decision **D-052** in `docs/DECISIONS.md`.
+
+6. **Edge Clamping vs Pure-Core Flipping Across Anchors (P2.2)**:
+   - *Original Claim*: Full placement and screen edge handling for shell menus.
+   - *Audit Finding*: Placement hardcoded top-panel anchors (`SurfaceAnchors::top_panel()`) and only clamped coordinates without flipping across anchors or handling bottom-anchored production panels.
+   - *Stage P2 Remediation*: Replaced hardcoded anchors with pure-core flip and clamp placement (`compute_menu_placement`), correctly opening above bottom panels, below top panels, right of left panels, left of right panels, with horizontal flipping and output bounding across multi-monitor setups.
+
+

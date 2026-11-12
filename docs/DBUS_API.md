@@ -315,7 +315,7 @@ Internal system tray presentation and interaction interface for `kynex-shell`. B
   - `Scroll(id: s, delta: i, orientation: s) -> ()`: Asynchronously invokes `Scroll(delta, orientation)` on the target item.
   - `GetMenu(item_id: s) -> (revision: u, items: a(iisbbuuiisb))`: Returns sanitized, flat, ordered list of menu items for target item. Flat array entries encode: `(id i, parent i, label s, enabled b, visible b, kind u {0: normal, 1: separator}, toggle u {0: none, 1: checkbox, 2: radio}, toggle_state i {-1: indeterminate/unknown, 0: unchecked, 1: checked}, icon_name s, disposition u {0: normal, 1: informative, 2: warning, 3: alert}, shortcut s, has_submenu b)`.
   - `MenuAboutToShow(item_id: s, menu_item_id: i) -> (need_update: b)`: Informs the item's dbusmenu service that submenu `menu_item_id` is about to be displayed; returns `need_update` flag and triggers bounded re-fetch if updated.
-  - `MenuEvent(item_id: s, menu_item_id: i, event: s) -> ()`: Dispatches event (`"clicked"` or `"hovered"`) to the item's dbusmenu service for `menu_item_id` if validated against current layout.
+  - `MenuEvent(item_id: s, menu_item_id: i, event: s, revision: u) -> ()`: Dispatches event (`"clicked"` or `"hovered"`) to the item's dbusmenu service for `menu_item_id` if validated against current layout and revision matches current cached layout revision. If revision does not match, rejected with `org.freedesktop.DBus.Error.InvalidArgs`.
 - Signals:
   - `ItemAdded(item: TrayItemInfo)`: Emitted when a new tray item is validated and ready for display.
   - `ItemChanged(item: TrayItemInfo)`: Emitted when an existing item's properties update (rate-limited to 10/s).
@@ -333,6 +333,14 @@ Internal system tray presentation and interaction interface for `kynex-shell`. B
   - Filter rules: Invisible items (`visible == false`) dropped; disabled items kept with `enabled = false`.
   - Event validation: Allowed only for IDs in CURRENT validated layout, enabled, not separators; events restricted to `"clicked"` and `"hovered"`.
   - Call bounds: 2.0 s timeout on all dbusmenu calls; max 8 concurrent fetches; per-item rate limit of 10 refreshes/second. Menus fetched lazily on demand; cache evicted when item unregisters or owner vanishes.
+- dbusmenu Protocol Omissions & Compatibility Notes (AUD-P-07):
+  The `com.canonical.dbusmenu` specification defines a broader surface of batch query methods, signals, and properties. In accordance with Kynex OS security invariants and low-overhead architecture (see ADR-015 and Decision D-052), the following elements are intentionally not implemented:
+  - `GetGroupProperties(ids: ai, property_names: as)`: Omitted because Kynex fetches the entire validated layout in a single bounded `GetLayout(0, -1, [])` roundtrip. Partial batch queries create state synchronization ambiguity and multi-roundtrip latency. Applications falling back to `LayoutUpdated` refreshes behave identically.
+  - `AboutToShowGroup(ids: ai)`: Omitted because Kynex manages menus as discrete hierarchy views, notifying only the active submenu via `MenuAboutToShow(item_id, submenu_id)`. Multi-group pre-flight notification adds unnecessary roundtrip IPC without practical benefit for tray menus.
+  - `EventGroup(events: a(isvu))` / `ItemActivationRequested(id: i, timestamp: u)`: Omitted because user interactions are dispatched strictly per discrete user gesture. Batching interactive events or delegating activation requests to external clients introduces race conditions and out-of-order execution risks.
+  - `Version` property: Omitted as redundant with D-Bus introspection and fixed interface schema.
+  - `Status` property: Omitted because application status is already tracked authoritatively via `StatusNotifierItem.Status` (`Active`, `Passive`, `NeedsAttention`).
+  - `IconThemePath` property: Omitted to enforce process boundary and security isolation (`.agents/rules/02-security.md`). Kynex strictly rejects scanning arbitrary filesystem paths provided by untrusted client applications, preventing path traversal and local asset injection. Icons must resolve via standard system icon themes or fall back to deterministic letter badges.
 - Test commands:
   ```bash
   busctl --user introspect org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1

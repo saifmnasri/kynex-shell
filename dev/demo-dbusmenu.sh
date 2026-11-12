@@ -100,7 +100,7 @@ MENU_OUT="$(busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kyn
 echo "GetMenu response: $MENU_OUT"
 
 echo "9. Testing Checkbox Toggle via MenuEvent..."
-busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 MenuEvent "sis" "$ITEM_ID" 3 "clicked"
+busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 MenuEvent "sisu" "$ITEM_ID" 3 "clicked" 1
 sleep 0.2
 
 echo "10. Testing Submenu AboutToShow..."
@@ -108,12 +108,22 @@ busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/
 sleep 0.2
 
 echo "11. Verifying Disabled Item Event is Rejected by Security Policy..."
-ERR_OUT="$(busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 MenuEvent "sis" "$ITEM_ID" 7 "clicked" 2>&1 || true)"
+ERR_OUT="$(busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 MenuEvent "sisu" "$ITEM_ID" 7 "clicked" 1 2>&1 || true)"
 echo "Disabled item MenuEvent response: $ERR_OUT"
 if echo "$ERR_OUT" | grep -q "is disabled"; then
   echo "PASS: MenuEvent on disabled item correctly rejected!"
 else
   echo "FAIL: MenuEvent on disabled item was not rejected!"
+  exit 1
+fi
+
+echo "11b. Verifying Stale Revision Event is Rejected by Security Policy..."
+ERR_STALE="$(busctl --user --address="$BUS_ADDR" call org.kynexos.Daemon /org/kynexos/Daemon/Tray org.kynexos.Daemon.Tray1 MenuEvent "sisu" "$ITEM_ID" 3 "clicked" 999 2>&1 || true)"
+echo "Stale revision MenuEvent response: $ERR_STALE"
+if echo "$ERR_STALE" | grep -q "Stale menu revision"; then
+  echo "PASS: MenuEvent with stale revision correctly rejected!"
+else
+  echo "FAIL: MenuEvent with stale revision was not rejected!"
   exit 1
 fi
 

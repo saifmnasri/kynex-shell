@@ -5,15 +5,21 @@ import glob
 import os
 import re
 import sys
+import tomllib
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 EVIDENCE_DIR = os.path.join(ROOT_DIR, "docs/work/evidence")
+CLAIMS_DIR = os.path.join(ROOT_DIR, "docs/work/claims")
 
 
 def find_newest_report():
     reports = glob.glob(os.path.join(ROOT_DIR, "docs/work/*-report.md"))
     if not reports:
         return None
+    # If stage-p2-report.md exists, prioritize it for the active stage
+    p2 = os.path.join(ROOT_DIR, "docs/work/stage-p2-report.md")
+    if os.path.isfile(p2):
+        return p2
     # Sort by mtime descending
     reports.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     return reports[0]
@@ -31,6 +37,143 @@ def is_contiguous_subslice(sub, full):
     return False
 
 
+def verify_claims(report_path, content, report_name):
+    stage_name = re.sub(r"-report\.md$", "", report_name)
+    claims_file = os.path.join(CLAIMS_DIR, f"{stage_name}.toml")
+
+    # If stage-p2 or claims file exists, require claims verification
+    if "p2" in report_name or "stage-p2" in report_name or os.path.isfile(claims_file):
+        if not os.path.isfile(claims_file):
+            print(f"ERROR: Missing claims ledger file: {claims_file}", file=sys.stderr)
+            return False
+
+        print(f"Checking claims ledger in {os.path.basename(claims_file)}...")
+        with open(claims_file, "rb") as cf:
+            raw_claims = tomllib.load(cf)
+
+        claims_dict = raw_claims.get("claims", raw_claims) if isinstance(raw_claims.get("claims"), dict) else raw_claims
+
+        # Extract Executive Summary section
+        exec_match = re.search(
+            r"^#+\s+(?:\d+\.\s*)?Executive Summary[^\n]*\n([\s\S]*?)(?=^#+\s+|\Z)",
+            content,
+            re.MULTILINE | re.IGNORECASE,
+        )
+        if not exec_match:
+            print(f"ERROR: Executive Summary section not found in {report_name}!", file=sys.stderr)
+            return False
+
+        exec_text = exec_match.group(1)
+        bullet_pattern = re.compile(r"^\s*(?:[-*]|\d+\.)\s+(.+)$", re.MULTILINE)
+        bullets = bullet_pattern.findall(exec_text)
+
+        if not bullets:
+            print(f"ERROR: No bullet items found in Executive Summary of {report_name}!", file=sys.stderr)
+            return False
+
+        claims_referenced = []
+        failed_claims = False
+
+        for b in bullets:
+            b_clean = b.strip()
+            claim_m = re.search(r"\{claim:([a-zA-Z0-9_\-]+)\}\s*$", b_clean)
+            if not claim_m:
+                print(f"  FAILED: Executive summary bullet does not end with {{claim:<id>}}:\n    '{b_clean}'", file=sys.stderr)
+                failed_claims = True
+                continue
+            cid = claim_m.group(1)
+            claims_referenced.append(cid)
+
+        for cid in claims_referenced:
+            if cid not in claims_dict:
+                print(f"  FAILED: Claim '{cid}' referenced in executive summary is not defined in {claims_file}!", file=sys.stderr)
+                failed_claims = True
+
+        for cid in claims_dict.keys():
+            if cid not in claims_referenced:
+                print(f"  FAILED: Claim '{cid}' defined in {claims_file} is not referenced in executive summary!", file=sys.stderr)
+                failed_claims = True
+
+        for cid, entry in claims_dict.items():
+            if not isinstance(entry, dict):
+                print(f"  FAILED: Claim '{cid}' entry must be a dictionary!", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            if "untested" in entry:
+                reason = entry["untested"]
+                print(f"  [UNTESTED] claim '{cid}': {reason}")
+                continue
+
+            test_path = entry.get("test_path")
+            test_name = entry.get("test_name")
+            evidence_id = entry.get("evidence_id")
+
+            if not (test_path and test_name and evidence_id):
+                print(
+                    f"  FAILED: Claim '{cid}' must specify 'test_path', 'test_name', and 'evidence_id' (or 'untested')!",
+                    file=sys.stderr,
+                )
+                failed_claims = True
+                continue
+
+            abs_test_path = os.path.join(ROOT_DIR, test_path)
+            if not os.path.isfile(abs_test_path):
+                print(f"  FAILED: Test path '{test_path}' does not exist for claim '{cid}'!", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            try:
+                with open(abs_test_path, "r", encoding="utf-8") as tf:
+                    test_file_content = tf.read()
+            except Exception as ex:
+                print(f"  FAILED: Cannot read test file '{test_path}': {ex}", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            if test_name not in test_file_content:
+                print(f"  FAILED: Test name '{test_name}' not found in repo at '{test_path}' for claim '{cid}'!", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            ev_path = os.path.join(EVIDENCE_DIR, f"{evidence_id}.txt")
+            if not os.path.isfile(ev_path):
+                print(f"  FAILED: Evidence file '{ev_path}' does not exist for claim '{cid}'!", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            try:
+                with open(ev_path, "r", encoding="utf-8") as ef:
+                    ev_lines = ef.readlines()
+            except Exception as ex:
+                print(f"  FAILED: Cannot read evidence file '{ev_path}': {ex}", file=sys.stderr)
+                failed_claims = True
+                continue
+
+            pass_found = False
+            for line in ev_lines:
+                if test_name in line:
+                    line_s = line.strip()
+                    if re.search(r"\b(?:ok|OK|PASSED|PASS)\b", line_s) and not re.search(r"\b(?:FAILED|FAIL|panicked)\b", line_s):
+                        pass_found = True
+                        break
+
+            if not pass_found:
+                print(
+                    f"  FAILED: Evidence file '{evidence_id}.txt' does not contain passing line for test '{test_name}' (claim '{cid}')!",
+                    file=sys.stderr,
+                )
+                failed_claims = True
+            else:
+                print(f"  ✓ Claim '{cid}' verified: {test_path} :: {test_name} in evidence/{evidence_id}.txt")
+
+        if failed_claims:
+            return False
+
+        print(f"SUCCESS: All {len(claims_dict)} claims in {os.path.basename(claims_file)} verified.")
+    return True
+
+
 def verify_report(report_path):
     if not os.path.isfile(report_path):
         print(f"ERROR: Report file not found: {report_path}", file=sys.stderr)
@@ -38,7 +181,7 @@ def verify_report(report_path):
 
     report_name = os.path.basename(report_path)
     file_size = os.path.getsize(report_path)
-    if ("o2" in report_name or "stage-o2" in report_name) and file_size > 150 * 1024:
+    if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2")) and file_size > 150 * 1024:
         print(
             f"ERROR: Report {report_name} exceeds 150 KB limit ({file_size / 1024:.1f} KB)!",
             file=sys.stderr,
@@ -47,6 +190,10 @@ def verify_report(report_path):
 
     with open(report_path, "r", encoding="utf-8") as f:
         content = f.read()
+
+    # Claims ledger verification
+    if not verify_claims(report_path, content, report_name):
+        return False
 
     # Match code blocks starting with ```raw:<id> or ```raw:<id>:L<a>-L<b>
     pattern = re.compile(
@@ -59,7 +206,7 @@ def verify_report(report_path):
 
     if not matches:
         # If this is stage-n2-report.md or later, require at least one raw block
-        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2")):
+        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2", "p2", "stage-p2")):
             print(f"ERROR: No ```raw:<id> blocks found in {report_name}!", file=sys.stderr)
             return False
         print(f"Notice: No ```raw:<id> blocks found in legacy report {report_name} (skipped).")
@@ -128,7 +275,7 @@ def verify_report(report_path):
                     f"  ✓ ```raw:{evidence_id}:L{start_line}-L{end_line} verified verbatim ({num_lines} lines)"
                 )
         else:
-            if "o2" in report_name or "stage-o2" in report_name:
+            if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2")):
                 print(
                     f"  FAILED: Block ```raw:{evidence_id} in {report_name} must specify explicit line range :L<a>-L<b> (<= 60 lines)!",
                     file=sys.stderr,

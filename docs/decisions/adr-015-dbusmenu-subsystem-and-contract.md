@@ -40,8 +40,8 @@ The internal `Tray1` interface on `/org/kynexos/Daemon/Tray` is extended with:
   - `has_submenu`: `bool` (true if node has visible children)
 - `MenuAboutToShow(item_id: s, menu_item_id: i) -> (need_update: b)`:
   Invokes `AboutToShow(menu_item_id)` on the client's dbusmenu service. If `need_update` is true, daemon triggers an asynchronous, bounded re-fetch.
-- `MenuEvent(item_id: s, menu_item_id: i, event: s) -> ()`:
-  Validates that `menu_item_id` exists in the CURRENT validated layout, is enabled, is not a separator, and `event` is strictly `"clicked"` or `"hovered"` before dispatching `Event` to the client.
+- `MenuEvent(item_id: s, menu_item_id: i, event: s, revision: u) -> ()`:
+  Validates that `revision` equals the CURRENT cached layout revision, `menu_item_id` exists in that validated layout, is enabled, is not a separator, and `event` is strictly `"clicked"` or `"hovered"` before dispatching `Event` to the client. If `revision` is stale or mismatched, rejects with `org.freedesktop.DBus.Error.InvalidArgs`.
 - Signal `MenuChanged(item_id: s, revision: u)`:
   Emitted when a menu's layout or properties are updated.
 
