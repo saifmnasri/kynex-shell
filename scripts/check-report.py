@@ -176,6 +176,56 @@ def verify_claims(report_path, content, report_name):
     return True
 
 
+def resolve_diff_range():
+    """Determine explicit (base, head) diff range for PR/branch guard check."""
+    explicit_range = os.environ.get("GUARD_DIFF_RANGE")
+    if explicit_range:
+        for sep in ("...", ".."):
+            if sep in explicit_range:
+                parts = explicit_range.split(sep, 1)
+                return (parts[0].strip(), parts[1].strip()), None
+        return (explicit_range.strip(), "HEAD"), None
+
+    # Check git repository
+    if not os.path.isdir(os.path.join(ROOT_DIR, ".git")):
+        res_git = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], cwd=ROOT_DIR, capture_output=True)
+        if res_git.returncode != 0:
+            return None, "Not a git repository. Cannot determine diff range."
+
+    # GitHub Actions pull_request event
+    base_ref = os.environ.get("GITHUB_BASE_REF")
+    if base_ref:
+        res = subprocess.run(["git", "merge-base", "HEAD", f"origin/{base_ref}"], cwd=ROOT_DIR, capture_output=True, text=True)
+        if res.returncode != 0:
+            res = subprocess.run(["git", "merge-base", "HEAD", base_ref], cwd=ROOT_DIR, capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout.strip():
+            return (res.stdout.strip(), "HEAD"), None
+        return None, f"Cannot determine merge-base with GITHUB_BASE_REF '{base_ref}'. Full git history required."
+
+    # GitHub Actions push event
+    if os.environ.get("GITHUB_EVENT_NAME") == "push":
+        before = os.environ.get("GITHUB_EVENT_BEFORE")
+        if before and not re.match(r"^0+$", before):
+            res = subprocess.run(["git", "rev-parse", "--verify", before], cwd=ROOT_DIR, capture_output=True)
+            if res.returncode == 0:
+                return (before, "HEAD"), None
+        return None, None
+
+    # Local development branch
+    res_branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT_DIR, capture_output=True, text=True)
+    if res_branch.returncode == 0:
+        branch = res_branch.stdout.strip()
+        if branch and branch not in ("main", "HEAD"):
+            res = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], cwd=ROOT_DIR, capture_output=True, text=True)
+            if res.returncode != 0:
+                res = subprocess.run(["git", "merge-base", "HEAD", "main"], cwd=ROOT_DIR, capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                return (res.stdout.strip(), "HEAD"), None
+            return None, "Cannot determine merge-base with main or origin/main. Full git history required."
+
+    return None, None
+
+
 def verify_guard_changes(report_path, content, report_name):
     # Only enforce for stage-p3 or reports containing GUARD CHANGES
     guard_match = re.search(
@@ -209,11 +259,24 @@ def verify_guard_changes(report_path, content, report_name):
                 files_in_report.add(backticked[0].strip())
 
     report_rel = os.path.relpath(report_path, ROOT_DIR)
-    # If the report is already merged into origin/main without local changes, skip branch guard diff check
-    res_diff = subprocess.run(["git", "diff", "--name-only", "origin/main...HEAD", "--", report_rel], cwd=ROOT_DIR, capture_output=True, text=True)
-    res_cat = subprocess.run(["git", "cat-file", "-e", f"origin/main:{report_rel}"], cwd=ROOT_DIR, capture_output=True)
-    if res_diff.returncode == 0 and not res_diff.stdout.strip() and res_cat.returncode == 0:
-        print(f"Notice: {report_name} is already merged into origin/main; skipping branch guard diff parity check.")
+    range_tuple, err = resolve_diff_range()
+    if err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        return False
+    if not range_tuple:
+        print("SKIPPED (parity: no report in diff range)")
+        return True
+
+    base, head = range_tuple
+    diff_spec = f"{base}...{head}"
+    diff_res = subprocess.run(["git", "diff", "--name-only", diff_spec], cwd=ROOT_DIR, capture_output=True, text=True)
+    if diff_res.returncode != 0:
+        print(f"ERROR: git diff {diff_spec} failed with code {diff_res.returncode}:\n{diff_res.stderr}", file=sys.stderr)
+        return False
+
+    changed_files = set(diff_res.stdout.splitlines())
+    if report_rel not in changed_files:
+        print("SKIPPED (parity: no report in diff range)")
         return True
 
     guard_script = os.path.join(ROOT_DIR, "scripts/guard-diff.sh")
@@ -230,7 +293,7 @@ def verify_guard_changes(report_path, content, report_name):
         sub_env["GIT_DIR"] = git_dir
         sub_env["GIT_WORK_TREE"] = ROOT_DIR
 
-    res = subprocess.run([guard_script, "--list"], cwd=ROOT_DIR, env=sub_env, capture_output=True, text=True)
+    res = subprocess.run([guard_script, "--list", diff_spec], cwd=ROOT_DIR, env=sub_env, capture_output=True, text=True)
     if res.returncode != 0:
         print(f"ERROR: scripts/guard-diff.sh --list failed with code {res.returncode}:\n{res.stderr}", file=sys.stderr)
         return False
