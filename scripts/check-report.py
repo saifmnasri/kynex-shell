@@ -208,6 +208,14 @@ def verify_guard_changes(report_path, content, report_name):
             if backticked:
                 files_in_report.add(backticked[0].strip())
 
+    report_rel = os.path.relpath(report_path, ROOT_DIR)
+    # If the report is already merged into origin/main without local changes, skip branch guard diff check
+    res_diff = subprocess.run(["git", "diff", "--name-only", "origin/main...HEAD", "--", report_rel], cwd=ROOT_DIR, capture_output=True, text=True)
+    res_cat = subprocess.run(["git", "cat-file", "-e", f"origin/main:{report_rel}"], cwd=ROOT_DIR, capture_output=True)
+    if res_diff.returncode == 0 and not res_diff.stdout.strip() and res_cat.returncode == 0:
+        print(f"Notice: {report_name} is already merged into origin/main; skipping branch guard diff parity check.")
+        return True
+
     guard_script = os.path.join(ROOT_DIR, "scripts/guard-diff.sh")
     if not os.path.isfile(guard_script):
         print(f"ERROR: scripts/guard-diff.sh not found for guard verification!", file=sys.stderr)
