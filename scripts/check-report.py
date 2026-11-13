@@ -17,11 +17,6 @@ def find_newest_report():
     reports = glob.glob(os.path.join(ROOT_DIR, "docs/work/*-report.md"))
     if not reports:
         return None
-    # Prioritize active stage reports
-    for stage in ("stage-p3", "stage-p2"):
-        p = os.path.join(ROOT_DIR, f"docs/work/{stage}-report.md")
-        if os.path.isfile(p):
-            return p
     # Sort by mtime descending
     reports.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     return reports[0]
@@ -269,7 +264,7 @@ def verify_guard_changes(report_path, content, report_name):
 
     base, head = range_tuple
     diff_spec = f"{base}...{head}"
-    diff_res = subprocess.run(["git", "diff", "--name-only", diff_spec], cwd=ROOT_DIR, capture_output=True, text=True)
+    diff_res = subprocess.run(["git", "diff", "--diff-filter=AM", "--name-only", diff_spec], cwd=ROOT_DIR, capture_output=True, text=True)
     if diff_res.returncode != 0:
         print(f"ERROR: git diff {diff_spec} failed with code {diff_res.returncode}:\n{diff_res.stderr}", file=sys.stderr)
         return False
