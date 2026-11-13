@@ -1,5 +1,0 @@
-=== COMMAND ===
-/usr/lib/qt6/bin/qmllint -I crates/kynex-shell/qml --compiler warning --max-warnings 0 styles/default/Shell.qml
-=== TIMESTAMP: 2026-11-11T01:57:38Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===

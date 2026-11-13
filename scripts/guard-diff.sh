@@ -11,47 +11,92 @@ export GIT_CONFIG_VALUE_0="*"
 command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
 
-# If running in an environment without .git (e.g. GitHub Actions container tarball download)
 if [ ! -d "${ROOT_DIR}/.git" ] || ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    command -v git >/dev/null 2>&1 && git init -q "${ROOT_DIR}" 2>/dev/null || true
-    command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" remote add origin "https://github.com/saifmnasri/kynex-shell.git" 2>/dev/null || true
-    command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" fetch -q --depth=20 origin main 2>/dev/null || true
-    command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" checkout -q -B main origin/main 2>/dev/null || true
+    echo "ERROR: Not a git repository. Cannot determine guard diff without git history." >&2
+    exit 1
 fi
 
-BASE="origin/main"
-if ! git rev-parse --verify "${BASE}" >/dev/null 2>&1; then
-    if git rev-parse --verify main >/dev/null 2>&1; then
-        BASE="main"
-    elif git rev-parse --verify remotes/origin/main >/dev/null 2>&1; then
-        BASE="remotes/origin/main"
-    elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
-        BASE="HEAD~1"
-    fi
-fi
+LIST_ONLY=0
+EXPLICIT_RANGE=""
 
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --list)
+            LIST_ONLY=1
+            shift
+            ;;
+        *)
+            EXPLICIT_RANGE="$1"
+            shift
+            ;;
+    esac
+done
+
+BASE=""
 HEAD_REF="HEAD"
-if ! git rev-parse --verify "${HEAD_REF}" >/dev/null 2>&1; then
-    if git rev-parse --verify FETCH_HEAD >/dev/null 2>&1; then
-        HEAD_REF="FETCH_HEAD"
-    elif git rev-parse --verify origin/feat/dbusmenu >/dev/null 2>&1; then
-        HEAD_REF="origin/feat/dbusmenu"
+
+if [ -n "${EXPLICIT_RANGE}" ]; then
+    if [[ "${EXPLICIT_RANGE}" == *"..."* ]]; then
+        BASE="${EXPLICIT_RANGE%...*}"
+        HEAD_REF="${EXPLICIT_RANGE#*...}"
+    elif [[ "${EXPLICIT_RANGE}" == *".."* ]]; then
+        BASE="${EXPLICIT_RANGE%..*}"
+        HEAD_REF="${EXPLICIT_RANGE#*..}"
+    else
+        BASE="${EXPLICIT_RANGE}"
+        HEAD_REF="HEAD"
+    fi
+elif [ -n "${GUARD_DIFF_RANGE:-}" ]; then
+    if [[ "${GUARD_DIFF_RANGE}" == *"..."* ]]; then
+        BASE="${GUARD_DIFF_RANGE%...*}"
+        HEAD_REF="${GUARD_DIFF_RANGE#*...}"
+    elif [[ "${GUARD_DIFF_RANGE}" == *".."* ]]; then
+        BASE="${GUARD_DIFF_RANGE%..*}"
+        HEAD_REF="${GUARD_DIFF_RANGE#*..}"
+    else
+        BASE="${GUARD_DIFF_RANGE}"
+        HEAD_REF="HEAD"
+    fi
+elif [ -n "${GITHUB_BASE_REF:-}" ]; then
+    BASE=$(git merge-base HEAD "origin/${GITHUB_BASE_REF}" 2>/dev/null || git merge-base HEAD "${GITHUB_BASE_REF}" 2>/dev/null || true)
+    if [ -z "${BASE}" ]; then
+        echo "ERROR: Failed to determine merge-base with GITHUB_BASE_REF '${GITHUB_BASE_REF}'. Full git history is required." >&2
+        exit 1
+    fi
+    HEAD_REF="HEAD"
+elif [ "${GITHUB_EVENT_NAME:-}" = "push" ] && [ -n "${GITHUB_EVENT_BEFORE:-}" ] && ! [[ "${GITHUB_EVENT_BEFORE}" =~ ^0+$ ]]; then
+    BASE="${GITHUB_EVENT_BEFORE}"
+    HEAD_REF="HEAD"
+else
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    if [ "${CURRENT_BRANCH}" != "main" ] && [ "${CURRENT_BRANCH}" != "HEAD" ] && [ -n "${CURRENT_BRANCH}" ]; then
+        BASE=$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)
+        if [ -z "${BASE}" ]; then
+            echo "ERROR: Failed to determine merge-base with main. Ensure main or origin/main exists in history." >&2
+            exit 1
+        fi
+        HEAD_REF="HEAD"
+    else
+        BASE=""
+        HEAD_REF="HEAD"
     fi
 fi
 
-# When on main or HEAD is the same commit as BASE, compare against the parent commit
-if git rev-parse --verify "${BASE}" >/dev/null 2>&1 && git rev-parse --verify "${HEAD_REF}" >/dev/null 2>&1; then
-    if [ "$(git rev-parse "${BASE}")" = "$(git rev-parse "${HEAD_REF}")" ]; then
-        if git rev-parse --verify "${HEAD_REF}~1" >/dev/null 2>&1; then
-            BASE="${HEAD_REF}~1"
-        fi
-    fi
+if [ -n "${BASE}" ] && ! git rev-parse --verify "${BASE}" >/dev/null 2>&1; then
+    echo "ERROR: Base revision '${BASE}' cannot be resolved. Git history may be shallow." >&2
+    exit 1
+fi
+
+if ! git rev-parse --verify "${HEAD_REF}" >/dev/null 2>&1; then
+    echo "ERROR: Head revision '${HEAD_REF}' cannot be resolved." >&2
+    exit 1
 fi
 
 GUARD_PATTERNS=(
     "scripts/verify.sh"
     "scripts/audit.sh"
     "scripts/check-*.py"
+    "scripts/check-*.sh"
     "scripts/bench/**"
     "scripts/bench/literals-allowlist.txt"
     ".agents/rules/**"
@@ -63,12 +108,21 @@ GUARD_PATTERNS=(
     "budgets.toml"
 )
 
-if [ "${1:-}" = "--list" ]; then
+if [ -z "${BASE}" ]; then
+    if [ "${LIST_ONLY}" -eq 1 ]; then
+        exit 0
+    fi
+    echo "Notice: On main branch with no diff range specified."
+    echo "Changed guard files: 0"
+    exit 0
+fi
+
+if [ "${LIST_ONLY}" -eq 1 ]; then
     git diff --name-only "${BASE}...${HEAD_REF}" -- "${GUARD_PATTERNS[@]}"
     exit 0
 fi
 
-echo "=== git diff origin/main...HEAD --stat ==="
+echo "=== git diff ${BASE}...${HEAD_REF} --stat ==="
 git diff "${BASE}...${HEAD_REF}" --stat
 
 echo ""

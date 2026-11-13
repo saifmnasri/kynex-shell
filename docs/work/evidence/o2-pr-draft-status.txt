@@ -1,6 +1,0 @@
-=== COMMAND ===
-gh pr view 23 --json isDraft,state,number,headRefName,title
-=== TIMESTAMP: 2026-11-11T02:01:55Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===
-{"headRefName":"feat/tray","isDraft":true,"number":23,"state":"OPEN","title":"feat(tray): implement status notifier watcher and tray subsystem (Stage O)"}

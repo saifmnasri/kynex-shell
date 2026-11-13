@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The quality gate. Usage: scripts/verify.sh [--fast] ; STRICT=1 turns SKIPs into failures.
+# The quality gate. Usage: scripts/verify.sh [--fast] [--ci] ; STRICT=1 turns unallowed SKIPs into failures.
 cd "$(dirname "$0")/.." || exit 1
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 export GIT_CONFIG_COUNT=1
@@ -7,8 +7,15 @@ export GIT_CONFIG_KEY_0=safe.directory
 export GIT_CONFIG_VALUE_0="*"
 command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
-FAST=0; [[ "${1:-}" == "--fast" ]] && FAST=1
-pass=(); failed=(); skipped=()
+FAST=0
+CI_MODE=0
+for arg in "$@"; do
+  case "$arg" in
+    --fast) FAST=1 ;;
+    --ci)   CI_MODE=1 ;;
+  esac
+done
+pass=(); failed=(); skipped=(); skipped_local=()
 
 step() { # step "name" cmd...
   local name="$1"; shift
@@ -16,6 +23,7 @@ step() { # step "name" cmd...
   if "$@"; then pass+=("$name"); else failed+=("$name"); fi
 }
 skip() { echo; echo "=== $1 === SKIPPED ($2)"; skipped+=("$1: $2"); }
+skip_local() { echo; echo "=== $1 === SKIPPED (local-only: $2)"; skipped+=("$1 (local-only: $2)"); skipped_local+=("$1"); }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 HAS_RUST=0; [[ -f Cargo.toml ]] && HAS_RUST=1
@@ -133,7 +141,9 @@ if [[ -f scripts/test-systemd-unit.sh ]] && systemctl --user list-units >/dev/nu
   step "systemd user unit sandbox test" ./scripts/test-systemd-unit.sh
 fi
 
-if [[ -f scripts/check-report.py ]]; then
+if ((CI_MODE)); then
+  skip_local "work report evidence check" "reports are private, D-019/D-020"
+elif [[ -f scripts/check-report.py ]]; then
   step "work report evidence check" ./scripts/check-report.py
 fi
 
@@ -149,10 +159,30 @@ if [[ -f tests/test_budget_scalar_rejection.py ]]; then
   step "budget-check scalar rejection test" python3 tests/test_budget_scalar_rejection.py
 fi
 
+if [[ -f scripts/check-private-paths.sh ]]; then
+  step "private paths untracked check" ./scripts/check-private-paths.sh
+fi
+
+if [[ -f tests/test_check_private_paths.py ]]; then
+  step "private paths guard test" python3 tests/test_check_private_paths.py
+fi
+
 echo; echo "================ SUMMARY ================"
 printf 'PASSED : %s\n' "${#pass[@]}"; ((${#pass[@]})) && printf '  + %s\n' "${pass[@]}"
 printf 'SKIPPED: %s\n' "${#skipped[@]}"; ((${#skipped[@]})) && printf '  ~ %s\n' "${skipped[@]}"
 printf 'FAILED : %s\n' "${#failed[@]}"; ((${#failed[@]})) && printf '  - %s\n' "${failed[@]}"
 ((${#failed[@]})) && exit 1
-[[ "${STRICT:-0}" == "1" && ${#skipped[@]} -gt 0 ]] && { echo "STRICT: skips not allowed"; exit 1; }
+
+if [[ "${STRICT:-0}" == "1" ]]; then
+  unallowed_skips=0
+  for s in "${skipped[@]}"; do
+    if [[ "$s" != *"(local-only:"* ]]; then
+      ((unallowed_skips++)) || true
+    fi
+  done
+  if ((unallowed_skips > 0)); then
+    echo "STRICT: unallowed skips not permitted ($unallowed_skips unallowed)"
+    exit 1
+  fi
+fi
 exit 0

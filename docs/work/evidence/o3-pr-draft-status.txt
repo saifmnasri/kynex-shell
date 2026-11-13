@@ -1,6 +1,0 @@
-=== COMMAND ===
-gh pr view 23 --json isDraft,state,url
-=== TIMESTAMP: 2026-11-11T06:57:39Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===
-{"isDraft":true,"state":"OPEN","url":"https://github.com/saifmnasri/kynex-shell/pull/23"}

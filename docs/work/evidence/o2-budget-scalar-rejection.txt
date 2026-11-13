@@ -1,8 +1,0 @@
-=== COMMAND ===
-python3 tests/test_budget_scalar_rejection.py
-=== TIMESTAMP: 2026-11-11T01:57:48Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===
-✓ Hand-typed scalar metric rejected as expected.
-✓ Structured metric with raw samples and method accepted and verified.
-All budget-check tests passed!

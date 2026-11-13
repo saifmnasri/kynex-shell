@@ -1,6 +1,0 @@
-=== COMMAND ===
-bash -c /usr/lib/qt6/bin/qmllint -I crates/kynex-shell/qml --compiler warning --max-warnings 0 $(find crates styles -name "*.qml") && echo "qmllint PASS (0 warnings)"
-=== TIMESTAMP: 2026-11-11T14:51:56Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===
-qmllint PASS (0 warnings)
