@@ -16,7 +16,7 @@ if [ ! -d "${ROOT_DIR}/.git" ] || ! git rev-parse --is-inside-work-tree >/dev/nu
     command -v git >/dev/null 2>&1 && git init -q "${ROOT_DIR}" 2>/dev/null || true
     command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" remote add origin "https://github.com/saifmnasri/kynex-shell.git" 2>/dev/null || true
     command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" fetch -q --depth=20 origin main 2>/dev/null || true
-    command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" fetch -q --depth=20 origin feat/dbusmenu 2>/dev/null || true
+    command -v git >/dev/null 2>&1 && git -C "${ROOT_DIR}" checkout -q -B main origin/main 2>/dev/null || true
 fi
 
 BASE="origin/main"
@@ -36,6 +36,15 @@ if ! git rev-parse --verify "${HEAD_REF}" >/dev/null 2>&1; then
         HEAD_REF="FETCH_HEAD"
     elif git rev-parse --verify origin/feat/dbusmenu >/dev/null 2>&1; then
         HEAD_REF="origin/feat/dbusmenu"
+    fi
+fi
+
+# When on main or HEAD is the same commit as BASE, compare against the parent commit
+if git rev-parse --verify "${BASE}" >/dev/null 2>&1 && git rev-parse --verify "${HEAD_REF}" >/dev/null 2>&1; then
+    if [ "$(git rev-parse "${BASE}")" = "$(git rev-parse "${HEAD_REF}")" ]; then
+        if git rev-parse --verify "${HEAD_REF}~1" >/dev/null 2>&1; then
+            BASE="${HEAD_REF}~1"
+        fi
     fi
 fi
 
