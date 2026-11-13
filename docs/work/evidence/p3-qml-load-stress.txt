@@ -1,0 +1,9 @@
+=== COMMAND ===
+./scripts/test-qml-stress.sh
+=== TIMESTAMP: 2026-11-12T13:58:05Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+Starting CPU load (6 cores)...
+Running QML suite 20 times under CPU load...
+./scripts/test-qml-stress.sh: line 41: 1322600 Killed                     yes > /dev/null
+QML stress run results: 20/20 passed, 0/20 failed

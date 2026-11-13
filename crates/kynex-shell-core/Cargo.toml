@@ -13,3 +13,7 @@ workspace = true
 kynex-common.workspace = true
 kynex-ipc.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+proptest = "1"
+

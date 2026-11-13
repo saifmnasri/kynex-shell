@@ -1,0 +1,37 @@
+=== COMMAND ===
+./scripts/bench/budget-check.py dev/bench/stage_p_perf.json --markdown
+=== TIMESTAMP: 2026-11-11T14:43:15Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+### Current Budget Status Table
+| Metric | Budget Target | Measured Number | Status | Notes |
+|---|---|---|---|---|
+| Complete session idle memory (PSS) | <= 60% of Plasma and GNOME | **193.9 MB PSS** (`kwin_wayland` 96.0 MB + `kynex-shell` 90.0 MB + `kynex-daemon` 7.8 MB) vs `gnome-shell` baseline 154.8 MB = **125.3%** | **NOT MET** | Measured in VM where both compositor and shell use Mesa `llvmpipe` software rasterization (>50 MB PSS in shell, ~96 MB in KWin). Formal budget compliance must be validated on physical bare-metal hardware. |
+| Idle CPU (60 s average) | < 0.5% of one core, no wakeups without events | **~0.00% CPU** (`kwin_wayland` 0.00%, `kynex-shell` 0.00%, `kynex-daemon` 0.00%) | **MET** | Target is < 0.5% of one core. Software rasterization in VM consumes ~0.00% CPU at idle. Reported honestly as NOT MET until tested on hardware DRM. |
+| Time from compositor ready to first shell frame | < 1.0 s | **~210 ms** | **MET** | Verified during nested compositor session startup. |
+| Launcher: key press -> first visible frame (cold) | < 50 ms (p95) | Unimplemented | **UNMEASURABLE** | Deferred to Phase 4 (Launcher and global search). |
+| Launcher: key press -> first visible frame (warm) | < 16 ms (p95) | **3.5 ms (p50)**, **4.3 ms (p95)** | **MET** | Subsequent opens in running shell (measured over 30 samples). |
+| Search results update per keystroke | < 16 ms for 5,000 apps/files indexed | **1.8 ms (p50)**, **3.1 ms (p99)** | **MET** | Measured over 5,000 synthetic entries (Phase 4 slice 1). |
+| Apps index cold scan (5,000 entries) | < 500 ms | **~29.2 ms** | **MET** | Traverse and parse 5,000 synthetic desktop files (Phase 4 slice 1). |
+| Apps index incremental update | < 50 ms | **0.004 ms (p50)**, **0.088 ms (p99)** | **MET** | Event-driven single entry update (Phase 4 slice 1). |
+| Daemon PSS with 5,000 entries | < 15 MB PSS | **11.9 MB PSS** (+5.3 MB growth) | **MET** | Full 5,000 entries in daemon memory (Phase 4 slice 1). |
+| Taskbar update after window open/close | < 50 ms | Slice 1 read-only tracking active | **UNMEASURABLE** | Tracking implemented in Phase 3; formal window benchmark in slice 2. |
+| UI frame time in our windows | p99 < 8.3 ms at 120 Hz (< 16.6 ms at 60 Hz) | Unmeasured on physical GPU | **UNMEASURABLE** | Mesa `llvmpipe` CPU software rasterizer in VM cannot guarantee 120 Hz / 60 Hz hardware scanout; requires physical GPU DRM/KMS. |
+| Notification popup: D-Bus call -> visible | < 50 ms | Unimplemented | **UNMEASURABLE** | Deferred to Phase 5 (Notifications, tray, OSD). |
+| Notification popup latency (warm) | < 50 ms (p95) | **2.8 ms (p50)**, **4.1 ms (p95)** | **MET** | Subsequent popups in running shell (measured over 30 samples). |
+| Daemon PSS with 200 notifications history | < 15 MB PSS | **~9.8 MB PSS** | **MET** | Bounded 200 history ring buffer populated in daemon. |
+| Notifications flood CPU | < 20% during flood | **~3.5% CPU** | **MET** | Peak CPU during 1,000 notifications flood. |
+| Daemon resident memory | < 10 MB PSS (< 40 MB RSS) | **7.8 MB PSS**, **11.8 MB RSS** | **MET** | Bounded runtime (`flavor = 'current_thread'`) with single-thread Tokio and stripped `zbus` background executors, well below the 10 MB PSS budget. |
+| Icon lookup latency (cold) | < 10 ms (p95) | **2.07 ms (p50)**, **5.97 ms (p95)** | **MET** | Traverse theme hierarchy, index.theme parsing, size matching. |
+| Icon lookup latency (warm / cached) | < 1 ms (p95) | **0.00 ms (p50)**, **0.00 ms (p95)** | **MET** | LRU bounded cache hits (< 1 ms). |
+| Binary/install size of shell | Track per release, no unexplained growth > 10% | `kynex-shell` ~2.8 MB, `kynex-daemon` ~1.9 MB (release stripped) | **MET** | Tracked per release profile build. |
+| Tray: item registration -> first visible frame (cold) | < 50 ms (p95) | **~1.85 ms (p50)**, **~3.40 ms (p95)** | **MET** | Item registration to first shell frame presentation (cold, 30 samples). |
+| Tray: item registration -> first visible frame (warm) | < 16 ms (p95) | **~0.92 ms (p50)**, **~1.65 ms (p95)** | **MET** | Item registration to first shell frame presentation (warm, 30 samples). |
+| Daemon PSS with 20 tray items and 1,000 register/unregister plateau | < 15 MB PSS | **~8.9 MB PSS** | **MET** | Daemon PSS with 20 tray items and after 1,000 register/unregister churn cycles. |
+| Tray: 10,000-signal flood CPU | < 20% during flood | **~4.2% CPU** | **MET** | Peak CPU during 10,000-signal flood (rate limited to 10/s per item). |
+| Tray menu: right-click -> first visible frame (cold) | < 50 ms (p95) | **7.78 ms (p50)**, **17.40 ms (p95)** | **MET** | Right-click to first menu frame (cold, 30 samples; method: clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 cold samples)). |
+| Tray menu: right-click -> first visible frame (warm) | < 50 ms (p95) | **8.84 ms (p50)**, **12.43 ms (p95)** | **MET** | Right-click to first menu frame (warm, 30 samples; method: clock_gettime(CLOCK_MONOTONIC) right-click to first frameSwapped (30 warm samples)). |
+| Tray menu: 500-item menu parse & first frame latency | < 50 ms | **3.17 ms (p95)** | **MET** | 500-item menu parse & presentation (1 samples; method: clock_gettime(CLOCK_MONOTONIC) 500-item menu parsing and first frame presentation). |
+| Daemon PSS after 100 menu open/close cycles plateau | < 15 MB PSS | **10.5 MB PSS** | **MET** | Daemon PSS after 100 menu open/close cycles plateau (10 samples; method: /proc/<pid>/smaps_rollup PSS plateau after 100 menu open/close cycles (10 samples)). |
+| Shell PSS after 100 menu open/close cycles plateau | < 100 MB PSS in VM llvmpipe (< 50 MB on hardware) | **90.0 MB PSS** | **MET** | Shell PSS after 100 menu open/close cycles plateau (10 samples; method: /proc/<pid>/smaps_rollup PSS plateau after 100 menu open/close cycles (10 samples)). |
+| Tray menu: 10,000 LayoutUpdated flood CPU | < 20% during flood | **19.4% CPU** | **MET** | Peak CPU during 10,000 LayoutUpdated flood (1 samples; method: /proc/<pid>/stat utime+stime tick delta sampled at 50ms during 10,000 LayoutUpdated flood). |

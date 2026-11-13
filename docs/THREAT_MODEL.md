@@ -189,3 +189,36 @@ All items registered with the system tray subsystem via `org.kde.StatusNotifierW
 8. **Orphaned Items & Life-cycle Leaks**:
    - *Attack*: Unclean client crashes or terminations leave orphaned tray icons indefinitely in the shell.
    - *Mitigation*: The daemon monitors `org.freedesktop.DBus.NameOwnerChanged` signals. When any bus name owner changes to an empty string (process exit or bus disconnection), all registered items associated with that unique bus name are immediately unregistered from the registry and removed from `kynex-shell` via `Tray1.ItemRemoved`. If a visualization host exits, the daemon updates `IsStatusNotifierHostRegistered` accordingly.
+
+### 8. D-Bus Menu (`com.canonical.dbusmenu`) Trees as Untrusted Input (Stage P)
+
+StatusNotifierItem menu definitions exported over `com.canonical.dbusmenu` originate from arbitrary third-party client processes and are treated as completely untrusted input.
+
+#### Threat Vectors & Mitigations
+1. **Unbounded Recursion & Stack Exhaustion**:
+   - *Attack*: An adversarial client creates a deeply nested menu tree (e.g. 1,000+ levels) or a cyclical graph where a child references an ancestor node, causing recursive traversal to overflow the call stack.
+   - *Mitigation*: Hard recursion depth cap enforced: nesting depth must not exceed 6 levels (`MAX_MENU_DEPTH = 6`). Cycle detection tracks visited IDs in a path set; any cycle, duplicate ID, self-ancestor, or tree exceeding depth 6 immediately causes the entire layout to be rejected.
+2. **Memory Exhaustion via Massive Node Count**:
+   - *Attack*: An application returns hundreds of thousands of menu items or 100,000 children under a single node.
+   - *Mitigation*: Hard limits enforced: total menu items must not exceed 500 (`MAX_TOTAL_ITEMS = 500`), and children per node must not exceed 100 (`MAX_CHILDREN_PER_NODE = 100`). Layouts exceeding these bounds are rejected fail-closed.
+3. **Invalid or Negative Identifiers**:
+   - *Attack*: Providing negative IDs (e.g. `-1`, `-999`) or duplicate IDs to cause lookup ambiguity, array indexing errors, or event spoofing.
+   - *Mitigation*: The root node is strictly ID 0. All other item IDs must be non-negative integers (`id >= 0`). Duplicate IDs are rejected fail-closed.
+4. **Adversarial Label Strings, Markup & Unicode Bidi Inversion**:
+   - *Attack*: Embedding HTML/XML tags, terminal escape sequences, Unicode bidirectional override/isolate characters (U+202A..=U+202E, U+2066..=U+2069), or 10,000-character strings in `label` to exploit UI renderers or spoof system prompts.
+   - *Mitigation*: Pure-Rust label sanitizer strips all HTML/XML tags, drops ASCII controls (0x00..=0x1F, 0x7F) and bidi overrides/isolates, parses mnemonic underscores (`_File` -> `File`, `__` -> `_`), and clamps length to at most 256 characters on UTF-8 char boundaries. In QML, labels are rendered strictly with `textFormat: Text.PlainText`.
+5. **Variant Type Confusion & Deserialization Vulnerabilities**:
+   - *Attack*: Sending unexpected variant types (e.g. array where bool expected, int where string expected) to panic parsers.
+   - *Mitigation*: Property types are validated against expected schemas. Mismatched or unexpected types are safely ignored and substituted with safe defaults (`enabled = true`, `visible = true`, empty string, etc.) with zero panics.
+6. **Daemon Stall via Hanging dbusmenu Calls**:
+   - *Attack*: Client accepts `GetLayout` or `AboutToShow` calls but never replies or stalls for 30+ seconds.
+   - *Mitigation*: All calls to `com.canonical.dbusmenu` are bounded by a strict 2-second timeout (`tokio::time::timeout(Duration::from_secs(2), ...)`). Timeout failure aborts the fetch without blocking the daemon or shell.
+7. **Signal Flooding Denial-of-Service**:
+   - *Attack*: Client floods 10,000 `LayoutUpdated` signals per second to starve daemon CPU.
+   - *Mitigation*: Per-item token bucket rate limiter caps refreshes to 10/s. In-flight fetches are coalesced so concurrent requests share a single fetch task, bounded by `MAX_CONCURRENT_FETCHES = 8`.
+8. **Unauthorized or Stale Event Dispatch**:
+   - *Attack*: Invoking events on non-existent, disabled, invisible, or separator items, or sending unauthorized event names.
+   - *Mitigation*: `MenuEvent` strictly validates that the target item ID exists in the CURRENT validated layout, is enabled, and is not a separator. Only event kinds `"clicked"` and `"hovered"` are accepted; any other event kind or invalid state is rejected.
+9. **Architectural Isolation (Shell Never Talks dbusmenu)**:
+   - *Attack*: A malicious client exploits direct D-Bus communication with the shell UI process.
+   - *Mitigation*: The shell NEVER communicates with the client's `com.canonical.dbusmenu` service. All communication is brokered and sanitized through `kynex-daemon` via the internal `Tray1` contract.

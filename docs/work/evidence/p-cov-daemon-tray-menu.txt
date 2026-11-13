@@ -1,0 +1,55 @@
+=== COMMAND ===
+cargo llvm-cov --package kynex-daemon --test dbusmenu_service_test
+=== TIMESTAMP: 2026-11-11T14:49:46Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling kynex-dbusmenu v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-dbusmenu)
+   Compiling kynex-daemon v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-daemon)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.21s
+     Running tests/dbusmenu_service_test.rs (target/llvm-cov-target/debug/deps/dbusmenu_service_test-74edac054223c37d)
+
+running 24 tests
+test test_hostile_cycle_rejection ... ok
+test test_hostile_event_validation ... ok
+test test_hostile_children_per_node_exceeded ... ok
+test test_hostile_huge_shortcuts ... ok
+test test_hostile_label_sanitization ... ok
+test test_hostile_duplicate_and_negative_ids ... ok
+test test_hostile_item_cap_exceeded ... ok
+test test_hostile_layout_updated_flood_and_core_ping ... ok
+test test_hostile_property_type_confusion ... ok
+test test_menu_manager_default_trait ... ok
+test test_mutant_depth_cap_removed ... ok
+test test_mutant_duplicate_id_allowed ... ok
+test test_mutant_event_validation_bypassed ... ok
+test test_mutant_item_cap_removed ... ok
+test test_mutant_label_sanitization_bypassed ... ok
+test test_mutant_timeout_removed ... ok
+test test_menu_fetch_coalescing ... ok
+test test_spec_conformance_get_menu_about_to_show_event ... ok
+test test_variant_to_raw_value_conversions ... ok
+test test_hostile_owner_vanishes_while_menu_open ... ok
+test test_spec_conformance_layout_updated_signal ... ok
+test test_hostile_nesting_1000_levels ... ok
+test test_hostile_about_to_show_timeout_2s ... ok
+test test_hostile_get_layout_timeout_2s ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s
+
+Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+main.rs                           354               354     0.00%           7                 7     0.00%         183               183     0.00%           0                 0         -
+server.rs                          18                11    38.89%           7                 4    42.86%          22                12    45.45%           0                 0         -
+services/apps.rs                  362               362     0.00%          37                37     0.00%         258               258     0.00%           0                 0         -
+services/network.rs               412               412     0.00%          34                34     0.00%         273               273     0.00%           0                 0         -
+services/notifications.rs         722               722     0.00%          56                56     0.00%         471               471     0.00%           0                 0         -
+services/pins.rs                  390               390     0.00%          43                43     0.00%         284               284     0.00%           0                 0         -
+services/power.rs                 324               324     0.00%          33                33     0.00%         207               207     0.00%           0                 0         -
+services/shell.rs                 205               205     0.00%          18                18     0.00%         139               139     0.00%           0                 0         -
+services/tray.rs                 1479               697    52.87%         115                71    38.26%         883               426    51.76%           0                 0         -
+services/tray_menu.rs             577                57    90.12%          35                 8    77.14%         375                49    86.93%           0                 0         -
+services/windows.rs               987               987     0.00%          84                84     0.00%         710               710     0.00%           0                 0         -
+window_state.rs                   182               182     0.00%          18                18     0.00%         132               132     0.00%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                            6012              4703    21.77%         487               413    15.20%        3937              3144    20.14%           0                 0         -

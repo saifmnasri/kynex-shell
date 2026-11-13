@@ -62,6 +62,27 @@ impl SurfaceAnchors {
             right: true,
         }
     }
+
+    /// Converts bit flags (matching `LayerShellQt::Window::Anchor`) to `SurfaceAnchors`.
+    /// `AnchorTop = 1`, `AnchorBottom = 2`, `AnchorLeft = 4`, `AnchorRight = 8`.
+    #[must_use]
+    pub fn from_bits(bits: u32) -> Self {
+        Self {
+            top: (bits & 1) != 0,
+            bottom: (bits & 2) != 0,
+            left: (bits & 4) != 0,
+            right: (bits & 8) != 0,
+        }
+    }
+
+    /// Converts `SurfaceAnchors` to bit flags matching `LayerShellQt::Window::Anchor`.
+    #[must_use]
+    pub fn to_bits(self) -> u32 {
+        u32::from(self.top)
+            | (u32::from(self.bottom) << 1)
+            | (u32::from(self.left) << 2)
+            | (u32::from(self.right) << 3)
+    }
 }
 
 /// Dimensions of the panel surface window.

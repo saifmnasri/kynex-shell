@@ -1,0 +1,425 @@
+=== COMMAND ===
+cargo nextest run --workspace
+=== TIMESTAMP: 2026-11-12T03:39:38Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s
+────────────
+ Nextest run ID ad439748-d7d1-4f43-a4a8-83c43bd70d24 with nextest profile: default
+    Starting 414 tests across 47 binaries
+        PASS [   0.005s] (  1/414) kynex-apps-index::entry_tests test_oversized_file_and_line_limits
+        PASS [   0.005s] (  2/414) kynex-apps-index::entry_tests test_locale_candidate_generation
+        PASS [   0.005s] (  3/414) kynex-apps-index::entry_tests test_decode_escapes
+        PASS [   0.003s] (  4/414) kynex-apps-index::entry_tests test_localized_string_fallback
+        PASS [   0.006s] (  5/414) kynex-apps-index::entry_tests test_fifo_rejected
+        PASS [   0.008s] (  6/414) kynex-apps-index::entry_tests test_desktop_environment_filters
+        PASS [   0.004s] (  7/414) kynex-apps-index::entry_tests test_reject_non_application_type
+        PASS [   0.005s] (  8/414) kynex-apps-index::entry_tests test_reject_hidden_and_nodisplay
+        PASS [   0.005s] (  9/414) kynex-apps-index::entry_tests test_parse_string_list
+        PASS [   0.004s] ( 10/414) kynex-apps-index::entry_tests test_try_exec_nonexistent_rejected
+        PASS [   0.006s] ( 11/414) kynex-apps-index::exec_tests test_basic_exec_parsing
+        PASS [   0.003s] ( 12/414) kynex-apps-index::exec_tests test_field_code_expansion
+        PASS [   0.004s] ( 13/414) kynex-apps-index::exec_tests test_empty_field_codes_dropped_when_no_files
+        PASS [   0.004s] ( 14/414) kynex-apps-index::exec_tests test_deprecated_field_codes_dropped
+        PASS [   0.012s] ( 15/414) kynex-apps-index::entry_tests test_parse_valid_desktop_entry
+        PASS [   0.007s] ( 16/414) kynex-apps-index::exec_tests test_exec_quoting_and_escapes
+        PASS [   0.003s] ( 17/414) kynex-apps-index::exec_tests test_hostile_exec_attacks_never_interpreted_by_shell
+        PASS [   0.003s] ( 18/414) kynex-apps-index::exec_tests test_url_and_file_field_code_expansions
+        PASS [   0.005s] ( 19/414) kynex-apps-index::exec_tests test_unclosed_quote_error
+        PASS [   0.004s] ( 20/414) kynex-apps-index::precedence_tests test_precedence_user_overrides_system
+        PASS [   0.007s] ( 21/414) kynex-apps-index::precedence_tests test_index_incremental_update_and_removal
+        PASS [   0.004s] ( 22/414) kynex-apps-index::precedence_tests test_precedence_masking_nodisplay_and_desktop_not_allowed
+        PASS [   0.004s] ( 23/414) kynex-apps-index::precedence_tests test_user_hidden_masks_system_entry
+        PASS [   0.005s] ( 24/414) kynex-apps-index::precedence_tests test_subdirectory_desktop_id_generation
+        PASS [   0.013s] ( 25/414) kynex-apps-index::precedence_tests test_index_standard_dirs_and_methods
+        PASS [   0.006s] ( 26/414) kynex-apps-index::precedence_tests test_symlink_loop_handling
+        PASS [   0.005s] ( 27/414) kynex-apps-index::search_tests test_empty_query_returns_alphabetical
+        PASS [   0.003s] ( 28/414) kynex-apps-index::search_tests test_search_ranking_hierarchy
+        PASS [   0.007s] ( 29/414) kynex-apps-index::search_tests test_search_edge_cases_and_tie_breaking
+        PASS [   0.004s] ( 30/414) kynex-apps-index::search_tests test_search_with_locale
+        PASS [   0.007s] ( 31/414) kynex-apps-index::search_tests test_search_subsequence_and_word_start
+        PASS [   0.077s] ( 32/414) kynex-apps-index::proptests prop_parse_exec_never_panics
+        PASS [   0.083s] ( 33/414) kynex-apps-index::proptests prop_argv_never_contains_unexpanded_field_codes
+        PASS [   0.252s] ( 34/414) kynex-apps-index::precedence_tests test_10000_files_benchmark_and_stability
+        PASS [   0.359s] ( 35/414) kynex-apps-index::watcher_tests test_watcher_atomic_rename
+        PASS [   0.003s] ( 36/414) kynex-common tests::test_battery_low_threshold
+        PASS [   0.003s] ( 37/414) kynex-common tests::test_network_weak_signal_threshold
+        PASS [   0.003s] ( 38/414) kynex-daemon services::network::tests::test_map_connection_type
+        PASS [   0.003s] ( 39/414) kynex-daemon services::network::tests::test_map_nm_state
+        PASS [   0.003s] ( 40/414) kynex-daemon services::network::tests::test_network_server_direct_getters_and_update
+        PASS [   0.003s] ( 41/414) kynex-daemon services::network::tests::test_sanitize_signal_strength
+        PASS [   0.002s] ( 42/414) kynex-daemon services::network::tests::test_sanitize_ssid_bidi_and_overrides
+        PASS [   0.003s] ( 43/414) kynex-daemon services::network::tests::test_sanitize_ssid_cap_32_bytes
+        PASS [   0.003s] ( 44/414) kynex-daemon services::network::tests::test_sanitize_ssid_control_characters
+        PASS [   0.003s] ( 45/414) kynex-daemon services::network::tests::test_sanitize_ssid_emoji
+        PASS [   0.003s] ( 46/414) kynex-daemon services::network::tests::test_sanitize_ssid_empty
+        PASS [   0.003s] ( 47/414) kynex-daemon services::network::tests::test_sanitize_ssid_invalid_utf8
+        PASS [   0.002s] ( 48/414) kynex-daemon services::network::tests::test_sanitize_ssid_valid
+        PASS [   0.404s] ( 49/414) kynex-apps-index::watcher_tests test_watcher_burst_coalescing
+        PASS [   0.003s] ( 50/414) kynex-daemon services::notifications::tests::test_extract_bool_hint
+        PASS [   0.003s] ( 51/414) kynex-daemon services::notifications::tests::test_extract_image_data_hint
+        PASS [   0.003s] ( 52/414) kynex-daemon services::notifications::tests::test_extract_urgency_hint
+        PASS [   0.355s] ( 53/414) kynex-apps-index::watcher_tests test_watcher_deletion
+        PASS [   0.354s] ( 54/414) kynex-apps-index::watcher_tests test_watcher_directory_and_nonexistent_handling
+        PASS [   0.002s] ( 55/414) kynex-daemon services::notifications::tests::test_map_notification_error
+        PASS [   0.004s] ( 56/414) kynex-daemon services::notifications::tests::test_fdo_server_direct_calls
+        PASS [   0.003s] ( 57/414) kynex-daemon services::notifications::tests::test_notifications1_server_direct_calls
+        PASS [   0.003s] ( 58/414) kynex-daemon services::notifications::tests::test_resolve_app_identity_with_apps_index
+        PASS [   0.005s] ( 59/414) kynex-daemon services::notifications::tests::test_promotions_and_signals_coverage
+        PASS [   0.003s] ( 60/414) kynex-daemon services::pins::tests::test_pins_constructors
+        PASS [   0.005s] ( 61/414) kynex-daemon services::notifications::tests::test_try_acquire_fdo_name_coverage
+        PASS [   0.003s] ( 62/414) kynex-daemon services::pins::tests::test_rate_limit_bucket
+        PASS [   0.006s] ( 63/414) kynex-daemon services::pins::tests::test_pins_shared_state_persistence_and_limits
+        PASS [   0.003s] ( 64/414) kynex-daemon services::pins::tests::test_validate_app_id
+        PASS [   0.002s] ( 65/414) kynex-daemon services::power::tests::test_power_server_snapshot_update
+        PASS [   0.002s] ( 66/414) kynex-daemon services::power::tests::test_sanitize_state
+        PASS [   0.003s] ( 67/414) kynex-daemon services::power::tests::test_sanitize_percentage
+        PASS [   0.002s] ( 68/414) kynex-daemon services::power::tests::test_sanitize_time
+        PASS [   0.002s] ( 69/414) kynex-daemon services::windows::tests::test_feeder_auth_caller_exited_rejected
+        PASS [   0.003s] ( 70/414) kynex-daemon services::windows::tests::test_create_action_temp_file_permissions
+        PASS [   0.002s] ( 71/414) kynex-daemon services::windows::tests::test_feeder_auth_error_display_formatting
+        PASS [   0.002s] ( 72/414) kynex-daemon services::windows::tests::test_feeder_auth_capability_restricted
+        PASS [   0.002s] ( 73/414) kynex-daemon services::windows::tests::test_feeder_auth_exact_executable
+        PASS [   0.002s] ( 74/414) kynex-daemon services::windows::tests::test_feeder_auth_inspection_failed_rejected
+        PASS [   0.003s] ( 75/414) kynex-daemon services::windows::tests::test_feeder_auth_no_kwin_owner_rejected
+        PASS [   0.003s] ( 76/414) kynex-daemon services::windows::tests::test_feeder_auth_not_kwin_owner_rejected
+        PASS [   0.002s] ( 77/414) kynex-daemon services::windows::tests::test_feeder_auth_rogue_takes_name_after_kwin_dies_rejected_by_exe
+        PASS [   0.002s] ( 78/414) kynex-daemon services::windows::tests::test_feeder_auth_rogue_temp_binary_rejected
+        PASS [   0.002s] ( 79/414) kynex-daemon services::windows::tests::test_feeder_auth_uid_mismatch_rejected
+        PASS [   0.002s] ( 80/414) kynex-daemon services::windows::tests::test_generate_action_script
+        PASS [   0.003s] ( 81/414) kynex-daemon services::windows::tests::test_kwin_sender_policy_self_inspection
+        PASS [   0.003s] ( 82/414) kynex-daemon services::windows::tests::test_noop_and_mock_action_executors
+        PASS [   0.002s] ( 83/414) kynex-daemon window_state::tests::test_sanitize_app_id
+        PASS [   0.003s] ( 84/414) kynex-daemon window_state::tests::test_has_window
+        PASS [   0.002s] ( 85/414) kynex-daemon window_state::tests::test_sanitize_id_invalid
+        PASS [   0.002s] ( 86/414) kynex-daemon window_state::tests::test_sanitize_title_bidi_overrides
+        PASS [   0.002s] ( 87/414) kynex-daemon window_state::tests::test_sanitize_title_clean
+        PASS [   0.003s] ( 88/414) kynex-daemon window_state::tests::test_sanitize_id_valid
+        PASS [   0.002s] ( 89/414) kynex-daemon window_state::tests::test_sanitize_title_truncation_utf8
+        PASS [   0.003s] ( 90/414) kynex-daemon window_state::tests::test_sanitize_title_control_chars
+        PASS [   0.002s] ( 91/414) kynex-daemon window_state::tests::test_set_active_and_remove
+        PASS [   0.058s] ( 92/414) kynex-daemon services::notifications::tests::test_expiry_scheduler_promotion
+        PASS [   0.004s] ( 93/414) kynex-daemon window_state::tests::test_upsert_lifecycle_and_capacity
+        PASS [   0.691s] ( 94/414) kynex-apps-index::proptests prop_parse_bytes_never_panics
+        PASS [   0.222s] ( 95/414) kynex-daemon::apps_service_test test_apps_service_full_lifecycle
+        PASS [   0.670s] ( 96/414) kynex-apps-index::watcher_tests test_watcher_ignores_non_desktop_files_and_clean_drop
+        PASS [   0.015s] ( 97/414) kynex-daemon::dbus_roundtrip_test test_dbus_session_bus_roundtrip
+        PASS [   0.024s] ( 98/414) kynex-daemon::apps_service_test test_daemon_wide_launch_rate_limiter
+        PASS [   0.015s] ( 99/414) kynex-daemon::dbusmenu_service_test test_hostile_children_per_node_exceeded
+        PASS [   0.014s] (100/414) kynex-daemon::dbusmenu_service_test test_hostile_cycle_rejection
+        PASS [   0.517s] (101/414) kynex-daemon::apps_service_test test_200_long_lived_children_zero_zombies_regression
+        PASS [   0.016s] (102/414) kynex-daemon::dbusmenu_service_test test_hostile_event_validation
+        PASS [   0.024s] (103/414) kynex-daemon::dbusmenu_service_test test_hostile_duplicate_and_negative_ids
+        PASS [   0.012s] (104/414) kynex-daemon::dbusmenu_service_test test_hostile_huge_shortcuts
+        PASS [   0.021s] (105/414) kynex-daemon::dbusmenu_service_test test_hostile_item_cap_exceeded
+        PASS [   0.014s] (106/414) kynex-daemon::dbusmenu_service_test test_hostile_label_sanitization
+        PASS [   0.018s] (107/414) kynex-daemon::dbusmenu_service_test test_hostile_layout_updated_flood_and_core_ping
+        PASS [   1.058s] (108/414) kynex-daemon::apps_service_test test_child_process_zombie_reaping_regression
+        PASS [   0.067s] (109/414) kynex-daemon::dbusmenu_service_test test_hostile_owner_vanishes_while_menu_open
+        PASS [   0.015s] (110/414) kynex-daemon::dbusmenu_service_test test_hostile_property_type_confusion
+        PASS [   0.016s] (111/414) kynex-daemon::dbusmenu_service_test test_menu_event_matching_revision_accepted
+        PASS [   0.015s] (112/414) kynex-daemon::dbusmenu_service_test test_menu_event_revision_from_another_item_rejected
+        PASS [   0.575s] (113/414) kynex-daemon::dbusmenu_service_test test_hostile_nesting_1000_levels
+        PASS [   0.013s] (114/414) kynex-daemon::dbusmenu_service_test test_menu_fetch_coalescing
+        PASS [   0.004s] (115/414) kynex-daemon::dbusmenu_service_test test_menu_manager_default_trait
+        PASS [   0.003s] (116/414) kynex-daemon::dbusmenu_service_test test_mutant_depth_cap_removed
+        PASS [   0.003s] (117/414) kynex-daemon::dbusmenu_service_test test_mutant_duplicate_id_allowed
+        PASS [   0.004s] (118/414) kynex-daemon::dbusmenu_service_test test_mutant_event_validation_bypassed
+        PASS [   0.029s] (119/414) kynex-daemon::dbusmenu_service_test test_menu_event_stale_revision_rejected_after_layout_updated
+        PASS [   0.003s] (120/414) kynex-daemon::dbusmenu_service_test test_mutant_item_cap_removed
+        PASS [   0.003s] (121/414) kynex-daemon::dbusmenu_service_test test_mutant_label_sanitization_bypassed
+        PASS [   0.003s] (122/414) kynex-daemon::dbusmenu_service_test test_mutant_menu_event_revision_check_removed
+        PASS [   0.002s] (123/414) kynex-daemon::dbusmenu_service_test test_mutant_timeout_removed
+        PASS [   0.018s] (124/414) kynex-daemon::dbusmenu_service_test test_spec_conformance_get_menu_about_to_show_event
+        PASS [   0.005s] (125/414) kynex-daemon::dbusmenu_service_test test_variant_to_raw_value_conversions
+        PASS [   0.064s] (126/414) kynex-daemon::launcher_e2e_test test_launcher_e2e_type_select_launch
+        PASS [   0.013s] (127/414) kynex-daemon::launcher_e2e_test test_launcher_shortcut_path_and_spoof_protection
+        PASS [   0.170s] (128/414) kynex-daemon::dbusmenu_service_test test_spec_conformance_layout_updated_signal
+        PASS [   0.111s] (129/414) kynex-daemon::launcher_e2e_test test_launcher_stale_reply_race_protection
+        PASS [   0.111s] (130/414) kynex-daemon::network_service_test test_network_service_change_signal
+        PASS [   1.567s] (131/414) kynex-daemon::apps_service_test test_apps_watcher_service_level_integration
+        PASS [   0.062s] (132/414) kynex-daemon::network_service_test test_network_service_initial_values
+        PASS [   0.063s] (133/414) kynex-daemon::network_service_test test_network_service_malformed_values
+        PASS [   0.164s] (134/414) kynex-daemon::network_service_test test_network_service_disappearing_and_reappearing
+        PASS [   0.008s] (135/414) kynex-daemon::network_service_test test_network_service_nm_missing
+        PASS [   0.008s] (136/414) kynex-daemon::network_service_test test_network_service_no_devices
+        PASS [   0.377s] (137/414) kynex-daemon::network_service_test test_network_service_adversarial_ssids
+        PASS [   0.059s] (138/414) kynex-daemon::network_service_test test_network_service_no_primary_connection
+        PASS [   0.058s] (139/414) kynex-daemon::network_service_test test_network_service_wifi_no_access_point
+        PASS [   0.010s] (140/414) kynex-daemon::notifications_service_test test_do_not_disturb_and_urgency_filtering
+        PASS [   0.010s] (141/414) kynex-daemon::notifications_service_test test_hostile_corpus_sanitization_and_injection_defense
+        PASS [   0.010s] (142/414) kynex-daemon::notifications_service_test test_hostile_image_data_validation
+        PASS [   0.015s] (143/414) kynex-daemon::notifications_service_test test_id_squatting_and_sender_isolation
+        PASS [   0.010s] (144/414) kynex-daemon::notifications_service_test test_spec_conformance_capabilities_and_server_info
+        PASS [   0.017s] (145/414) kynex-daemon::notifications_service_test test_kynex_ipc_proxy_traits_and_constants_against_daemon
+        PASS [   0.013s] (146/414) kynex-daemon::notifications_service_test test_spec_replaces_id_and_sender_authorization
+        PASS [   0.013s] (147/414) kynex-daemon::notifications_service_test test_token_bucket_flood_protection
+        PASS [   0.004s] (148/414) kynex-daemon::pins_service_test test_pins_atomic_write_crash_resilience
+        PASS [   0.003s] (149/414) kynex-daemon::pins_service_test test_pins_service_corrupt_file_quarantine
+        PASS [   0.012s] (150/414) kynex-daemon::pins_service_test test_pins_concurrent_mutations_from_10_connections
+        PASS [   0.009s] (151/414) kynex-daemon::pins_service_test test_pins_service_max_limit_enforced
+        PASS [   0.003s] (152/414) kynex-daemon::pins_service_test test_pins_service_symlink_swap_safety
+        PASS [   0.012s] (153/414) kynex-daemon::pins_service_test test_pins_service_pin_unpin_move_and_permissions
+        PASS [   0.113s] (154/414) kynex-daemon::power_service_test test_power_service_change_signal
+        PASS [   0.215s] (155/414) kynex-daemon::notifications_service_test test_action_round_trip_unicast_isolation
+        PASS [   0.166s] (156/414) kynex-daemon::power_service_test test_power_service_disappearing_and_reappearing
+        PASS [   0.059s] (157/414) kynex-daemon::power_service_test test_power_service_initial_values
+        PASS [   0.003s] (158/414) kynex-daemon::server_test test_daemon_server_direct
+        PASS [   0.060s] (159/414) kynex-daemon::shell_service_test test_shell_feed_without_emitter
+        PASS [   0.111s] (160/414) kynex-daemon::power_service_test test_power_service_malformed_values
+        PASS [   0.061s] (161/414) kynex-daemon::shell_service_test test_shell_shortcut_authorized_triggers_signal
+        PASS [   0.208s] (162/414) kynex-daemon::power_service_test test_power_service_upower_missing
+        PASS [   0.077s] (163/414) kynex-daemon::shell_service_test test_shell_shortcut_rate_limiting
+        PASS [   0.162s] (164/414) kynex-daemon::shell_service_test test_shell_kwin_watcher_owner_lifecycle
+        PASS [   0.016s] (165/414) kynex-daemon::tray_service_test test_capacity_limits_per_sender_and_total
+        PASS [   0.016s] (166/414) kynex-daemon::tray_service_test test_fdo_watcher_and_item_state_pixmaps
+        PASS [   0.014s] (167/414) kynex-daemon::tray_service_test test_hostile_pixmap_corpus
+        PASS [   0.059s] (168/414) kynex-daemon::shell_service_test test_shell_shortcut_unauthorized_caller_rejected
+        PASS [   0.013s] (169/414) kynex-daemon::tray_service_test test_hostile_string_sanitization
+        PASS [   0.012s] (170/414) kynex-daemon::tray_service_test test_invalid_item_id_dispatch
+        PASS [   0.016s] (171/414) kynex-daemon::tray_service_test test_malformed_ids_and_paths
+        PASS [   0.076s] (172/414) kynex-daemon::tray_service_test test_multi_client_65_items_global_cap_enforced
+        PASS [   0.013s] (173/414) kynex-daemon::tray_service_test test_register_by_another_clients_well_known_name_rejected
+        PASS [   0.013s] (174/414) kynex-daemon::tray_service_test test_register_by_object_path_ok
+        PASS [   0.013s] (175/414) kynex-daemon::tray_service_test test_register_by_own_unique_name_ok
+        PASS [   0.119s] (176/414) kynex-daemon::tray_service_test test_name_vanish_unregisters_item_and_host
+        PASS [   0.014s] (177/414) kynex-daemon::tray_service_test test_register_by_own_well_known_name_ok
+        PASS [   0.011s] (178/414) kynex-daemon::tray_service_test test_register_by_unowned_well_known_name_rejected
+        PASS [   0.066s] (179/414) kynex-daemon::tray_service_test test_register_well_known_name_owner_changes_mid_way
+        PASS [   2.018s] (180/414) kynex-daemon::dbusmenu_service_test test_hostile_about_to_show_timeout_2s
+        PASS [   0.011s] (181/414) kynex-daemon::tray_service_test test_spoof_detection_and_rejection
+        PASS [   0.016s] (182/414) kynex-daemon::tray_service_test test_tray1_actions_dispatch
+        PASS [   2.016s] (183/414) kynex-daemon::dbusmenu_service_test test_hostile_get_layout_timeout_2s
+        PASS [   0.011s] (184/414) kynex-daemon::tray_service_test test_watcher_name_acquisition_and_default_state
+        PASS [   0.013s] (185/414) kynex-daemon::tray_service_test test_watcher_spec_conformance_and_properties
+        PASS [   0.020s] (186/414) kynex-daemon::windows_service_test test_fake_kwin_feeder_lifecycle
+        PASS [   0.014s] (187/414) kynex-daemon::windows_service_test test_hostile_titles_and_input_sanitization
+        PASS [   0.012s] (188/414) kynex-daemon::windows_service_test test_kwin_restart_reset
+        PASS [   0.019s] (189/414) kynex-daemon::windows_service_test test_kwin_script_action_executor_lifecycle
+        PASS [   0.034s] (190/414) kynex-daemon::windows_service_test test_kwin_watcher_disappearance
+        PASS [   0.009s] (191/414) kynex-daemon::windows_service_test test_production_policy_rejects_spoofed_caller
+        PASS [   0.216s] (192/414) kynex-daemon::tray_service_test test_signal_flood_rate_limit
+        PASS [   0.012s] (193/414) kynex-daemon::windows_service_test test_sender_policy_and_clear_coverage
+        PASS [   0.013s] (194/414) kynex-daemon::windows_service_test test_window_actions_happy_path
+        PASS [   0.215s] (195/414) kynex-daemon::tray_service_test test_tray_signals_and_attention_state
+        PASS [   0.010s] (196/414) kynex-daemon::windows_service_test test_window_actions_kwin_gone
+        PASS [   0.033s] (197/414) kynex-daemon::windows_service_test test_window_actions_hostile_ids
+        PASS [   0.011s] (198/414) kynex-daemon::windows_service_test test_window_actions_unknown_ids
+        PASS [   0.016s] (199/414) kynex-daemon::windows_service_test test_window_storm_capacity_bound
+        PASS [   0.011s] (200/414) kynex-dbusmenu::dbusmenu_core_test proptest_arbitrary_layout_no_panic
+        PASS [   0.004s] (201/414) kynex-dbusmenu::dbusmenu_core_test test_child_count_cap_enforcement
+        PASS [   0.003s] (202/414) kynex-dbusmenu::dbusmenu_core_test test_cycle_and_self_ancestor_rejection
+        PASS [   0.003s] (203/414) kynex-dbusmenu::dbusmenu_core_test test_depth_cap_enforcement
+        PASS [   0.003s] (204/414) kynex-dbusmenu::dbusmenu_core_test test_duplicate_and_negative_id_rejection
+        PASS [   0.003s] (205/414) kynex-dbusmenu::dbusmenu_core_test test_enum_conversions_and_raw_helpers
+        PASS [   0.004s] (206/414) kynex-dbusmenu::dbusmenu_core_test test_event_validation
+        PASS [   0.003s] (207/414) kynex-dbusmenu::dbusmenu_core_test test_format_and_sanitize_shortcut
+        PASS [   0.002s] (208/414) kynex-dbusmenu::dbusmenu_core_test test_invisible_items_dropped_and_disabled_kept
+        PASS [   0.003s] (209/414) kynex-dbusmenu::dbusmenu_core_test test_normal_layout_parsing
+        PASS [   0.003s] (210/414) kynex-dbusmenu::dbusmenu_core_test test_parse_mnemonic_underscores
+        PASS [   0.003s] (211/414) kynex-dbusmenu::dbusmenu_core_test test_property_type_confusion_tolerance
+        PASS [   0.003s] (212/414) kynex-dbusmenu::dbusmenu_core_test test_sanitize_icon_name
+        PASS [   0.003s] (213/414) kynex-dbusmenu::dbusmenu_core_test test_sanitize_label
+        PASS [   0.003s] (214/414) kynex-dbusmenu::dbusmenu_core_test test_strip_markup
+        PASS [   0.004s] (215/414) kynex-dbusmenu::dbusmenu_core_test test_total_items_cap_enforcement
+        PASS [   0.191s] (216/414) kynex-daemon::windows_service_test test_rate_limiting_enforcement
+        PASS [   0.023s] (217/414) kynex-dbusmenu::proptests prop_label_sanitizer_invariants
+        PASS [   0.156s] (218/414) kynex-daemon::windows_service_test test_window_actions_rapid_1000_rate_limit
+        PASS [   0.065s] (219/414) kynex-icons::hostile_test test_10000_icon_theme_performance
+        PASS [   0.004s] (220/414) kynex-icons::hostile_test test_hostile_100mb_file_rejected
+        PASS [   0.003s] (221/414) kynex-icons::hostile_test test_hostile_absolute_path_outside_roots
+        PASS [   0.005s] (222/414) kynex-icons::hostile_test test_hostile_fifo_rejected
+        PASS [   0.003s] (223/414) kynex-icons::hostile_test test_hostile_names_and_path_traversal
+        PASS [   0.003s] (224/414) kynex-icons::hostile_test test_hostile_symlink_loop_rejected
+        PASS [   0.002s] (225/414) kynex-icons::hostile_test test_hostile_symlink_to_passwd_rejected
+        PASS [   0.003s] (226/414) kynex-icons::lookup_test test_absolute_path_icon_rules
+        PASS [   0.003s] (227/414) kynex-icons::lookup_test test_config_additional_branches
+        PASS [   0.024s] (228/414) kynex-icons::lookup_test test_config_and_roots_from_env
+        PASS [   0.003s] (229/414) kynex-icons::lookup_test test_hostile_file_limits_and_symlinks
+        PASS [   0.003s] (230/414) kynex-icons::lookup_test test_icon_name_validation_and_normalization
+        PASS [   0.004s] (231/414) kynex-icons::lookup_test test_inheritance_order_spec_compliance
+        PASS [   0.003s] (232/414) kynex-icons::lookup_test test_pixmap_fallback
+        PASS [   0.003s] (233/414) kynex-icons::lookup_test test_roots_additional_branches
+        PASS [   0.003s] (234/414) kynex-icons::lookup_test test_subdirectory_matching_and_distance
+        PASS [   0.006s] (235/414) kynex-icons::lookup_test test_theme_additional_branches
+        PASS [   0.005s] (236/414) kynex-icons::lookup_test test_theme_hierarchy_inheritance_and_cycle_detection
+        PASS [   0.272s] (237/414) kynex-icons::proptest_parser prop_theme_index_parser
+        PASS [   0.045s] (238/414) kynex-icons::proptest_parser prop_theme_index_structured
+        PASS [   0.034s] (239/414) kynex-icons::proptest_parser prop_validate_icon_name
+        PASS [   0.003s] (240/414) kynex-ipc network::tests::test_network_kind_mapping
+        PASS [   0.003s] (241/414) kynex-ipc network::tests::test_network_state_mapping
+        PASS [   0.002s] (242/414) kynex-ipc tray::tests::test_tray_item_info_operations
+        PASS [   0.004s] (243/414) kynex-ipc::ipc_tests test_battery_state_mapping
+        PASS [   0.002s] (244/414) kynex-ipc::ipc_tests test_daemon_status_clone_and_eq
+        PASS [   0.003s] (245/414) kynex-ipc::ipc_tests test_ipc_constants
+        PASS [   0.002s] (246/414) kynex-ipc::ipc_tests test_notification_ipc_constants_and_types
+        PASS [   0.002s] (247/414) kynex-ipc::ipc_tests test_service_health_states
+        PASS [   0.003s] (248/414) kynex-ipc::ipc_tests test_tray_ipc_constants_and_types
+        PASS [   0.003s] (249/414) kynex-notifications::image_test test_reject_dimensions_exceeding_max_256
+        PASS [   0.003s] (250/414) kynex-notifications::image_test test_reject_inconsistent_alpha_flag
+        PASS [   0.003s] (251/414) kynex-notifications::image_test test_reject_invalid_bits_per_sample
+        PASS [   0.002s] (252/414) kynex-notifications::image_test test_reject_invalid_channel_counts
+        PASS [   0.002s] (253/414) kynex-notifications::image_test test_reject_mismatched_data_length
+        PASS [   0.002s] (254/414) kynex-notifications::image_test test_reject_rowstride_too_small
+        PASS [   0.002s] (255/414) kynex-notifications::image_test test_reject_total_size_exceeding_256_kib
+        PASS [   0.002s] (256/414) kynex-notifications::image_test test_reject_zero_or_negative_dimensions
+        PASS [   0.002s] (257/414) kynex-notifications::image_test test_valid_rgb_image
+        PASS [   0.003s] (258/414) kynex-notifications::image_test test_valid_rgba_image_with_padded_rowstride
+        PASS [   0.020s] (259/414) kynex-notifications::proptests prop_markup_stripper_invariants
+        PASS [   0.021s] (260/414) kynex-notifications::proptests prop_sanitize_text_never_panics_and_respects_invariants
+        PASS [   0.023s] (261/414) kynex-notifications::proptests prop_truncate_to_char_boundary_always_safe
+        PASS [   0.023s] (262/414) kynex-notifications::proptests prop_validate_action_key_invariants
+        PASS [   0.081s] (263/414) kynex-notifications::proptests prop_validate_image_data_never_panics
+        PASS [   0.003s] (264/414) kynex-notifications::rate_limit_test test_burst_capacity_and_exhaustion
+        PASS [   0.003s] (265/414) kynex-notifications::rate_limit_test test_independent_per_sender_limits
+        PASS [   0.003s] (266/414) kynex-notifications::rate_limit_test test_sender_removal
+        PASS [   0.002s] (267/414) kynex-notifications::rate_limit_test test_sustained_refill_rate
+        PASS [   0.003s] (268/414) kynex-notifications::rate_limit_test test_tracked_senders_pruning_and_cap
+        PASS [   0.003s] (269/414) kynex-notifications::sanitize_test test_action_key_validation
+        PASS [   0.002s] (270/414) kynex-notifications::sanitize_test test_actions_list_validation
+        PASS [   0.003s] (271/414) kynex-notifications::sanitize_test test_bidi_override_filtering
+        PASS [   0.003s] (272/414) kynex-notifications::sanitize_test test_control_character_filtering
+        PASS [   0.003s] (273/414) kynex-notifications::sanitize_test test_entity_decoding
+        PASS [   0.005s] (274/414) kynex-notifications::sanitize_test test_field_length_caps
+        PASS [   0.002s] (275/414) kynex-notifications::sanitize_test test_html_tag_stripping
+        PASS [   0.002s] (276/414) kynex-notifications::sanitize_test test_script_and_style_removal
+        PASS [   0.002s] (277/414) kynex-notifications::sanitize_test test_utf8_char_boundary_truncation
+        PASS [   0.002s] (278/414) kynex-notifications::state_test test_action_invocation_unicast_and_residence
+        PASS [   0.003s] (279/414) kynex-notifications::state_test test_close_notification_authorization
+        PASS [   0.002s] (280/414) kynex-notifications::state_test test_do_not_disturb_suppresses_popups_except_critical
+        PASS [   0.003s] (281/414) kynex-notifications::state_test test_history_bounding_and_eviction
+        PASS [   0.003s] (282/414) kynex-notifications::state_test test_id_wraparound_and_collision_skipping
+        PASS [   0.003s] (283/414) kynex-notifications::state_test test_monotonic_ids_and_non_zero
+        PASS [   0.002s] (284/414) kynex-notifications::state_test test_replaces_id_different_sender_rejected
+        PASS [   0.003s] (285/414) kynex-notifications::state_test test_replaces_id_same_sender_succeeds
+        PASS [   0.003s] (286/414) kynex-notifications::state_test test_single_deadline_expiry_scheduler
+        PASS [   0.003s] (287/414) kynex-notifications::state_test test_state_edge_cases_and_accessors
+        PASS [   0.002s] (288/414) kynex-notifications::state_test test_timeout_semantics
+        PASS [   0.002s] (289/414) kynex-notifications::state_test test_urgency_conversions
+        PASS [   0.002s] (290/414) kynex-notifications::state_test test_visible_stack_bounding_and_queue_promotion
+        PASS [   0.015s] (291/414) kynex-shell menu::tests::test_create_menu_role_names
+        PASS [   0.014s] (292/414) kynex-shell menu::tests::test_menu_model_rust_activate_selected
+        PASS [   0.013s] (293/414) kynex-shell menu::tests::test_menu_model_rust_all_roles_and_data
+        PASS [   0.014s] (294/414) kynex-shell menu::tests::test_menu_model_rust_latency_tracking
+        PASS [   0.014s] (295/414) kynex-shell menu::tests::test_menu_model_rust_navigation_and_submenus
+        PASS [   0.013s] (296/414) kynex-shell menu::tests::test_menu_signal_parsing_and_filtering
+        PASS [   0.020s] (297/414) kynex-shell menu::tests::test_send_menu_calls_offline
+        PASS [   0.014s] (298/414) kynex-shell network::tests::test_network_client_state_clamped_and_fallback
+        PASS [   0.014s] (299/414) kynex-shell network::tests::test_network_client_state_default
+        PASS [   0.014s] (300/414) kynex-shell network::tests::test_network_client_state_disconnected
+        PASS [   0.014s] (301/414) kynex-shell network::tests::test_network_client_state_ethernet
+        PASS [   0.014s] (302/414) kynex-shell network::tests::test_network_client_state_not_present
+        PASS [   0.014s] (303/414) kynex-shell network::tests::test_network_client_state_weak_signal_threshold
+        PASS [   0.014s] (304/414) kynex-shell network::tests::test_network_client_state_wifi_connected
+        PASS [   0.015s] (305/414) kynex-shell notifications::tests::test_compute_letter_badge
+        PASS [   0.017s] (306/414) kynex-shell notifications::tests::test_create_notification_role_names
+        PASS [   0.016s] (307/414) kynex-shell notifications::tests::test_escape_json_str_special_characters
+        PASS [   0.017s] (308/414) kynex-shell notifications::tests::test_format_actions_json
+        PASS [   0.017s] (309/414) kynex-shell notifications::tests::test_handle_notification_signal_message_and_name_owner
+        PASS [   0.074s] (310/414) kynex-shell notifications::tests::test_init_signal_stream_and_proxy_calls
+        PASS [   0.016s] (311/414) kynex-shell notifications::tests::test_notification_item_role_variant_all_roles
+        PASS [   0.017s] (312/414) kynex-shell notifications::tests::test_notification_model_rust_row_count_data_and_record_first_frame
+        PASS [   0.016s] (313/414) kynex-shell notifications::tests::test_notification_model_rust_state_and_items
+        PASS [   0.017s] (314/414) kynex-shell notifications::tests::test_notification_ui_state_upsert_and_remove
+        PASS [   0.017s] (315/414) kynex-shell notifications::tests::test_parse_shown_notification_and_default_action
+        PASS [   0.017s] (316/414) kynex-shell notifications::tests::test_role_constants_uniqueness
+        PASS [   0.016s] (317/414) kynex-shell power::tests::test_power_state_charging_states
+        PASS [   0.016s] (318/414) kynex-shell power::tests::test_power_state_not_present
+        PASS [   0.017s] (319/414) kynex-shell power::tests::test_power_state_sanitization
+        PASS [   0.015s] (320/414) kynex-shell tray::tests::test_handle_name_owner_changed_event
+        PASS [   2.013s] (321/414) kynex-daemon::tray_service_test test_hanging_item_timeout
+        PASS [   0.015s] (322/414) kynex-shell tray::tests::test_pixmap_cache_and_ffi
+        PASS [   0.019s] (323/414) kynex-shell tray::tests::test_project_tray_coordinates_negative_screen_origin
+        PASS [   0.017s] (324/414) kynex-shell tray::tests::test_tray_item_role_variant_and_names
+        PASS [   0.023s] (325/414) kynex-shell tray::tests::test_tray_model_rust_defaults
+        PASS [   0.016s] (326/414) kynex-shell::image_decoding_security_test test_hostile_svg_decoding_rejected
+        PASS [   0.016s] (327/414) kynex-shell::image_decoding_security_test test_svg_security_filter
+        PASS [   0.024s] (328/414) kynex-shell::image_decoding_security_test test_png_decompression_bomb_header_rejected
+        PASS [   0.016s] (329/414) kynex-shell::image_decoding_security_test test_valid_svg_decodes_cleanly
+        PASS [   0.019s] (330/414) kynex-shell::image_decoding_security_test test_truncated_png_rejected
+        PASS [   0.003s] (331/414) kynex-shell-core coordinates::tests::test_second_monitor_at_negative_x
+        PASS [   0.004s] (332/414) kynex-shell-core coordinates::tests::test_scaled_output
+        PASS [   0.003s] (333/414) kynex-shell-core coordinates::tests::test_single_monitor_bottom_anchoring
+        PASS [   0.006s] (334/414) kynex-shell-core coordinates::tests::test_single_monitor_left_anchoring
+        PASS [   0.004s] (335/414) kynex-shell-core coordinates::tests::test_single_monitor_right_anchoring
+        PASS [   0.002s] (336/414) kynex-shell-core coordinates::tests::test_single_monitor_top_anchoring
+        PASS [   0.002s] (337/414) kynex-shell-core launcher::tests::test_compute_letter_badge
+        PASS [   0.002s] (338/414) kynex-shell-core launcher::tests::test_latest_wins_sequence_ordering
+        PASS [   0.003s] (339/414) kynex-shell-core launcher::tests::test_launcher_core_launch_bounds_and_off_by_one_protection
+        PASS [   0.003s] (340/414) kynex-shell-core launcher::tests::test_launcher_core_empty_results_resets_selection
+        PASS [   0.003s] (341/414) kynex-shell-core launcher::tests::test_launcher_core_query_and_close
+        PASS [   0.004s] (342/414) kynex-shell-core launcher::tests::test_launcher_core_stale_results_dropped
+        PASS [   0.003s] (343/414) kynex-shell-core launcher::tests::test_sanitize_app_item_fallback
+        PASS [   0.003s] (344/414) kynex-shell-core launcher::tests::test_sanitize_app_item_unknown_fallback
+        PASS [   0.003s] (345/414) kynex-shell-core launcher::tests::test_sanitize_display_text_bidi_override_characters
+        PASS [   0.002s] (346/414) kynex-shell-core launcher::tests::test_sanitize_display_text_control_characters
+        PASS [   0.004s] (347/414) kynex-shell-core launcher::tests::test_sanitize_display_text_length_capping
+        PASS [   0.003s] (348/414) kynex-shell-core launcher::tests::test_sanitize_query
+        PASS [   0.003s] (349/414) kynex-shell-core launcher::tests::test_selection_wrap_around
+        PASS [   0.005s] (350/414) kynex-shell-core menu::tests::test_handle_menu_name_owner_changed
+        PASS [   0.004s] (351/414) kynex-shell-core menu::tests::test_menu_item_role_value_all_roles
+        PASS [   0.003s] (352/414) kynex-shell-core menu::tests::test_menu_latency_tracker
+        PASS [   0.002s] (353/414) kynex-shell-core menu::tests::test_menu_state_navigation_and_revisions
+        PASS [   0.003s] (354/414) kynex-shell-core menu::tests::test_mutant_placement_hardcoded_anchors
+        PASS [   0.002s] (355/414) kynex-shell-core menu::tests::test_mutant_placement_no_horizontal_flip
+        PASS [   0.004s] (356/414) kynex-shell-core menu::tests::test_mutant_placement_no_clamping
+        PASS [   0.003s] (357/414) kynex-shell-core menu::tests::test_placement_all_four_edges
+        PASS [   0.005s] (358/414) kynex-shell-core menu::tests::test_placement_500_item_menu
+        PASS [   0.003s] (359/414) kynex-shell-core menu::tests::test_placement_horizontal_flip_at_right_edge
+        PASS [   0.003s] (360/414) kynex-shell-core menu::tests::test_placement_menu_taller_than_screen
+        PASS [   0.002s] (361/414) kynex-shell-core menu::tests::test_placement_scaled_output
+        PASS [   0.002s] (362/414) kynex-shell-core menu::tests::test_placement_vertical_flip_at_screen_edge
+        PASS [   0.002s] (363/414) kynex-shell-core menu::tests::test_placement_secondary_monitor_negative_x
+        PASS [   0.003s] (364/414) kynex-shell-core tray::tests::test_handle_tray_event
+        PASS [   0.003s] (365/414) kynex-shell-core menu::tests::test_should_update_on_menu_changed
+        PASS [   0.003s] (366/414) kynex-shell-core tray::tests::test_letter_badge
+        PASS [   0.005s] (367/414) kynex-shell-core tray::tests::test_pixmap_cache_operations
+        PASS [   0.003s] (368/414) kynex-shell-core tray::tests::test_role_values
+        PASS [   0.002s] (369/414) kynex-shell-core tray::tests::test_ui_item_conversion
+        PASS [   0.003s] (370/414) kynex-shell-core tray::tests::test_state_upsert_and_remove
+        PASS [   0.002s] (371/414) kynex-shell-core::matching_test test_realistic_installed_apps_matching
+        PASS [   0.004s] (372/414) kynex-shell-core::matching_test test_hostile_matching_inputs
+        PASS [   0.003s] (373/414) kynex-shell-core::matching_test test_suffix_stripping_and_helpers
+        PASS [   0.002s] (374/414) kynex-shell-core::taskbar_test test_launcher_core_methods_coverage
+        PASS [   0.003s] (375/414) kynex-shell-core::taskbar_test test_launcher_ctrl_p_pin_toggle
+        PASS [   0.002s] (376/414) kynex-shell-core::taskbar_test test_taskbar_click_interactions_and_multi_window_cycling
+        PASS [   0.002s] (377/414) kynex-shell-core::taskbar_test test_taskbar_middle_click_close
+        PASS [   0.003s] (378/414) kynex-shell-core::taskbar_test test_taskbar_edge_cases_and_coverage
+        PASS [   0.003s] (379/414) kynex-shell-core::taskbar_test test_taskbar_pinned_and_running_ordering
+        PASS [   0.003s] (380/414) kynex-style::validation_tests test_default_style_pack_validates
+        PASS [   0.004s] (381/414) kynex-style::validation_tests test_invalid_color_in_tokens_rejected
+        PASS [   0.006s] (382/414) kynex-style::validation_tests test_fifo_rejected_without_hanging
+        PASS [   0.002s] (383/414) kynex-style::validation_tests test_invalid_style_id_rejected
+        PASS [   0.002s] (384/414) kynex-style::validation_tests test_malicious_absolute_path_rejected
+        PASS [   0.002s] (385/414) kynex-style::validation_tests test_malicious_path_traversal_in_entry
+        PASS [   0.003s] (386/414) kynex-style::validation_tests test_malicious_path_traversal_in_tokens
+        PASS [   0.004s] (387/414) kynex-style::validation_tests test_oversized_file_rejected
+        PASS [   0.002s] (388/414) kynex-style::validation_tests test_symlink_to_dev_zero_rejected_without_hanging
+        PASS [   0.003s] (389/414) kynex-style::validation_tests test_symlink_escaping_pack_rejected
+        PASS [   0.004s] (390/414) kynex-style::validation_tests test_valid_style_pack_loads_successfully
+        PASS [   0.004s] (391/414) kynex-style::validation_tests test_unsupported_schema_version_rejected
+        PASS [   0.003s] (392/414) kynex-tray pixmap::tests::test_lying_data_length
+        PASS [   0.004s] (393/414) kynex-tray pixmap::tests::test_dimension_bounds
+        PASS [   0.003s] (394/414) kynex-tray pixmap::tests::test_select_best_pixmap
+        PASS [   0.002s] (395/414) kynex-tray pixmap::tests::test_valid_pixmap_conversion
+        PASS [   0.002s] (396/414) kynex-tray rate_limit::tests::test_rate_limiter_burst_and_refill
+        PASS [   0.002s] (397/414) kynex-tray registry::tests::test_capacity_limits
+        PASS [   0.003s] (398/414) kynex-tray registry::tests::test_host_registration_lifecycle
+        PASS [   0.002s] (399/414) kynex-tray registry::tests::test_remove_sender
+        PASS [   0.004s] (400/414) kynex-tray registry::tests::test_total_capacity_limit_across_senders
+        PASS [   0.003s] (401/414) kynex-tray registry::tests::test_unregister_get_and_iter
+        PASS [   0.007s] (402/414) kynex-tray registry::tests::test_sender_resolution
+        PASS [   0.003s] (403/414) kynex-tray sanitize::tests::test_sanitize_icon_name
+        PASS [   0.003s] (404/414) kynex-tray sanitize::tests::test_entity_decoding
+        PASS [   0.003s] (405/414) kynex-tray sanitize::tests::test_sanitize_id_and_title
+        PASS [   0.004s] (406/414) kynex-tray status::tests::test_status_mapping
+        PASS [   0.036s] (407/414) kynex-tray::proptests proptest_sanitize_helpers
+        PASS [   0.053s] (408/414) kynex-tray::proptests proptest_pixmap_validator
+        PASS [   0.038s] (409/414) kynex-tray::proptests proptest_sanitize_text
+        PASS [   2.128s] (410/414) kynex-daemon::tray_service_test test_signal_flood_decoupled_resilience
+        PASS [   0.046s] (411/414) kynex-tray::proptests proptest_select_best_pixmap
+        PASS [   2.101s] (412/414) kynex-dbusmenu::proptests prop_layout_parser_invariants
+        PASS [   2.162s] (413/414) kynex-dbusmenu::proptests prop_event_validation_invariants
+        PASS [  10.532s] (414/414) kynex-daemon::apps_service_test test_real_limiter_5_launches_per_sec_for_10s
+────────────
+     Summary [  11.493s] 414 tests run: 414 passed, 0 skipped

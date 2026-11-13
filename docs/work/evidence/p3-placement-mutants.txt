@@ -1,0 +1,35 @@
+=== COMMAND ===
+cargo test -p kynex-shell-core -- test_mutant_placement_
+=== TIMESTAMP: 2026-11-12T13:41:55Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/lib.rs (target/debug/deps/kynex_shell_core-b1f468bd59b07669)
+
+running 5 tests
+test menu::tests::test_mutant_placement_hardcoded_anchors ... ok
+test menu::tests::test_mutant_placement_edge_derivation ... ok
+test menu::tests::test_mutant_placement_no_clamping ... ok
+test menu::tests::test_mutant_placement_no_horizontal_flip ... ok
+test menu::tests::test_mutant_placement_no_vertical_flip ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 40 filtered out; finished in 0.00s
+
+     Running tests/matching_test.rs (target/debug/deps/matching_test-54c468f235955aa7)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/taskbar_test.rs (target/debug/deps/taskbar_test-f0879b9c4615925d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+   Doc-tests kynex_shell_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

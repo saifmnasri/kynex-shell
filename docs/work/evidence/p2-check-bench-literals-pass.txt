@@ -1,0 +1,6 @@
+=== COMMAND ===
+./scripts/check-bench-literals.py
+=== TIMESTAMP: 2026-11-12T00:50:35Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+PASS: All numeric literals in 11 benchmark files match allowlist (399 allowed lines).

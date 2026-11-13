@@ -1,0 +1,50 @@
+=== COMMAND ===
+cargo test -p kynex-dbusmenu
+=== TIMESTAMP: 2026-11-11T14:49:16Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+   Compiling kynex-dbusmenu v0.1.0 (/home/saif/Kynex-Shell/crates/kynex-dbusmenu)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.83s
+     Running unittests src/lib.rs (target/debug/deps/kynex_dbusmenu-e7055549c313bef8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/dbusmenu_core_test.rs (target/debug/deps/dbusmenu_core_test-6126c3de510c8a70)
+
+running 16 tests
+test test_child_count_cap_enforcement ... ok
+test test_cycle_and_self_ancestor_rejection ... ok
+test test_depth_cap_enforcement ... ok
+test test_enum_conversions_and_raw_helpers ... ok
+test test_duplicate_and_negative_id_rejection ... ok
+test test_invisible_items_dropped_and_disabled_kept ... ok
+test proptest_arbitrary_layout_no_panic ... ok
+test test_event_validation ... ok
+test test_format_and_sanitize_shortcut ... ok
+test test_property_type_confusion_tolerance ... ok
+test test_normal_layout_parsing ... ok
+test test_parse_mnemonic_underscores ... ok
+test test_sanitize_icon_name ... ok
+test test_strip_markup ... ok
+test test_total_items_cap_enforcement ... ok
+test test_sanitize_label ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/proptests.rs (target/debug/deps/proptests-35fe82c76797eb2e)
+
+running 3 tests
+test prop_label_sanitizer_invariants ... ok
+test prop_layout_parser_invariants ... ok
+test prop_event_validation_invariants ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.94s
+
+   Doc-tests kynex_dbusmenu
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

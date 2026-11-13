@@ -63,6 +63,8 @@ pub struct ItemState {
     pub attention_icon_name: Option<String>,
     /// Validated attention icon pixmap converted to RGBA.
     pub attention_pixmap: Option<ValidatedPixmap>,
+    /// Optional object path to dbusmenu service (`Menu`).
+    pub menu_path: Option<String>,
 }
 
 /// Pure-Rust registry managing tray items and visualization hosts.
@@ -360,6 +362,7 @@ mod tests {
                 window_id: 0,
                 attention_icon_name: None,
                 attention_pixmap: None,
+                menu_path: None,
             };
             assert!(reg.upsert(item).is_ok());
         }
@@ -380,6 +383,7 @@ mod tests {
             window_id: 0,
             attention_icon_name: None,
             attention_pixmap: None,
+            menu_path: None,
         };
         assert_eq!(
             reg.upsert(item5),
@@ -402,6 +406,7 @@ mod tests {
             window_id: 0,
             attention_icon_name: None,
             attention_pixmap: None,
+            menu_path: None,
         };
         assert!(reg.upsert(item_replacement).is_ok());
     }
@@ -428,6 +433,7 @@ mod tests {
                     window_id: 0,
                     attention_icon_name: None,
                     attention_pixmap: None,
+                    menu_path: None,
                 };
                 assert!(reg.upsert(item).is_ok());
             }
@@ -450,6 +456,7 @@ mod tests {
             window_id: 0,
             attention_icon_name: None,
             attention_pixmap: None,
+            menu_path: None,
         };
         assert_eq!(
             reg.upsert(item65),
@@ -492,6 +499,7 @@ mod tests {
                 window_id: 0,
                 attention_icon_name: None,
                 attention_pixmap: None,
+                menu_path: None,
             };
             assert!(reg.upsert(item).is_ok());
         }
@@ -520,6 +528,7 @@ mod tests {
             window_id: 0,
             attention_icon_name: None,
             attention_pixmap: None,
+            menu_path: None,
         };
 
         assert!(reg.upsert(item).is_ok());

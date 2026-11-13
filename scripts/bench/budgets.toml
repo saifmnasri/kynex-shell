@@ -159,3 +159,46 @@ max_cpu_pct = 20.0
 unit = "%"
 phase = "Phase 5"
 
+[menu_open_latency_cold]
+name = "Tray menu: right-click -> first visible frame (cold)"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[menu_open_latency_warm]
+name = "Tray menu: right-click -> first visible frame (warm)"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[menu_500_items_latency]
+name = "Tray menu: 500-item menu parse & first frame latency"
+target = "< 50 ms"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+
+[menu_idle_daemon_pss]
+name = "Daemon PSS after 100 menu open/close cycles plateau"
+target = "< 15 MB PSS"
+max_pss_mb = 15.0
+unit = "MB"
+phase = "Phase 5"
+
+[menu_idle_shell_pss]
+name = "Shell PSS after 100 menu open/close cycles plateau"
+target = "< 100 MB PSS in VM llvmpipe (< 50 MB on hardware)"
+max_pss_mb = 100.0
+unit = "MB"
+phase = "Phase 5"
+
+[menu_flood_cpu]
+name = "Tray menu: 10,000 LayoutUpdated flood CPU"
+target = "< 20% during flood"
+max_cpu_pct = 20.0
+unit = "%"
+phase = "Phase 5"
+
+

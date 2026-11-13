@@ -36,6 +36,10 @@ pub mod ffi {
         #[must_use]
         fn kynex_test_decode_icon(path: &str, width: i32, height: i32, scale: i32) -> bool;
 
+        /// Tests opening the real `TrayMenuModel` from QML with 15 production arguments.
+        #[must_use]
+        fn kynex_test_real_tray_menu_model_open(qml_path: &str) -> bool;
+
         /// Updates the `Style` singleton with parsed design tokens.
         #[allow(clippy::too_many_arguments)]
         fn kynex_set_style_tokens(
@@ -173,4 +177,10 @@ pub unsafe extern "C" fn kynex_resolve_icon(
         }
         _ => false,
     }
+}
+
+/// Tests opening the real `TrayMenuModel` from QML with 15 production arguments.
+#[must_use]
+pub fn test_real_tray_menu_model_open(qml_path: &str) -> bool {
+    ffi::kynex_test_real_tray_menu_model_open(qml_path)
 }

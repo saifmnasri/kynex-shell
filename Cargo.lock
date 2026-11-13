@@ -852,6 +852,7 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "kynex-apps-index",
+ "kynex-dbusmenu",
  "kynex-ipc",
  "kynex-notifications",
  "kynex-tray",
@@ -863,6 +864,14 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "zbus",
+]
+
+[[package]]
+name = "kynex-dbusmenu"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -925,6 +934,7 @@ version = "0.1.0"
 dependencies = [
  "kynex-common",
  "kynex-ipc",
+ "proptest",
  "tracing",
 ]
 

@@ -6,6 +6,7 @@ Usage: scripts/bench/budget-check.py [benchmark.json] [--budgets scripts/bench/b
 
 import argparse
 import json
+import math
 import os
 import sys
 import tomllib
@@ -23,6 +24,12 @@ def load_budgets(path):
         sys.exit(f"ERROR: Budgets file not found: {path}")
     with open(path, "rb") as f:
         return tomllib.load(f)
+
+
+NS_PER_MS = 1_000_000.0
+PERCENT = 100.0
+KB_PER_MB = 1024.0
+MAX_INVALID_PCT = 5.0
 
 
 def validate_and_compute_metric(bench, key, alt_keys=()):
@@ -59,14 +66,6 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         )
         sys.exit(1)
 
-    for s in val["samples"]:
-        if not isinstance(s, (int, float)):
-            print(
-                f"ERROR: Metric '{found_key}' samples must contain only numbers, found {s}!",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
     if "method" not in val or not isinstance(val["method"], str) or len(val["method"].strip()) == 0:
         print(
             f"ERROR: Metric '{found_key}' is missing a valid 'method' description string!",
@@ -74,17 +73,78 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         )
         sys.exit(1)
 
-    samples = sorted(val["samples"])
+    raw_samples = val["samples"]
+    valid_samples = []
+    invalid_count = 0
+
+    for s in raw_samples:
+        if isinstance(s, dict):
+            start = s.get("start_ns", s.get("start"))
+            end = s.get("end_ns", s.get("end"))
+            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                invalid_count += 1
+            elif end < start:
+                invalid_count += 1
+            else:
+                lat_ms = (end - start) / NS_PER_MS
+                valid_samples.append(lat_ms)
+        elif isinstance(s, (list, tuple)) and len(s) == 2:
+            start, end = s[0], s[1]
+            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                invalid_count += 1
+            elif end < start:
+                invalid_count += 1
+            else:
+                lat_ms = (end - start) / NS_PER_MS
+                valid_samples.append(lat_ms)
+        elif isinstance(s, (int, float)):
+            if s < 0:
+                invalid_count += 1
+            else:
+                valid_samples.append(float(s))
+        else:
+            invalid_count += 1
+
+    total_samples = len(valid_samples) + invalid_count
+    invalid_pct = (invalid_count / total_samples * PERCENT) if total_samples > 0 else 0.0
+
+    print(
+        f"  [metric: {found_key}] total={total_samples}, valid={len(valid_samples)}, invalid_discarded={invalid_count} ({invalid_pct:.2f}%)"
+    )
+
+    if invalid_pct > MAX_INVALID_PCT:
+        print(
+            f"ERROR: Metric '{found_key}' exceeded invalid sample threshold: {invalid_count}/{total_samples} ({invalid_pct:.2f}% > {MAX_INVALID_PCT}%)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not valid_samples:
+        print(
+            f"ERROR: Metric '{found_key}' has zero valid samples!",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    samples = sorted(valid_samples)
     n = len(samples)
 
     def calc_percentile(p):
         if n == 1:
             return float(samples[0])
-        k = (n - 1) * (p / 100.0)
+        k = (n - 1) * (p / PERCENT)
         f = int(k)
         c = min(f + 1, n - 1)
         d = k - f
         return float(samples[f] + d * (samples[c] - samples[f]))
+
+    mean_val = sum(samples) / float(n)
+    variance_val = (
+        sum((x - mean_val) ** 2 for x in samples) / (n - 1)
+        if n > 1
+        else 0.0
+    )
+    stdev_val = math.sqrt(variance_val)
 
     return {
         "samples": samples,
@@ -92,9 +152,13 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
         "p50": calc_percentile(50),
         "p95": calc_percentile(95),
         "p99": calc_percentile(99),
-        "mean": sum(samples) / float(n),
+        "mean": mean_val,
+        "variance": variance_val,
+        "stdev": stdev_val,
         "max": max(samples),
         "min": min(samples),
+        "invalid_count": invalid_count,
+        "total_samples": total_samples,
     }
 
 
@@ -153,7 +217,7 @@ def main():
     gnome_baseline = budgets["session_idle_pss"]["gnome_baseline_mb"]
     ratio_ceiling = budgets["session_idle_pss"]["ratio_ceiling"]
     max_allowed_pss = gnome_baseline * ratio_ceiling
-    pct_of_gnome = (total_pss / gnome_baseline) * 100.0 if gnome_baseline > 0 else 0.0
+    pct_of_gnome = (total_pss / gnome_baseline) * PERCENT if gnome_baseline > 0 else 0.0
     pss_status = "MET" if total_pss <= max_allowed_pss else "NOT MET"
     pss_measured = (
         f"**{total_pss:.1f} MB PSS** (`kwin_wayland` {kwin_pss:.1f} MB + "
@@ -405,6 +469,86 @@ def main():
         tray_flood_cpu_measured = "**~4.2% CPU**"
         tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
 
+    # 13a. Tray menu open latency (cold)
+    m_cold = validate_and_compute_metric(bench, "menu_open_latency_cold")
+    if m_cold:
+        m_cold_p50 = m_cold["p50"]
+        m_cold_p95 = m_cold["p95"]
+        max_m_cold = budgets.get("menu_open_latency_cold", {}).get("max_ms", 50.0)
+        menu_cold_status = "MET" if m_cold_p95 <= max_m_cold else "NOT MET"
+        menu_cold_measured = f"**{m_cold_p50:.2f} ms (p50)**, **{m_cold_p95:.2f} ms (p95)**"
+        menu_cold_notes = f"Right-click to first menu frame (cold, {len(m_cold['samples'])} samples; method: {m_cold['method']})."
+    else:
+        menu_cold_status = "UNMEASURABLE"
+        menu_cold_measured = "Unmeasured"
+        menu_cold_notes = "Tray menu cold latency."
+
+    # 13b. Tray menu open latency (warm)
+    m_warm = validate_and_compute_metric(bench, "menu_open_latency_warm")
+    if m_warm:
+        m_warm_p50 = m_warm["p50"]
+        m_warm_p95 = m_warm["p95"]
+        max_m_warm = budgets.get("menu_open_latency_warm", {}).get("max_ms", 50.0)
+        menu_warm_status = "MET" if m_warm_p95 <= max_m_warm else "NOT MET"
+        menu_warm_measured = f"**{m_warm_p50:.2f} ms (p50)**, **{m_warm_p95:.2f} ms (p95)**"
+        menu_warm_notes = f"Right-click to first menu frame (warm, {len(m_warm['samples'])} samples; method: {m_warm['method']})."
+    else:
+        menu_warm_status = "UNMEASURABLE"
+        menu_warm_measured = "Unmeasured"
+        menu_warm_notes = "Tray menu warm latency."
+
+    # 13c. 500-item menu latency
+    m_500 = validate_and_compute_metric(bench, "menu_500_items_latency")
+    if m_500:
+        m_500_p95 = m_500["p95"]
+        max_m_500 = budgets.get("menu_500_items_latency", {}).get("max_ms", 50.0)
+        menu_500_status = "MET" if m_500_p95 <= max_m_500 else "NOT MET"
+        menu_500_measured = f"**{m_500_p95:.2f} ms (p95)**"
+        menu_500_notes = f"500-item menu parse & presentation ({len(m_500['samples'])} samples; method: {m_500['method']})."
+    else:
+        menu_500_status = "UNMEASURABLE"
+        menu_500_measured = "Unmeasured"
+        menu_500_notes = "500-item menu parse & presentation."
+
+    # 13d. Menu daemon PSS plateau
+    m_d_pss = validate_and_compute_metric(bench, "menu_idle_daemon_pss")
+    if m_d_pss:
+        m_d_pss_val = m_d_pss["max"]
+        max_m_d_pss = budgets.get("menu_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
+        menu_d_pss_status = "MET" if m_d_pss_val <= max_m_d_pss else "NOT MET"
+        menu_d_pss_measured = f"**{m_d_pss_val:.1f} MB PSS**"
+        menu_d_pss_notes = f"Daemon PSS after 100 menu open/close cycles plateau ({len(m_d_pss['samples'])} samples; method: {m_d_pss['method']})."
+    else:
+        menu_d_pss_status = "UNMEASURABLE"
+        menu_d_pss_measured = "Unmeasured"
+        menu_d_pss_notes = "Daemon PSS after 100 menu open/close cycles."
+
+    # 13e. Menu shell PSS plateau
+    m_s_pss = validate_and_compute_metric(bench, "menu_idle_shell_pss")
+    if m_s_pss:
+        m_s_pss_val = m_s_pss["max"]
+        max_m_s_pss = budgets.get("menu_idle_shell_pss", {}).get("max_pss_mb", 100.0)
+        menu_s_pss_status = "MET" if m_s_pss_val <= max_m_s_pss else "NOT MET"
+        menu_s_pss_measured = f"**{m_s_pss_val:.1f} MB PSS**"
+        menu_s_pss_notes = f"Shell PSS after 100 menu open/close cycles plateau ({len(m_s_pss['samples'])} samples; method: {m_s_pss['method']})."
+    else:
+        menu_s_pss_status = "UNMEASURABLE"
+        menu_s_pss_measured = "Unmeasured"
+        menu_s_pss_notes = "Shell PSS after 100 menu open/close cycles."
+
+    # 13f. Menu flood CPU
+    m_cpu = validate_and_compute_metric(bench, "menu_flood_cpu")
+    if m_cpu:
+        m_cpu_val = m_cpu["max"]
+        max_m_cpu = budgets.get("menu_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        menu_flood_cpu_status = "MET" if m_cpu_val <= max_m_cpu else "NOT MET"
+        menu_flood_cpu_measured = f"**{m_cpu_val:.1f}% CPU**"
+        menu_flood_cpu_notes = f"Peak CPU during 10,000 LayoutUpdated flood ({len(m_cpu['samples'])} samples; method: {m_cpu['method']})."
+    else:
+        menu_flood_cpu_status = "UNMEASURABLE"
+        menu_flood_cpu_measured = "Unmeasured"
+        menu_flood_cpu_notes = "Peak CPU during LayoutUpdated flood."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -429,6 +573,12 @@ def main():
         (budgets["tray_item_registration_latency_warm"]["name"], budgets["tray_item_registration_latency_warm"]["target"], tray_warm_measured, tray_warm_status, tray_warm_notes),
         (budgets["tray_idle_daemon_pss"]["name"], budgets["tray_idle_daemon_pss"]["target"], tray_pss_measured, tray_pss_status, tray_pss_notes),
         (budgets["tray_flood_cpu"]["name"], budgets["tray_flood_cpu"]["target"], tray_flood_cpu_measured, tray_flood_cpu_status, tray_flood_cpu_notes),
+        (budgets["menu_open_latency_cold"]["name"], budgets["menu_open_latency_cold"]["target"], menu_cold_measured, menu_cold_status, menu_cold_notes),
+        (budgets["menu_open_latency_warm"]["name"], budgets["menu_open_latency_warm"]["target"], menu_warm_measured, menu_warm_status, menu_warm_notes),
+        (budgets["menu_500_items_latency"]["name"], budgets["menu_500_items_latency"]["target"], menu_500_measured, menu_500_status, menu_500_notes),
+        (budgets["menu_idle_daemon_pss"]["name"], budgets["menu_idle_daemon_pss"]["target"], menu_d_pss_measured, menu_d_pss_status, menu_d_pss_notes),
+        (budgets["menu_idle_shell_pss"]["name"], budgets["menu_idle_shell_pss"]["target"], menu_s_pss_measured, menu_s_pss_status, menu_s_pss_notes),
+        (budgets["menu_flood_cpu"]["name"], budgets["menu_flood_cpu"]["target"], menu_flood_cpu_measured, menu_flood_cpu_status, menu_flood_cpu_notes),
     ]
 
     if args.markdown:

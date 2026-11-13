@@ -1,0 +1,151 @@
+=== COMMAND ===
+./scripts/test-qml-controls.sh
+=== TIMESTAMP: 2026-11-11T14:53:13Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+********* Start testing of controls *********
+Config: Using QtTest library 6.10.2, Qt 6.10.2 (arm64-little_endian-lp64 shared (dynamic) release build; by GCC 15.2.0), ubuntu 26.04
+PASS   : controls::KynexControlsTests::initTestCase()
+PASS   : controls::KynexControlsTests::test_button_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_button_focus_ring()
+PASS   : controls::KynexControlsTests::test_button_icon_and_letter_badge()
+PASS   : controls::KynexControlsTests::test_button_keyboard_return()
+PASS   : controls::KynexControlsTests::test_button_keyboard_space()
+PASS   : controls::KynexControlsTests::test_button_mouse_click()
+PASS   : controls::KynexControlsTests::test_button_window_count_badge()
+PASS   : controls::KynexControlsTests::test_controls_rtl_layout_mirroring()
+PASS   : controls::KynexControlsTests::test_controls_token_bindings()
+PASS   : controls::KynexControlsTests::test_generic_disabled_contract()
+PASS   : controls::KynexControlsTests::test_listitem_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_listitem_focus_ring()
+PASS   : controls::KynexControlsTests::test_listitem_keyboard_activation()
+PASS   : controls::KynexControlsTests::test_listitem_mouse_click()
+PASS   : controls::KynexControlsTests::test_listitem_selection()
+PASS   : controls::KynexControlsTests::test_menu_container_and_model()
+PASS   : controls::KynexControlsTests::test_menu_item_properties_and_features()
+PASS   : controls::KynexControlsTests::test_menu_separator()
+PASS   : controls::KynexControlsTests::test_searchfield_clear_button()
+PASS   : controls::KynexControlsTests::test_searchfield_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_searchfield_focus_ring()
+PASS   : controls::KynexControlsTests::test_searchfield_typing_and_editing()
+PASS   : controls::KynexControlsTests::test_slider_clamping()
+PASS   : controls::KynexControlsTests::test_slider_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_slider_focus_ring()
+PASS   : controls::KynexControlsTests::test_slider_keyboard_navigation()
+PASS   : controls::KynexControlsTests::test_slider_mouse_and_wheel()
+PASS   : controls::KynexControlsTests::test_switch_defaults_and_a11y()
+PASS   : controls::KynexControlsTests::test_switch_focus_ring()
+PASS   : controls::KynexControlsTests::test_switch_keyboard_toggle()
+PASS   : controls::KynexControlsTests::test_switch_mouse_toggle()
+PASS   : controls::KynexControlsTests::test_tooltip_properties_and_visibility()
+PASS   : controls::KynexControlsTests::cleanupTestCase()
+PASS   : controls::LauncherTests::initTestCase()
+QWARN  : controls::LauncherTests::test_backdrop_click_closes() layershellqt: Launcher_QMLTYPE_30(0xc5aa8ee5eaa0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_backdrop_click_closes()
+QWARN  : controls::LauncherTests::test_ctrl_p_pin_toggle() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eed3d50) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_ctrl_p_pin_toggle()
+QWARN  : controls::LauncherTests::test_delegate_item_selection_and_secondary_text() layershellqt: Launcher_QMLTYPE_30(0xc5aa8ee67b10) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_delegate_item_selection_and_secondary_text()
+QWARN  : controls::LauncherTests::test_enter_launches_selected_bounds() layershellqt: Launcher_QMLTYPE_30(0xc5aa8ece16d0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_enter_launches_selected_bounds()
+QWARN  : controls::LauncherTests::test_esc_closes() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eeb0850) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_esc_closes()
+QWARN  : controls::LauncherTests::test_focus_lands_in_search_field_on_open() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eaf1d00) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_focus_lands_in_search_field_on_open()
+PASS   : controls::LauncherTests::test_initial_state()
+QWARN  : controls::LauncherTests::test_no_double_launch_on_repeated_enter() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eebac80) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_no_double_launch_on_repeated_enter()
+PASS   : controls::LauncherTests::test_null_model_listview_hidden()
+QWARN  : controls::LauncherTests::test_placeholder_text_states() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eee4be0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_placeholder_text_states()
+QWARN  : controls::LauncherTests::test_results_list_visibility() layershellqt: Launcher_QMLTYPE_30(0xc5aa8eefb920) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_results_list_visibility()
+QWARN  : controls::LauncherTests::test_up_down_wrap() layershellqt: Launcher_QMLTYPE_30(0xc5aa8ee0ec30) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::LauncherTests::test_up_down_wrap()
+PASS   : controls::LauncherTests::cleanupTestCase()
+PASS   : controls::NotificationPopupTests::initTestCase()
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8eb6dea0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8eb177b0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_accessibility_and_layout_mirroring()
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ee616e0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_action_buttons_and_interaction() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_action_buttons_and_interaction()
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8eea03e0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_body_visibility_and_elision() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_body_visibility_and_elision()
+QWARN  : controls::NotificationPopupTests::test_dismiss_and_hover_tracking() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ee5b940) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_dismiss_and_hover_tracking() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_dismiss_and_hover_tracking()
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ecfdfc0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_icon_and_letter_badge() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_icon_and_letter_badge()
+PASS   : controls::NotificationPopupTests::test_initial_state()
+PASS   : controls::NotificationPopupTests::test_null_model_initial_state()
+QWARN  : controls::NotificationPopupTests::test_text_plain_text_format_enforcement() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ea796d0) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_text_plain_text_format_enforcement() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_text_plain_text_format_enforcement()
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ed1a890) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+QWARN  : controls::NotificationPopupTests::test_urgency_border_and_styling() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_urgency_border_and_styling()
+QWARN  : controls::NotificationPopupTests::test_visibility_and_mask() layershellqt: NotificationPopup_QMLTYPE_40(0xc5aa8ea48210) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::NotificationPopupTests::test_visibility_and_mask() This plugin does not support setting window masks
+PASS   : controls::NotificationPopupTests::test_visibility_and_mask()
+PASS   : controls::NotificationPopupTests::cleanupTestCase()
+PASS   : controls::ShellTests::initTestCase()
+QWARN  : controls::ShellTests::test_initial_state() layershellqt: Shell_QMLTYPE_52(0xc5aa8ecab640) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_initial_state() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_initial_state()
+QWARN  : controls::ShellTests::test_launcher_loader_ready_binding() layershellqt: Shell_QMLTYPE_52(0xc5aa8ea47c10) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_launcher_loader_ready_binding() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_launcher_loader_ready_binding() layershellqt: Launcher_QMLTYPE_62(0xc5aa8eebc4d0) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::ShellTests::test_launcher_loader_ready_binding()
+QWARN  : controls::ShellTests::test_menu_overlay_loader_ready_binding() layershellqt: Shell_QMLTYPE_52(0xc5aa8ee442f0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_menu_overlay_loader_ready_binding() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_menu_overlay_loader_ready_binding() layershellqt: MenuOverlay_QMLTYPE_71(0xc5aa8eeef640) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::ShellTests::test_menu_overlay_loader_ready_binding()
+QWARN  : controls::ShellTests::test_network_indicator_states() layershellqt: Shell_QMLTYPE_52(0xc5aa8ebfa240) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_network_indicator_states() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_network_indicator_states()
+QWARN  : controls::ShellTests::test_notification_loader_and_model() layershellqt: Shell_QMLTYPE_52(0xc5aa8ee93610) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_notification_loader_and_model() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_notification_loader_and_model() layershellqt: NotificationPopup_QMLTYPE_72(0xc5aa8ecdf360) is not a wayland window. Not creating zwlr_layer_surface
+QWARN  : controls::ShellTests::test_notification_loader_and_model() This plugin does not support setting window masks
+PASS   : controls::ShellTests::test_notification_loader_and_model()
+QWARN  : controls::ShellTests::test_taskbar_keyboard_activation() layershellqt: Shell_QMLTYPE_52(0xc5aa8eb719b0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_taskbar_keyboard_activation() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_taskbar_keyboard_activation()
+QWARN  : controls::ShellTests::test_taskbar_window_count_badge_and_delegates() layershellqt: Shell_QMLTYPE_52(0xc5aa8eb177b0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_taskbar_window_count_badge_and_delegates() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_taskbar_window_count_badge_and_delegates()
+QWARN  : controls::ShellTests::test_tray_click_and_scroll_interactions() layershellqt: Shell_QMLTYPE_52(0xc5aa8ebefc20) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_click_and_scroll_interactions() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_click_and_scroll_interactions()
+QWARN  : controls::ShellTests::test_tray_dbusmenu_right_click() layershellqt: Shell_QMLTYPE_52(0xc5aa8ef09bb0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_dbusmenu_right_click() qml: Kynex Shell panel initialized successfully
+QWARN  : controls::ShellTests::test_tray_dbusmenu_right_click() layershellqt: MenuOverlay_QMLTYPE_71(0xc5aa8eb08e30) is not a wayland window. Not creating zwlr_layer_surface
+PASS   : controls::ShellTests::test_tray_dbusmenu_right_click()
+QWARN  : controls::ShellTests::test_tray_initial_state() layershellqt: Shell_QMLTYPE_52(0xc5aa8ea597d0) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_initial_state() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_initial_state()
+QWARN  : controls::ShellTests::test_tray_items_presentation() layershellqt: Shell_QMLTYPE_52(0xc5aa8ee5ee30) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_items_presentation() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_items_presentation()
+QWARN  : controls::ShellTests::test_tray_secondary_screen_negative_origin() layershellqt: Shell_QMLTYPE_52(0xc5aa8ef0a450) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_secondary_screen_negative_origin() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_secondary_screen_negative_origin()
+QWARN  : controls::ShellTests::test_tray_tooltip_branches() layershellqt: Shell_QMLTYPE_52(0xc5aa8eef1350) is not a wayland window. Not creating zwlr_layer_surface
+QDEBUG : controls::ShellTests::test_tray_tooltip_branches() qml: Kynex Shell panel initialized successfully
+PASS   : controls::ShellTests::test_tray_tooltip_branches()
+PASS   : controls::ShellTests::cleanupTestCase()
+Totals: 75 passed, 0 failed, 0 skipped, 0 blacklisted, 1182ms
+********* Finished testing of controls *********

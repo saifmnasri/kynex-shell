@@ -1,0 +1,1787 @@
+=== COMMAND ===
+./scripts/guard-diff.sh
+=== TIMESTAMP: 2026-11-12T16:05:54Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+=== git diff origin/main...HEAD --stat ===
+ .gitignore                                         |    2 +
+ Cargo.lock                                         |   10 +
+ Cargo.toml                                         |    1 +
+ _typos.toml                                        |    2 +-
+ crates/kynex-daemon/Cargo.toml                     |    1 +
+ crates/kynex-daemon/src/services/mod.rs            |    1 +
+ crates/kynex-daemon/src/services/tray.rs           |  135 +-
+ crates/kynex-daemon/src/services/tray_menu.rs      |  529 ++++
+ crates/kynex-daemon/tests/dbusmenu_service_test.rs | 1244 +++++++++
+ crates/kynex-daemon/tests/tray_service_test.rs     |    1 +
+ crates/kynex-dbusmenu/Cargo.toml                   |   17 +
+ crates/kynex-dbusmenu/fuzz/Cargo.lock              |  152 ++
+ crates/kynex-dbusmenu/fuzz/Cargo.toml              |   24 +
+ .../0015992ab98c74211be05a6c114c3d99a0c7a33b       |    1 +
+ .../011307c18e228d404d4872d9baa032312357a749       |  Bin 0 -> 43 bytes
+ .../021e83f015972405e08e5dbed64aca9db76aa277       |    1 +
+ .../0395c321f0524feac7336faf47146fd00299e72e       |    1 +
+ .../040a7884a2e3ccece4aeb33e98ef1f72a10ce7e9       |  Bin 0 -> 141 bytes
+ .../042f6a0425bd893e283362566fcbe46fc5aaf19c       |  Bin 0 -> 59 bytes
+ .../05b934272c24b6d45914b61364e4defb6690a3c1       |  Bin 0 -> 48 bytes
+ .../05b9599908e204d17aea92d9da6ae1926043a4dc       |  Bin 0 -> 39 bytes
+ .../05bd13a9a96d813f5f48831002a3b2bcd74dec62       |  Bin 0 -> 89 bytes
+ .../05f96173333151c092656e97147ffbe575127e97       |  Bin 0 -> 39 bytes
+ .../0675967f03e5ee05fb49c6f1dbeceedeaf2050d2       |    1 +
+ .../068f5538a2425d0deb935b57cadcc80b1edd1315       |  Bin 0 -> 217 bytes
+ .../06e633b65a4e7f533ce599ebe2490e9ef288b125       |  Bin 0 -> 107 bytes
+ .../074628309b3f02a24be9300f0058aaf460c96b07       |  Bin 0 -> 141 bytes
+ .../0784469b48c7e552f16ca6091045c301579b1597       |  Bin 0 -> 113 bytes
+ .../08ea0061c09f048b2e8fcd9376497eb300be8bab       |    1 +
+ .../094f645e83f65087ca535bc7d6ad9771cf605aa0       |  Bin 0 -> 108 bytes
+ .../097ed8d47381ea9f82765221c2bc1dac01af9667       |    1 +
+ .../09bacb1bcb25397fe5ee855666e73decf2e8f76e       |    1 +
+ .../09ca44bd6ae17502ddc4cc157ae60815233477ec       |  Bin 0 -> 54 bytes
+ .../0a9f17eea03fe9c5215850562744ab5168f4e922       |  Bin 0 -> 37 bytes
+ .../0b6116fc4c35659f45c3df616f22dd3a42c30c18       |  Bin 0 -> 671 bytes
+ .../0d4927782548ccea74f7f53209aa56ddb657bbe5       |  Bin 0 -> 81 bytes
+ .../0dcfb44ab0971c0dbff60d5c62e82625daf2396c       |    1 +
+ .../0deb6a3ad813ff55ca1a92ac7d35b32720749cf5       |  Bin 0 -> 64 bytes
+ .../0f7b928db8f8a4d3ca2258774584373b6800a9d4       |  Bin 0 -> 48 bytes
+ .../0fbdf2f8226fdcfdf876996599909e9281ed35fd       |    1 +
+ .../104a225c65cbd971e4aeaa89a7d7686295ca6c7c       |  Bin 0 -> 251 bytes
+ .../105b37a3580b909a9dd56ba8c4faf812a6c6fe6b       |  Bin 0 -> 71 bytes
+ .../10fab0155e986bc5a16b0f04134f2d043a4c06fa       |  Bin 0 -> 71 bytes
+ .../112a9eb0d44e9c042f9e1714ee40a3c8334fa0a6       |  Bin 0 -> 65 bytes
+ .../117dc7483f2c360414e9b310161b7c62344d0e70       |  Bin 0 -> 112 bytes
+ .../11ef13433e2deac715958bad19946dc9e18397d8       |  Bin 0 -> 43 bytes
+ .../12dbd68f487075dd888d66d0b5eb0ac50f2bb73f       |  Bin 0 -> 71 bytes
+ .../1355e68804691f974a33813ada7e103fb5078bdb       |  Bin 0 -> 538 bytes
+ .../1370020cbbc09796e0e3044a4fc9eae73365e963       |  Bin 0 -> 110 bytes
+ .../139a64d224beb94b022e0fd3e053f4ff959a80db       |  Bin 0 -> 604 bytes
+ .../143e15b12dc1683c018b287de9e50d7a9086cd23       |  Bin 0 -> 181 bytes
+ .../1486a5d9cf625b04b010192c9b4395041b65b929       |    1 +
+ .../15311f265713c00a165ac757efdebca3abab3e45       |  Bin 0 -> 294 bytes
+ .../15b2e97f749b63c9dbf86e29531ed77ae14cbd8d       |  Bin 0 -> 353 bytes
+ .../1610b6d98fe9032fe680893652b4e32f7cbe0412       |    1 +
+ .../16326dbcc6ef336e65f5eaa007e2fe5e69d1fbe7       |  Bin 0 -> 38 bytes
+ .../16936b914396e1b68520150fdc1bdb8533d0f7a3       |  Bin 0 -> 76 bytes
+ .../1737b350cd83cdfad48388613024e5e42f94f3a5       |  Bin 0 -> 48 bytes
+ .../17b193c77fa1d904dec58aaaf2fa301246bbe9d8       |  Bin 0 -> 264 bytes
+ .../18107153f82ec7f036e5eece1be10613ed3f2b65       |    1 +
+ .../1880998d7b48439a2df54ea84fa8ba340b914fc7       |  Bin 0 -> 364 bytes
+ .../18b328607d054ff63f39f911bc801d956c0bf9cf       |  Bin 0 -> 52 bytes
+ .../1a7aff39a496ecc763638ca74a1e21a0d796f366       |    1 +
+ .../1c300de9d7ac01e26bbeddd12bb6969c5174b8cd       |    1 +
+ .../1c42af0aa5f02fa76f3ddc301e93d100d43c0505       |  Bin 0 -> 38 bytes
+ .../1c96cd5b25cb2586c1d162e0a7de7d49e32cd871       |  Bin 0 -> 40 bytes
+ .../1cb413ec8b01c63c06b3758fc581eda9e59134ae       |  Bin 0 -> 119 bytes
+ .../1d3c77d5fcfb62b68b14225aecf4771ffae300f6       |  Bin 0 -> 247 bytes
+ .../1ec99431dd7d3cc3a34797e0251aace66f4d84bb       |  Bin 0 -> 284 bytes
+ .../205715286ddc7bd4a357023a8ce2656ea74a2d66       |  Bin 0 -> 67 bytes
+ .../205ca9cf3224b78ed4ba8398c2aacf3dd66ea5ef       |  Bin 0 -> 47 bytes
+ .../209dd7e05d4323f6dd12843fb37dc50e5303aa48       |  Bin 0 -> 53 bytes
+ .../20cafbb8729ce93ef7b2d13ddafad3fe6c6aa433       |  Bin 0 -> 73 bytes
+ .../21076a06acfb973b39f979040db31ff63206e2bc       |  Bin 0 -> 46 bytes
+ .../21595950acb07ccaf40704d7c42e899e7bdbe760       |    1 +
+ .../221bcdf8dba14f57d18645bf4640d24048c32ba1       |  Bin 0 -> 56 bytes
+ .../22d3063fe1ff645dd26caadd5953c4401fc81525       |    1 +
+ .../22fbce5951b1f34389540221f065e6c252678524       |  Bin 0 -> 106 bytes
+ .../232050975391a71ca91890a8fba298388ce09cbb       |  Bin 0 -> 284 bytes
+ .../246a2349646da54ae75894cd979d281885a86f9b       |  Bin 0 -> 42 bytes
+ .../24ecc6683e50e941e2bc6f1328278cf54fcf97d2       |  Bin 0 -> 142 bytes
+ .../24f2e9fa486c4eda011b3b2b98014090e7a24fe5       |    1 +
+ .../24fb389fca116913c7a11450ded22f6965b74817       |  Bin 0 -> 142 bytes
+ .../253c9e2b2adc999e6dddcf6668a991ab51841abc       |    1 +
+ .../269475d0526795a8522cf2bc840a07b29dfdeebd       |  Bin 0 -> 107 bytes
+ .../2705b7247f3cf022fa719dafffbc823bd78777a5       |    1 +
+ .../272397b83d5246ee38578a654d89cbe725d91161       |  Bin 0 -> 72 bytes
+ .../277669589aa7166d233a05fc7ee6e6ef7921cb5e       |  Bin 0 -> 37 bytes
+ .../279cc55662b50cb0667e4cdab3f7c473febb6b4f       |    1 +
+ .../27d97bdcc4ecfc5c8daf56c5822bcc33f43324bd       |  Bin 0 -> 47 bytes
+ .../27f50bde603d6729e31f50bc7ec2b42364aa114d       |  Bin 0 -> 571 bytes
+ .../2830de822ef71972a2b400bcf6bf8511adde266d       |  Bin 0 -> 39 bytes
+ .../283dabfdb8ceb16dafaf6279ab5648028daa1d07       |  Bin 0 -> 47 bytes
+ .../283e8b3a37eeec88a14f86af43b59159f4fd127f       |  Bin 0 -> 45 bytes
+ .../289f414d7885263ee06aacf403f99e4f121e65b1       |  Bin 0 -> 82 bytes
+ .../29628cb9507726016d0fda0df7ff7640fe8366f8       |  Bin 0 -> 83 bytes
+ .../29c337a8f3be4143af4d873d820b32d022ecf68c       |  Bin 0 -> 109 bytes
+ .../2a0796f3a1708c4200fc929cd1cc30877603c548       |    1 +
+ .../2a14c14c7a7c63cbb3ba99a55b1b99bda23a6174       |  Bin 0 -> 74 bytes
+ .../2b08c4592865b936e9ad5c37f563337f3cf6feb8       |  Bin 0 -> 114 bytes
+ .../2bbbef01780c426222e5635d366c440143cc1e15       |  Bin 0 -> 38 bytes
+ .../2cd8bc6d2d6332e7f5a65f932ff6a09ac6d61eb0       |    1 +
+ .../2e12e4da4bd09fcf426e4224cffdc8243977a0ac       |    1 +
+ .../2f266288e8b8f23fb2e35cb334d1a7a516669826       |    1 +
+ .../2fe87c349fb11f4ec153608412804353f66c4563       |  Bin 0 -> 140 bytes
+ .../30faa7f60aa123751a6e9d433838ec56423cbfc4       |    1 +
+ .../318ae79d269c55c53d225f0b88dc1996178203c4       |  Bin 0 -> 73 bytes
+ .../31dad03b2464686619324d917ad0ee58e968e4fd       |  Bin 0 -> 110 bytes
+ .../325c7c6909cd3c1512581ac0fd6acbdf43fc8239       |  Bin 0 -> 37 bytes
+ .../32762e2694490dd43505d72b400a3c827e9a8aab       |  Bin 0 -> 335 bytes
+ .../32e42021f503a2b0d622ed5b95ceb264e22fe810       |  Bin 0 -> 387 bytes
+ .../336a3d8b47c2a6e40f2c38edd4dad1fb8213c27c       |  Bin 0 -> 534 bytes
+ .../33aa3a195edb6d375d48a05e5543450fe64e0909       |  Bin 0 -> 654 bytes
+ .../33f4a527ffeb432b1fbbf32646dc7b90b879eec4       |  Bin 0 -> 225 bytes
+ .../3430b259818a8e473d422c4ae60b723c1d9211c7       |  Bin 0 -> 387 bytes
+ .../34a688640df9508f5cf30a932b77a8230d723374       |  Bin 0 -> 42 bytes
+ .../3509f94df492407671f2a076fcff3421c8d5514c       |  Bin 0 -> 140 bytes
+ .../358333bec813636b39e29301ef77bdfdff3146f9       |  Bin 0 -> 683 bytes
+ .../3823178af860fc71e9550adc7e8222e0d73788b4       |  Bin 0 -> 253 bytes
+ .../3869808a9bdecae2d03515a5fe12e2d07d92cfb1       |  Bin 0 -> 635 bytes
+ .../38941691e86e8ec670c04f34e3d8d422291567e6       |  Bin 0 -> 473 bytes
+ .../39ded637b3e2a26cc365c334352277011a8700d4       |    1 +
+ .../3a1cc37594567425cff8f6d026dee02f5c1ac822       |    1 +
+ .../3a2aa30df6047d1dca725719ab6790a7f02559a8       |  Bin 0 -> 118 bytes
+ .../3a59ee0e08a3d0ffe8c8ddf384212203f8e5c57a       |  Bin 0 -> 273 bytes
+ .../3ac4b98fcbac2600179ee7b123f54b23e2ac99d7       |  Bin 0 -> 228 bytes
+ .../3ae7e4a4885b894570f2f0f97152d79fc861137a       |  Bin 0 -> 72 bytes
+ .../3b8d2bbe8118bde8ca50bd8f3de66cea24fce4c2       |  Bin 0 -> 295 bytes
+ .../3b998f34a1ee985e1fbcb70683ee6c564e629e52       |  Bin 0 -> 72 bytes
+ .../3bcb9bea5ce1ed7c6c48147c3e55b915779cdea1       |    1 +
+ .../3cab8a742477131d25a68a7af9b024fabc1414a4       |    1 +
+ .../3cd9eaa32fa1d7449dfbf42f8ed5c8dbb68cffaa       |    1 +
+ .../3dbf1f88211e331178853598bf3a53ac92018b5a       |  Bin 0 -> 292 bytes
+ .../3ec119b64268bc67b3d1e36a0452819d99c38624       |  Bin 0 -> 284 bytes
+ .../3f7992ca499d9e3c1dbb5c939ecac397bb2bb468       |  Bin 0 -> 356 bytes
+ .../3fd98c579b3c57a08151d1df5ce899070589491e       |  Bin 0 -> 142 bytes
+ .../401448b9449dfdb239583b02a7c445d8d2c2a8b2       |  Bin 0 -> 533 bytes
+ .../408e3e70f116609caa0471360afefcb2a19a67dc       |  Bin 0 -> 43 bytes
+ .../40c2a748dbb35bfeab465b0451177eed86f8f6b8       |  Bin 0 -> 564 bytes
+ .../41d6fff903f6dcdd016092c9037018f513b95cad       |  Bin 0 -> 80 bytes
+ .../41e4aa6ed585ef6a3caebe9b0e21fd305863d883       |    1 +
+ .../428a49aed80ed27bbdafcac8519ca4232237d6de       |  Bin 0 -> 247 bytes
+ .../42b324c185b80c8667631947648e5dc37bc25751       |  Bin 0 -> 85 bytes
+ .../434a3786e1404a6da18fc8cacf22a06eb5da9a62       |  Bin 0 -> 51 bytes
+ .../43a124d9f5ddb7fe7aefaa1cfb0fa6d8daf36aa9       |  Bin 0 -> 47 bytes
+ .../43f46376b5a6d4f0e0ef8bce23d83a64d3df7cda       |  Bin 0 -> 110 bytes
+ .../43f7f9fd785822961d6ecbf1635dadb45c52a3ca       |  Bin 0 -> 142 bytes
+ .../4452d71687b6bc2c9389c3349fdc17fbd73b833b       |    1 +
+ .../450278dc4e5bad57e8ce93cd8295fc63f84a3ad5       |  Bin 0 -> 64 bytes
+ .../4615dc6b60f43e798a006a9e7ab628bf01328cd9       |  Bin 0 -> 97 bytes
+ .../46a81cb49c97d2023d69ac219016794b1ce62320       |  Bin 0 -> 163 bytes
+ .../46c1bdb5302f1a0605073a3d85492c085965b34e       |  Bin 0 -> 47 bytes
+ .../472c9855186dcc8bb5a113fc1e816ea50291d787       |  Bin 0 -> 245 bytes
+ .../4759c6999e6294080b7d621c5fee6f0057df7925       |  Bin 0 -> 335 bytes
+ .../47e84cfb4ba60cb0c5e3233d28666bb110e9b2b2       |  Bin 0 -> 108 bytes
+ .../4886c40b784baf1bf33481d1aba271b1625f85b6       |  Bin 0 -> 142 bytes
+ .../4a0a73d6e10399947cd50833d40a31648b62abac       |  Bin 0 -> 102 bytes
+ .../4a23271973fdd6097eddbb7ee795efbc2ecbfb97       |  Bin 0 -> 651 bytes
+ .../4a9af191820b21bd1226e34bc84b4865f3e78a96       |  Bin 0 -> 296 bytes
+ .../4a9dc49cb9a7b60ed0af23ed573878d7c747035d       |  Bin 0 -> 631 bytes
+ .../4aac938b376fb1653a6e1733b9db54c97a623372       |  Bin 0 -> 67 bytes
+ .../4abb453496c95d962e3462418a36d2952fdbdc87       |  Bin 0 -> 96 bytes
+ .../4b02371ec12339ab20e3aa16fd0f114e3d23638c       |  Bin 0 -> 95 bytes
+ .../4b2636678df542cb98d2587f26bff8196833ce32       |  Bin 0 -> 74 bytes
+ .../4b30c2b1ca93c2874e2daf86cb232c9939eb4c45       |  Bin 0 -> 38 bytes
+ .../4bbad6851dfd2a823cf94da7a21671b1cb05c66d       |  Bin 0 -> 145 bytes
+ .../4cf5a5412579bb8c087e19576226625a60b9a5b1       |  Bin 0 -> 248 bytes
+ .../4d055e3fa97bccad5b2fdb597e96937c01fa1f84       |  Bin 0 -> 225 bytes
+ .../4e4bf91b22bf94fa1ef8f5c85ed37a565cbf7754       |  Bin 0 -> 183 bytes
+ .../4f468a9a24ab92991e12d873d247138a2b7188f9       |  Bin 0 -> 79 bytes
+ .../4fb125454a2c9b0be55e9463528c0170cd8ae010       |  Bin 0 -> 37 bytes
+ .../5026d4e7b5d03ebef53eaf392d165a44c352496b       |  Bin 0 -> 319 bytes
+ .../5037547f7b851a37b17f5d32dbab34036e973b3a       |    1 +
+ .../50959cfd40d82d5fba91f2e15adcc1f9f3aa4465       |  Bin 0 -> 142 bytes
+ .../50bb96c24660374113afc5606cb078fb6de83792       |  Bin 0 -> 119 bytes
+ .../51b9f30a5d83774299bbacb2f95cf4c19924d979       |  Bin 0 -> 199 bytes
+ .../5283c77aed7beb30565311690760b5811054cf06       |  Bin 0 -> 74 bytes
+ .../52faa58617f3e0f5c82abb316c2fb0c6b97ff6ba       |  Bin 0 -> 69 bytes
+ .../53bb88553d175f64f912e09eacde819a5599b09c       |  Bin 0 -> 41 bytes
+ .../53dfc60b71b92f8cf6c39c027e36b2d74622fc33       |    1 +
+ .../54c95c2a4bc25797f234d44358a77eca39dc02f4       |  Bin 0 -> 290 bytes
+ .../54d9c27d4ead241fe3a9af35a3ce94ba0ac9053e       |  Bin 0 -> 90 bytes
+ .../54ea6e862a9d2b5fc27d2ae39cd90fc943078c9e       |  Bin 0 -> 247 bytes
+ .../55a0253bb57c3aecf3e2e8086459936035ed829a       |    1 +
+ .../5685b191e12a888ebfffb408a4cfa1dee4a52c78       |    1 +
+ .../568b592f3b7a537a11005a8dfab8d6b20ff20663       |    1 +
+ .../57cb8aa937fa0f035bf5e3a8bc8bbc01b85ef4e5       |  Bin 0 -> 231 bytes
+ .../57d3c24be77a3a02e64a9a0955c2e7af255f2aa8       |  Bin 0 -> 42 bytes
+ .../57fd5a5e0a4bbbb18e934e18007be7f1cb9c1807       |  Bin 0 -> 258 bytes
+ .../5838f20161a820f71b567c79b55182b2d029f1f8       |  Bin 0 -> 71 bytes
+ .../5894a1bc417bece0c980f37d0b35e7f2fd5a8886       |  Bin 0 -> 232 bytes
+ .../589fe18688f3ea4afa0f925b36ebc076341c10c2       |    1 +
+ .../59ecca9c7a7e488f0a373e1c61bf06cb28bdaa2c       |  Bin 0 -> 106 bytes
+ .../59f99bbe1ecfb64af179de69658e7edf0a35a30c       |  Bin 0 -> 725 bytes
+ .../5a3b2fd5643ca320a0889145c0ffffac84486b59       |  Bin 0 -> 540 bytes
+ .../5a7134c93e7adc19e87e531fadaaf56e5b2e774f       |  Bin 0 -> 107 bytes
+ .../5a8ca84c7d4d9b055f05c55b1f707f223979d387       |    1 +
+ .../5b1c939ee713789f885c41edb54a304444b68a84       |  Bin 0 -> 58 bytes
+ .../5b7f512a4ce8d3ea061be5ddee15d1af4e895791       |  Bin 0 -> 246 bytes
+ .../5b91b5a6e2812670fab24b6fe8c1de351cc98fd5       |  Bin 0 -> 41 bytes
+ .../5ba93c9db0cff93f52b521d7420e43f6eda2784f       |  Bin 0 -> 1 bytes
+ .../5c4f2a09793a496a7e44c1326e759dccb5c4a502       |  Bin 0 -> 109 bytes
+ .../5ccca6d9372062b1c798b3dbadffd62949e0a543       |    1 +
+ .../5d1085241185825eca36de3d5037ebe631af1bd5       |  Bin 0 -> 109 bytes
+ .../5e4afe96ccfafb0dbc77063e8e8d3a818e7c96b3       |  Bin 0 -> 297 bytes
+ .../5f163430d995ae0c789ddfa67261914d0cbe1078       |  Bin 0 -> 48 bytes
+ .../5fcc0795bc9ef5af79d3b6968e544c9732d0387e       |  Bin 0 -> 71 bytes
+ .../60d1fdd500839b49905884270f5fc3aad47f8e2c       |    1 +
+ .../60f5b6a493a3d40c38b66fd6f0cdda552b831702       |  Bin 0 -> 37 bytes
+ .../6220faa1f58a94e99690172129e7e0d0e5d88932       |  Bin 0 -> 73 bytes
+ .../62690ce5131ba15f14b48afafb9669fc28d2a103       |    1 +
+ .../634822769f2e2c66919678e28b1b28b6df694b1b       |  Bin 0 -> 79 bytes
+ .../64b26395ee6153d71406a06ac2ecd2304f4884f6       |  Bin 0 -> 58 bytes
+ .../65d7e6b45f612cb6eebe33bd1c05ab836980232a       |  Bin 0 -> 319 bytes
+ .../660f9f36521f29e1c2c20fcf74eefa7f9dfbb43f       |  Bin 0 -> 37 bytes
+ .../679be1b70fb5be3db785afaf69ca85971fa1b254       |  Bin 0 -> 36 bytes
+ .../67b55b645a15d2a24c4197f4273eeff41a1c0a8e       |  Bin 0 -> 249 bytes
+ .../67c00d84766c44c1085d55c9e32ce928f8d1c7f7       |  Bin 0 -> 39 bytes
+ .../67ffcf29b1c133d1d0655c5c197841bede11bbb8       |    1 +
+ .../68744e9b570ee5b406459be5e808dd9c7af5f962       |  Bin 0 -> 86 bytes
+ .../690102ff33a68c9abd3805eb37267f92475b555d       |  Bin 0 -> 72 bytes
+ .../690a8d801310fa929b13987f85930aff52a3eb6c       |  Bin 0 -> 456 bytes
+ .../6a027b108561ead275e80b7ca477e8570abe17be       |  Bin 0 -> 554 bytes
+ .../6bb19671412b85b1d6a4bcc4be030b9fe49ba858       |  Bin 0 -> 84 bytes
+ .../6c5003e1d69b56230b403595b69cc6a81c1f04a9       |  Bin 0 -> 386 bytes
+ .../6d20cb61a325fad1073cb55c513cc88737ad6dc5       |  Bin 0 -> 107 bytes
+ .../6e067d2affa10338c05c2f90d2c7cbf1bb720466       |  Bin 0 -> 74 bytes
+ .../6e077f2fa038c0c6049c1be8d57a77c78bdf236b       |  Bin 0 -> 56 bytes
+ .../6ea38425ead5b5ff5906de39406a4731134049f7       |  Bin 0 -> 212 bytes
+ .../6ea451fc99326cfa00dc9af6bd7f1dcf424f3de1       |  Bin 0 -> 319 bytes
+ .../702e7e16f242d3c80708c3a204b5748e12e47a07       |  Bin 0 -> 294 bytes
+ .../70c545004e97b27ded073ca07cc3299a10f1510a       |  Bin 0 -> 55 bytes
+ .../7131f52a8dd765c6d15081131fbbbccbb38cc8d3       |  Bin 0 -> 388 bytes
+ .../71bd2745cd026f9901af8b659c6c61209dcbc3c2       |  Bin 0 -> 142 bytes
+ .../71d60c9e7626f71589768270cf23f6367fbad2dc       |    1 +
+ .../727026816b14fa76a8d4cad558abd6b3f40b92bc       |  Bin 0 -> 212 bytes
+ .../7271edb2f14fc1ca22ba822d418e3189f9d254f9       |  Bin 0 -> 109 bytes
+ .../728c1084948a3b601206d9fb9d4357e71f453607       |    1 +
+ .../72b0f409bb92c8100b6a465556b8ecfca1d69080       |  Bin 0 -> 73 bytes
+ .../72d6a8a6d9be0449c129ba893568ea1bb9526d10       |    1 +
+ .../72ef23fbcf4e8612eaac753ad46554473f76434b       |  Bin 0 -> 142 bytes
+ .../74be0fb60ceed58d6c4b530dbaea6d8a471e59e9       |  Bin 0 -> 71 bytes
+ .../74fac03c3f1091d23005b0839332161658b04d52       |    1 +
+ .../75a76fa4ec9ac785f812041b57bc310b38e8d6f5       |    1 +
+ .../776a29845b7fd103bf5d3b8eced316b3a969dfc8       |  Bin 0 -> 73 bytes
+ .../776c3a274eac932b7c90b2c955709656bab19c81       |  Bin 0 -> 107 bytes
+ .../7b633b0d4b84d7270c29f934ed1079a2697600e3       |  Bin 0 -> 551 bytes
+ .../7c0d6222bdefb79f8e133282a39da4e4482524a6       |  Bin 0 -> 177 bytes
+ .../7c20d0069c965b0d03d974eb31fc9055a75c9475       |  Bin 0 -> 57 bytes
+ .../7d57b36a9ae47f944af506228bc2c1fba02bc36e       |  Bin 0 -> 84 bytes
+ .../7e136c4d6fc579dbd2ce9cedd07fb140a21a47c9       |  Bin 0 -> 109 bytes
+ .../7eb52ddbf67729c21c89833c1951be7fb912d5b4       |  Bin 0 -> 83 bytes
+ .../7f2fe78fdb5e6439a1547418c07212b82b3b6ebc       |  Bin 0 -> 48 bytes
+ .../7f594ff2e5542f61476bd2abed8c4a66c8a2bd30       |    1 +
+ .../7f8012e77d12ac79cbb383cb17ca47fa9c4de2fe       |  Bin 0 -> 84 bytes
+ .../81d2f5a74fd7c7497499c0aeae88d2df0f366ba7       |  Bin 0 -> 142 bytes
+ .../81dc4d86dfa456974bcbe849801f15bd3d462cf9       |  Bin 0 -> 106 bytes
+ .../83953a85b42c8c90bd7f7de681dba18f5afeb0b7       |  Bin 0 -> 143 bytes
+ .../8469eee8a1822fdf6481512490245b050e46839a       |  Bin 0 -> 78 bytes
+ .../84b71fb5f284a18d1edda00bf0315bcb5d1e5fe9       |    1 +
+ .../8540605e13831fddf482783c300c50996c6f3659       |    1 +
+ .../857b7736386d66d06cf9f96bf81affe1b4c5551f       |  Bin 0 -> 40 bytes
+ .../85be5b6024ca6c3ef7cb2acb7376af6d869e456a       |  Bin 0 -> 647 bytes
+ .../860e820632bfcf3d4b81c42ab9c392ac46ecc6f0       |  Bin 0 -> 68 bytes
+ .../86eced2b3c04245eb9d89b748344105c31d23550       |  Bin 0 -> 198 bytes
+ .../8721ea04e92fa4fcaa45c3cf51362daace92a4d4       |    1 +
+ .../8730f03c1f76f64fc114ce3816130d3f4bcd1da6       |  Bin 0 -> 80 bytes
+ .../87d38475836d4ae6a3614096c46c6cee5070c36f       |  Bin 0 -> 39 bytes
+ .../880b3864b051365348a55e063275dedca49e1133       |  Bin 0 -> 38 bytes
+ .../88578c4ed4bf389004048fddab7cef8ddb0a6dd4       |    1 +
+ .../886dcf6e322b3170d3a3a3360f60de0635a139e2       |  Bin 0 -> 108 bytes
+ .../88dcad057b24210486263ca89cbe178204c419c6       |  Bin 0 -> 241 bytes
+ .../8997e0cc7c01a1bd8065d67ebb26a424c2f0cc2d       |    1 +
+ .../89ad2f7d4026eceb1b22a559d4888a644489911c       |  Bin 0 -> 267 bytes
+ .../89c38850c5d9e8d7defb9e66e250159426a8d19a       |    1 +
+ .../8aac569b84f9aa83fb35ba5b11af2223c7abd048       |  Bin 0 -> 120 bytes
+ .../8aea4e19f17fe97a1ad18b2d903adbc048ff02b4       |    1 +
+ .../8afbe60f1ba08f3dfefeba2f8b62dd3daf32bbb7       |  Bin 0 -> 49 bytes
+ .../8d28ea7bdfa83b82030580a20ae15c84a5f5f920       |  Bin 0 -> 45 bytes
+ .../8da6fc3839e87354babcc9041b5d62041a284970       |  Bin 0 -> 613 bytes
+ .../8e0f2b8eb62307125b28c24e84a1a6086593fc36       |    1 +
+ .../8e9f48de0f3b3eb0a2018a44219335ab2180714d       |  Bin 0 -> 650 bytes
+ .../8f41954e66287aa7f026068b37398a1b2b312dcc       |  Bin 0 -> 81 bytes
+ .../8febc26c5fa2ff53c89b55576d0aaa79d82392b8       |  Bin 0 -> 303 bytes
+ .../9071c3e31fc0b216932e1e1217d89d2d8166d6a4       |    1 +
+ .../912cf301478d032fbb611fc14cee768b80031ddf       |    1 +
+ .../94407dacd87ea6afbc4d24ea6c5bc0ade11f1bcf       |  Bin 0 -> 107 bytes
+ .../94b2d37c976afa813822cc5d3127d455fe50f9b8       |    1 +
+ .../94bad3803594c9568423d57293584d75cb8ae401       |  Bin 0 -> 96 bytes
+ .../952c73a84c8d720455ffdf0f7f58f5c678549c4e       |  Bin 0 -> 35 bytes
+ .../95655f6f0c8345edd570813f2178367973dbf6b8       |  Bin 0 -> 109 bytes
+ .../96051abb664d6e7348d37f5c503926a503018ec1       |  Bin 0 -> 47 bytes
+ .../96b8545fbfc6e13f57b6f8b6b8436e2fece73e22       |  Bin 0 -> 108 bytes
+ .../9756097aa7761c759f10e36a52566ae16e5d9ca5       |    1 +
+ .../9825bfd489c75384b83743320cb8e90a6a5517ee       |  Bin 0 -> 47 bytes
+ .../982f1cae7939fd7a6799e8e9d84b9bcad94422af       |  Bin 0 -> 240 bytes
+ .../987f5ba901e99765548856ca42261245acfb101c       |  Bin 0 -> 141 bytes
+ .../9909212db908f7517a9c126a41a8ab1bbc8577a1       |  Bin 0 -> 73 bytes
+ .../993a7211f3f2d3c1df51ca9e5b70e640742d5cb8       |  Bin 0 -> 60 bytes
+ .../9ad99dcde828ad65ea58da2cf6b74be67f0ccf72       |  Bin 0 -> 530 bytes
+ .../9b9ebba63bf2271b6c387be7c56ec67d6b52a243       |  Bin 0 -> 259 bytes
+ .../9bc0522a3ce7a5e384261a05d96e98f402d02267       |    1 +
+ .../9bc5a535f656240df33d5e6b2da09f8b435d06c1       |  Bin 0 -> 35 bytes
+ .../9c3d51bea2afa15f60fa9751b963e76e3c2cc826       |    1 +
+ .../9c4b1f201c75cf4982fe6674a8c9f71e738592f5       |  Bin 0 -> 142 bytes
+ .../9c5aba33ff35e2df616c8dc4fcb769add2cb6e98       |    1 +
+ .../9d2c46984b0da7c05125582014d6d532dd27df3c       |  Bin 0 -> 37 bytes
+ .../9dc6bc9dc39891b4dc24d84b0615106e8afeb6fe       |    1 +
+ .../9ff46b37cfdfa2303939cab1a17b21e8f6190924       |    1 +
+ .../a03df86de20d5bbf31a6322751404c5e60bc959c       |  Bin 0 -> 141 bytes
+ .../a0bdec4965203cbd944bfba0d37d5a698db658b5       |    1 +
+ .../a14ee886e8704326594d99ac660c5eca73432da3       |    1 +
+ .../a1c16c803c45f2285c55f7d70abe53a56b9c0436       |    1 +
+ .../a1df474f239be829d93d70cef81190dab1fabbd2       |  Bin 0 -> 630 bytes
+ .../a336dc79f9417e1185fc699156ba9b176ebb9bae       |    1 +
+ .../a3fcca12a6b57ee399cb10c37e8a9da848acad18       |    1 +
+ .../a404505b5bdbe767cec73eda68350502bd4cc791       |  Bin 0 -> 55 bytes
+ .../a457b4fbbc902f706b69c66a82dc76c67a053260       |  Bin 0 -> 249 bytes
+ .../a4ba675f8dc2d38e18501c4fb5a93ffa5768f789       |    1 +
+ .../a515e4774e846f955647ea9e29bab8d3be7428b6       |  Bin 0 -> 109 bytes
+ .../a55226c8f18467b54c2e7ef32c8d8e4ba30d82d7       |    1 +
+ .../a66b62e403a209ef9aa43a135b6983ead2540e62       |  Bin 0 -> 184 bytes
+ .../a6c012c04706765f052f4c08927f7cad094fae34       |    1 +
+ .../a6d5023b0b31cbe30cc21871146a80ead5eb99ad       |  Bin 0 -> 118 bytes
+ .../a7c964d388e6410295fb3f1333c8dfdc8a84dc3a       |    1 +
+ .../a8ceed3857744a8ea286bf1aa7c5f7c5f0f9115f       |  Bin 0 -> 582 bytes
+ .../a8d4171536c7483782d0479905d28d31e3fe11cd       |  Bin 0 -> 81 bytes
+ .../a9e9d3ce5e026fd07c5269c777ad12a9a1c31956       |  Bin 0 -> 94 bytes
+ .../aa167151e997615fd28ba5f586b50a75445b9ec3       |  Bin 0 -> 72 bytes
+ .../ab412d2e56c9354c42aef05a32bf99870f7e8c3a       |  Bin 0 -> 107 bytes
+ .../ab6593343150007bf2a6b19e858ca872a9efd7b0       |  Bin 0 -> 553 bytes
+ .../ab8624f7112eb52f524ffeec35dd41d8be6845a6       |  Bin 0 -> 326 bytes
+ .../aca3eeca82a0e2604033d6b30df083f14d05c70a       |  Bin 0 -> 283 bytes
+ .../ad3aa6ad52fcdb77da1c4765d4da7e66e748d259       |  Bin 0 -> 146 bytes
+ .../ad441c242f47e00534441ffdd2b58b6f3baf3b83       |  Bin 0 -> 104 bytes
+ .../adc62ca290a5f68b1e0d84333139968741e650b8       |  Bin 0 -> 72 bytes
+ .../ae339d3ca3549a4a541b819e9e75bdbd92918c39       |  Bin 0 -> 561 bytes
+ .../ae6e3872ed090b6c47cc1b9057ba72b860f26ec9       |  Bin 0 -> 652 bytes
+ .../ae84dae5ee4f07db2d37fd56c690edb4b9601e22       |  Bin 0 -> 94 bytes
+ .../aef7d54acb1321fe05b0b75d40ee3888108f5925       |  Bin 0 -> 649 bytes
+ .../af5052fb8b4726ad8d1d2337877815396890fe13       |  Bin 0 -> 56 bytes
+ .../afe97f33ad1b7feb9fa9e1085d814f00874b9450       |  Bin 0 -> 38 bytes
+ .../b0d2dd7562e47288d54c590189a4546cfca2986c       |  Bin 0 -> 66 bytes
+ .../b20172ebe23649fe7b898e404d1670a205ec1929       |  Bin 0 -> 667 bytes
+ .../b26fe75c7a05e3702b602767461a9033d985b031       |  Bin 0 -> 73 bytes
+ .../b2f1908bb375a32f59c9c42ad446f822d1e54dc0       |  Bin 0 -> 350 bytes
+ .../b2f991ff20dc8e571083384b53b82400e4ba9a6e       |  Bin 0 -> 358 bytes
+ .../b3056b345c73efc954eae5568c7f39233ed46319       |  Bin 0 -> 115 bytes
+ .../b3477b2d1e29edd1a7f72e2e8b791edc4e190d7d       |  Bin 0 -> 47 bytes
+ .../b46b1f54763142976f70e2812622bb907e9642e6       |    1 +
+ .../b4f87f4d9f07fea221f905adab72f30cec346b3a       |    1 +
+ .../b53917ca8f032ac4d36da2923855635fb998af5e       |  Bin 0 -> 37 bytes
+ .../b5690f6224b68a7c0f1032fab936b082c84d837e       |  Bin 0 -> 73 bytes
+ .../b6844a001655a80eb4e2029102bb8b870e62e07d       |  Bin 0 -> 48 bytes
+ .../b698d67f18be5c5bda63d530379ba625032f69d8       |  Bin 0 -> 109 bytes
+ .../b7251496b019a535535285f68acb7b9099dd7742       |    1 +
+ .../b798345096011d2f3df89c03f30d526a08550ae3       |  Bin 0 -> 38 bytes
+ .../b7a8725a248ed64a3d99e9f6074f1d4c6a30c0df       |  Bin 0 -> 107 bytes
+ .../b7abfc8f1ad0b64b1fa064649d03c5708c2cf31c       |  Bin 0 -> 685 bytes
+ .../b83d2b73992c9c5ab1018863763e09cbec1b4bb3       |  Bin 0 -> 38 bytes
+ .../b92716d0ffb11f8b1621f64b397455d65382bd5c       |    1 +
+ .../b934dce9e29ad7b964da7f62b27429d167a929cd       |  Bin 0 -> 107 bytes
+ .../b93ff506e69eed8691506090477caa86e7fcbbe6       |  Bin 0 -> 607 bytes
+ .../b9a2515f7a92205bd94fe62010dba4151c8ee9ce       |  Bin 0 -> 67 bytes
+ .../ba6d80555196e41edb665c041b3e37a3790d0c6d       |  Bin 0 -> 120 bytes
+ .../baa8388ddd075f94a48b4398cce5a6d0e1e301c7       |  Bin 0 -> 94 bytes
+ .../baeeb5922d984d6089a7f80e2534be267aa9b1ae       |  Bin 0 -> 72 bytes
+ .../bb5c59667b9e9bcffa67beaca452bb252cc40630       |  Bin 0 -> 717 bytes
+ .../bbb68f65625e9326e9b4185f64a5311f2df10cac       |  Bin 0 -> 312 bytes
+ .../bbb95bb82dcfde5b545f6477960454b84b5e3bbc       |  Bin 0 -> 112 bytes
+ .../bcebc73d177e5df89432b7d628e9b44f27d8e4d5       |    1 +
+ .../bd04a9c533058c3e5a0497bbb39d44bd3d6f936a       |  Bin 0 -> 618 bytes
+ .../bd95e820d71d38d038b99fef1e0188468174b36a       |  Bin 0 -> 560 bytes
+ .../bf771083d44e9234cbf13d44bc21ab282e2ae4c8       |  Bin 0 -> 55 bytes
+ .../bf9913b89ac42824b544c671c54e9e25282e0ca0       |    1 +
+ .../bfaf67fbdbc137b0701f6c622fb5d78169d9058e       |  Bin 0 -> 490 bytes
+ .../c0107696784ce68d9c2bb5bd42b33c0d4015c0b0       |  Bin 0 -> 683 bytes
+ .../c081e7486a9073846768c652e6b4b88302dcaa5c       |    1 +
+ .../c085a27dc686c72f76012a210ccd59a87affcb7d       |    1 +
+ .../c220856c88178260ef23b4cabdaaff9573fd42f6       |  Bin 0 -> 42 bytes
+ .../c23b6bbf9cea9affeea1444c358ffeb308736ccd       |    1 +
+ .../c2e40a13f9f8cdc463339dc0c872f10b3f34ba45       |  Bin 0 -> 532 bytes
+ .../c3adf93738ff40eb7037ae984585f6921363b450       |  Bin 0 -> 297 bytes
+ .../c3e49e1338930f091c7d5c266cb18a084d60f608       |  Bin 0 -> 40 bytes
+ .../c42e5c15d559e907120a6655ca70e31440dec4fc       |  Bin 0 -> 242 bytes
+ .../c4d64da846cd4196ca52c4b326f98125bad53a0b       |  Bin 0 -> 248 bytes
+ .../c4f2ffb0d0489ce21ea3805c9f09388dd0f74a72       |  Bin 0 -> 48 bytes
+ .../c57c8e6d6a0517959598de2c08de5cf8daa440ce       |    1 +
+ .../c5805a45be51fc36a9c4244f733762ef54094b06       |  Bin 0 -> 229 bytes
+ .../c5c9a185ab38503a12c10d3ce6db2c0de62b67dd       |    1 +
+ .../c5e47401473e0622ed79cbe57e9eaaf73451d5bd       |  Bin 0 -> 73 bytes
+ .../c62f7cd90243c63deef4f923a0345a24dbb504b4       |    1 +
+ .../c64ee15269493a813e523f4b8ca4212c0f6f961e       |  Bin 0 -> 119 bytes
+ .../c7556f36e6f5676eab994d9cdf1e73f8b1cd4fad       |    1 +
+ .../c796ec9d8e097fcf8c1b63ea92036d237ea90606       |  Bin 0 -> 56 bytes
+ .../c7a963637634e8211202f4a8d9ea0c1798bbbf61       |  Bin 0 -> 674 bytes
+ .../c8b9515dc723e98059752baa7a2b4acedd2e9bdc       |  Bin 0 -> 107 bytes
+ .../c95635552bdedb6dcd8ae3b475fc0c6a7f599718       |    1 +
+ .../ca72ec268686d51803297ffc29f7b10a3cbdeed2       |    1 +
+ .../ca7e36c683bbbfb42c97409c414d7b26722b85b1       |    1 +
+ .../caa341626ab2ba59fedb7738b9457cdba28f9148       |  Bin 0 -> 47 bytes
+ .../cb2149db77c829040b7ba7cf03a5ab0037261843       |  Bin 0 -> 75 bytes
+ .../cbb07c32fb247ecc18aafa81e05eccee606d8c30       |  Bin 0 -> 210 bytes
+ .../cc8101f5c0e53c1c3adc992953dbf695fb19b422       |  Bin 0 -> 322 bytes
+ .../cc911cdea78de939ae769fea5562fe215e8bd4cf       |  Bin 0 -> 47 bytes
+ .../ccad54410c7382a274d2b6c29a777dd9bc95b421       |  Bin 0 -> 39 bytes
+ .../cd092308fd31c5ad734dcce59e9bb4f8d25a72fe       |    1 +
+ .../cd37b2692a24975560a953bd542abfb452d0fd31       |  Bin 0 -> 114 bytes
+ .../cd5a69a8bb347e2b940e9f9970b3f21642f22bb7       |  Bin 0 -> 142 bytes
+ .../cd65b81a4ba6e8e6119b890252d351cc69fe5d81       |    1 +
+ .../ce1dc928c0dce63c8a27d708df68fd669f5f668c       |  Bin 0 -> 58 bytes
+ .../ce83a4f4cf36356b4ae9966a6e1540f86e17498e       |  Bin 0 -> 318 bytes
+ .../cee5e1bebd49ab4eef6b6ded3b090b272ce7469c       |  Bin 0 -> 370 bytes
+ .../cf1afea2c7eae96d4203540f0ce6cd3fad3e5403       |    1 +
+ .../cf5007c9a47d427fe2e718dbcd2ae764ee55947c       |    1 +
+ .../cfc5c3cccbb268d1c4794e0430ab39f5e22bcf43       |  Bin 0 -> 109 bytes
+ .../d03269a1c0136958a535a3a503048a7eeadedacf       |  Bin 0 -> 67 bytes
+ .../d1bd9d6ff2d9f1704953181a0f0afdc0925b6b0e       |  Bin 0 -> 343 bytes
+ .../d34e193a36da934d06cd30452353c20b7030700f       |  Bin 0 -> 53 bytes
+ .../d35a58ebd7d9285175e34b682701480bde77d3f2       |  Bin 0 -> 247 bytes
+ .../d38b5dd6ec9f38b613c4235cd0970a53fb28f3b5       |  Bin 0 -> 98 bytes
+ .../d3d3a95457bcf316d4566300c547eb240e74fc5d       |  Bin 0 -> 278 bytes
+ .../d3f642c3073d6ca6d1df50e8e9e8548ce624b1fd       |  Bin 0 -> 141 bytes
+ .../d4e2636a6740e8d15d6c9ae286301c4a2aa9b6cf       |    1 +
+ .../d53f753f96e2c71fdaf92bdbd1c21be91eb6f46a       |  Bin 0 -> 640 bytes
+ .../d5586b6463a88d77055c4cb0b207ca59900239b3       |  Bin 0 -> 85 bytes
+ .../d5d5b63afb1654546e9c802c72a667576720cb5e       |  Bin 0 -> 497 bytes
+ .../d5f5262efceedac505406c315a261e972b073ccd       |    1 +
+ .../d67ac8809abcc9e4b3d9dad6e83f95a474c875a2       |  Bin 0 -> 460 bytes
+ .../d6d251c9a6a70215e462ac4b30c7338eb0bb1d92       |  Bin 0 -> 74 bytes
+ .../d72ccb94f05c1fcfa94ef5ef48447c4276262236       |  Bin 0 -> 43 bytes
+ .../d79981e6e40834ded50097c2cd0d81918be8a4b6       |  Bin 0 -> 232 bytes
+ .../d8e516415be8e508e6515383607d6656b1992ed6       |  Bin 0 -> 247 bytes
+ .../d901d0b54c9dc3dd2d343aaeb4633ab07b590bae       |    1 +
+ .../d94b2b8a092ff29d72458eeb607a4e0f98b1c38b       |  Bin 0 -> 47 bytes
+ .../da5538c411452767035fea6aa76fce151d0634f9       |    1 +
+ .../da9ae00ceddd2913df8e53883de405029140d845       |  Bin 0 -> 141 bytes
+ .../daa18bf030fac2f6e59bf4428cce058113afc26b       |  Bin 0 -> 564 bytes
+ .../db2effb272042a7b73a593ae682859211c63685c       |  Bin 0 -> 40 bytes
+ .../dbf99f2a9ad43f4b2e896c28f6491dd149986cda       |  Bin 0 -> 48 bytes
+ .../dc8c4c7dae091a7902e9f927b96957fa2a3fc00c       |  Bin 0 -> 180 bytes
+ .../de30a7e9d7bf2360583b46b839d10734374afcc2       |  Bin 0 -> 142 bytes
+ .../e049f302f8cb577711fa2b4f4166f2156820820f       |  Bin 0 -> 536 bytes
+ .../e058d6ad7750e3d1ec4ecb1714ecc61ab9777aa4       |  Bin 0 -> 76 bytes
+ .../e0fbfb21261ed7cc05932bdd3a58a49374cc4a12       |  Bin 0 -> 253 bytes
+ .../e277d9460e8a1c7a96923d60035136cbc2d16795       |  Bin 0 -> 57 bytes
+ .../e4a4592b01459f77b5ccc254aceb753764c57a6e       |  Bin 0 -> 71 bytes
+ .../e4def16d85081f8fcffa0d2f740bbf4abcad02e1       |    1 +
+ .../e4e583bdf94999a667af4ebf3a76a8215a4d8976       |  Bin 0 -> 41 bytes
+ .../e518b63b49987d60be9faf357dcc6aa7c5833f0a       |  Bin 0 -> 143 bytes
+ .../e59a68b5df51044e05394e99ce3bca4cc7ee7e03       |  Bin 0 -> 46 bytes
+ .../e5ccec30eab1213f9edc186e0e8edad0f0c98e7d       |  Bin 0 -> 96 bytes
+ .../e66ef2d915c0ea83265a9dd509635ba0035112fa       |  Bin 0 -> 107 bytes
+ .../e687bfb8b4c4f0827d83aa34ba46a97a9eb7969b       |  Bin 0 -> 84 bytes
+ .../e6e689f699bd0f18089f091d25fb7c1584e5a9f6       |    1 +
+ .../e7489cda6016722364fa7e28adbbcaa6a4f274de       |  Bin 0 -> 80 bytes
+ .../e74d51e601db5143c1b528970b1a7e93659c6032       |    1 +
+ .../e7dcc0fede42e201fc6512f30145812d38c5aede       |    2 +
+ .../e83dec6bcbbbcb3f973377ef3c5ab0d768b5f3a9       |  Bin 0 -> 59 bytes
+ .../e88551b9cf0aa6c747aaa2e5b59030d395256d9d       |  Bin 0 -> 182 bytes
+ .../e90e728511c5f777843ea5e626b9674de64fc025       |  Bin 0 -> 224 bytes
+ .../ea99af66fb1e9f57b31aee33929c4be07aeb1531       |  Bin 0 -> 74 bytes
+ .../eb2fdd8e5576aadaf74e1aabd8f12bd8a511570d       |  Bin 0 -> 299 bytes
+ .../eba107fba637d65dad91c106ac690bf19a00518d       |  Bin 0 -> 142 bytes
+ .../ecdd96364af72a47fb04c8f23c44215c68d67216       |  Bin 0 -> 217 bytes
+ .../ecee465ca18faf239655e7fa9ef38f87e6d60703       |  Bin 0 -> 676 bytes
+ .../ed57bfa07e24de9d5a66e69e069349efa4262719       |    1 +
+ .../ed79920a1234d04da3863f92c5d743b08948eff2       |  Bin 0 -> 151 bytes
+ .../ed9684f1c9daf4e244465c53d3a349c8811c3f7b       |  Bin 0 -> 352 bytes
+ .../ee10ea3c3235881db33583a18bcd2093dabdf34c       |  Bin 0 -> 41 bytes
+ .../ee17560c8b77385b5bb8d8687820f9b82f3fdcdf       |    1 +
+ .../ee328d338910616ed4f94c1d9b86c33db5a5f81e       |    2 +
+ .../ee329abc157f43591650f5e8b46f72eaa103ba93       |  Bin 0 -> 122 bytes
+ .../eed6b5d540d882e8ac2f8bcf27937d9a54a077ac       |  Bin 0 -> 422 bytes
+ .../ef4d3200337e26745348080686f76e66b9725515       |    1 +
+ .../ef7372908f110abfc85237b1d2568edca1fb068b       |  Bin 0 -> 135 bytes
+ .../efd1ba3f0310ffd3d5f203353591c91d5e05f615       |  Bin 0 -> 42 bytes
+ .../efe0de76a403d08ea0128bb112ebe5ff366b67d9       |    1 +
+ .../f0945e0cd1c9b50174ae10b66ea21327965a6a6a       |  Bin 0 -> 109 bytes
+ .../f1952e8c935db11657e38b4b0ebcf1de8c08d53d       |  Bin 0 -> 73 bytes
+ .../f1a5140475d3881b1c2c340cf27f52c43142424f       |  Bin 0 -> 177 bytes
+ .../f1fbfd11bd1080934a4a40a381423c83d98296a9       |    1 +
+ .../f21ab8d9379b91942714265abeb1f8f7d60eecc4       |  Bin 0 -> 74 bytes
+ .../f26d0d6c27092feb987b73071d4d037d1447e9e2       |  Bin 0 -> 212 bytes
+ .../f2fc5e2936ae138403e2f2d9dc458c5b65d88dea       |  Bin 0 -> 284 bytes
+ .../f30868f45220715d435b8231652e35bd9811bc29       |  Bin 0 -> 74 bytes
+ .../f3721f4c438c3a6685d6fea25c4c511a0e6f50e1       |  Bin 0 -> 55 bytes
+ .../f380cd83071faa7c84fb7074fab0798de5915c99       |  Bin 0 -> 43 bytes
+ .../f396b03bce60d583fd306d381afb6034c63813ac       |  Bin 0 -> 647 bytes
+ .../f438486529aff561570084dd1aeacde83efbf9f3       |  Bin 0 -> 317 bytes
+ .../f51131838ee6c0a96555a46c385d8fbd87c000cd       |  Bin 0 -> 141 bytes
+ .../f5347735df402e55c13b5ae098403a13001f07d1       |  Bin 0 -> 107 bytes
+ .../f5ff46e67b04e1bf89ef921aba07c8ef540321aa       |  Bin 0 -> 49 bytes
+ .../f70293ad82a35d17c7fceca456878f85c9060e37       |  Bin 0 -> 248 bytes
+ .../f76b09997a1fbeecff01e364ce4c1de1e8858c63       |  Bin 0 -> 496 bytes
+ .../f77b444693fd6a4a39660066c2327bbcc7bc48bd       |  Bin 0 -> 395 bytes
+ .../f784d11df632ac98f7c10849a035bcbb423db938       |  Bin 0 -> 76 bytes
+ .../f79607cbcb9037ed0695aaf1614dd5129074a678       |    1 +
+ .../f80bdd289ec9b654b645a14d73b126614b958a5e       |  Bin 0 -> 59 bytes
+ .../f84601f242416d882862c8c9dfdbfcf076c970d9       |  Bin 0 -> 43 bytes
+ .../f86d53faaf2f0a44143669d19a07fa044ee7119a       |  Bin 0 -> 148 bytes
+ .../f8a15c50b381dc91ee10c9b3cf1fbb9e3ae099f8       |  Bin 0 -> 145 bytes
+ .../f8b338558268e3dea0b49df93c66607d49558789       |  Bin 0 -> 40 bytes
+ .../f933f1a21b92225d4bf4e126531a5751d0c3462b       |  Bin 0 -> 338 bytes
+ .../f9d6abef29f59c7fe0ac391e431ebbda3acd9e05       |  Bin 0 -> 179 bytes
+ .../fa0c7acb1cdf66c3c3e87ab81dea7d152187099c       |  Bin 0 -> 142 bytes
+ .../fb0f5ca7385458ec827563438916fab5ed2a84df       |    1 +
+ .../fb6681f60f30bbd0fb201c2b1829c8124a2f901c       |  Bin 0 -> 228 bytes
+ .../fb6977c3c0f471e279d6a49183251bf5ad7fc57d       |    1 +
+ .../fb9a192874909384c7b4b28f9758f3c0e6ba0751       |  Bin 0 -> 141 bytes
+ .../fbdb731643957b1115f5b4868dc8eea0eefc4d44       |    1 +
+ .../fdd2cdbea769df41a66d2dba66efa2a849de8389       |  Bin 0 -> 93 bytes
+ .../fe5b3de442b056459596c5d24a40010d2c712e0e       |  Bin 0 -> 45 bytes
+ .../fec51469df486f4fd3976283bda04d7d0c6de060       |  Bin 0 -> 349 bytes
+ .../ff30889749ff70fb4d591035267a4a8c1daf55e4       |  Bin 0 -> 55 bytes
+ .../fuzz/corpus/fuzz_menu_parser/seed1.bin         |    1 +
+ .../fuzz/fuzz_targets/fuzz_menu_parser.rs          |   97 +
+ crates/kynex-dbusmenu/src/error.rs                 |   64 +
+ crates/kynex-dbusmenu/src/event.rs                 |   41 +
+ crates/kynex-dbusmenu/src/lib.rs                   |   35 +
+ crates/kynex-dbusmenu/src/limits.rs                |   28 +
+ crates/kynex-dbusmenu/src/parser.rs                |  234 ++
+ crates/kynex-dbusmenu/src/raw.rs                   |  106 +
+ crates/kynex-dbusmenu/src/sanitize.rs              |  169 ++
+ crates/kynex-dbusmenu/src/types.rs                 |  131 +
+ crates/kynex-dbusmenu/tests/dbusmenu_core_test.rs  |  443 ++++
+ crates/kynex-dbusmenu/tests/proptests.rs           |  139 +
+ crates/kynex-ipc/src/lib.rs                        |   12 +-
+ crates/kynex-ipc/src/tray.rs                       |  123 +
+ crates/kynex-ipc/tests/ipc_tests.rs                |    1 +
+ crates/kynex-shell-core/Cargo.toml                 |    4 +
+ crates/kynex-shell-core/src/coordinates.rs         |   21 +
+ crates/kynex-shell-core/src/lib.rs                 |    7 +
+ crates/kynex-shell-core/src/menu.rs                | 1620 ++++++++++++
+ crates/kynex-shell-core/src/tray.rs                |   31 +-
+ crates/kynex-shell/build.rs                        |    1 +
+ crates/kynex-shell/cpp/shim.cpp                    |   46 +
+ crates/kynex-shell/cpp/shim.h                      |    1 +
+ .../kynex-shell/qml/Kynex/Controls/KynexMenu.qml   |   85 +
+ .../qml/Kynex/Controls/KynexMenuItem.qml           |  212 ++
+ crates/kynex-shell/qml/Kynex/Controls/qmldir       |    2 +
+ .../kynex-shell/qml/Kynex/Shell/plugins.qmltypes   |   88 +-
+ crates/kynex-shell/src/lib.rs                      |    1 +
+ crates/kynex-shell/src/menu.rs                     |  994 +++++++
+ crates/kynex-shell/src/shim.rs                     |   10 +
+ crates/kynex-shell/src/tray.rs                     |   91 +-
+ .../kynex-shell/tests/real_tray_menu_model_test.rs |   17 +
+ crates/kynex-tray/src/registry.rs                  |    9 +
+ dev/bench/measure_stage_p.py                       |  823 ++++++
+ dev/bench/stage_p_perf.json                        |  316 +++
+ dev/demo-dbusmenu.sh                               |  172 ++
+ dev/demo_fake_item.py                              |  380 +++
+ docs/DBUS_API.md                                   |   27 +-
+ docs/DECISIONS.md                                  |    3 +
+ docs/ROADMAP.md                                    |    2 +-
+ docs/SECURITY_CHECKLIST.md                         |   61 +
+ docs/THREAT_MODEL.md                               |   33 +
+ .../adr-015-dbusmenu-subsystem-and-contract.md     |   61 +
+ docs/work/claims/stage-p2.toml                     |   87 +
+ docs/work/claims/stage-p3.toml                     |   64 +
+ docs/work/evidence/p-audit-gate.txt                | 2683 +++++++++++++++++++
+ docs/work/evidence/p-bench.txt                     |  124 +
+ docs/work/evidence/p-budget-check.txt              |   37 +
+ docs/work/evidence/p-cov-daemon-tray-menu.txt      |   55 +
+ docs/work/evidence/p-cov-kynex-dbusmenu.txt        |   54 +
+ docs/work/evidence/p-cov-shell-core.txt            |   76 +
+ docs/work/evidence/p-daemon-integration-tests.txt  |   37 +
+ docs/work/evidence/p-dbusmenu-unit-tests.txt       |   50 +
+ docs/work/evidence/p-demo.txt                      |   44 +
+ docs/work/evidence/p-flake-10.txt                  |  316 +++
+ docs/work/evidence/p-fuzz.txt                      |   47 +
+ docs/work/evidence/p-mutation-tests.txt            |   46 +
+ docs/work/evidence/p-named-mutants.txt             |   18 +
+ docs/work/evidence/p-pr-draft-status.txt           |    6 +
+ docs/work/evidence/p-qml-unit-tests.txt            |  151 ++
+ docs/work/evidence/p-qmllint.txt                   |    6 +
+ docs/work/evidence/p-tokens.txt                    |    6 +
+ docs/work/evidence/p-verify-gate.txt               | 1699 ++++++++++++
+ docs/work/evidence/p-visual-tests.txt              |   21 +
+ docs/work/evidence/p2-audit-gate.txt               | 2785 ++++++++++++++++++++
+ docs/work/evidence/p2-bench.txt                    |  124 +
+ .../evidence/p2-check-bench-literals-evasions.txt  |   17 +
+ .../work/evidence/p2-check-bench-literals-pass.txt |    6 +
+ docs/work/evidence/p2-daemon-integration-tests.txt |   40 +
+ docs/work/evidence/p2-llvm-cov.txt                 |  786 ++++++
+ .../evidence/p2-mutant-revision-check-fail.txt     |   36 +
+ .../evidence/p2-mutant-revision-check-pass.txt     |   14 +
+ docs/work/evidence/p2-nextest-run.txt              |  425 +++
+ docs/work/evidence/p2-old-code-literals-fail.txt   |   10 +
+ docs/work/evidence/p2-placement-tests.txt          |   28 +
+ docs/work/evidence/p2-pr-draft-status.txt          |    6 +
+ docs/work/evidence/p2-qml-mutation-test.txt        |   46 +
+ docs/work/evidence/p2-test-qml.txt                 |  173 ++
+ docs/work/evidence/p2-verify-gate.txt              | 1356 ++++++++++
+ docs/work/evidence/p3-bench-allowlist-check.txt    |    6 +
+ docs/work/evidence/p3-bench-measure.txt            |  130 +
+ docs/work/evidence/p3-budget-check.txt             |   43 +
+ .../evidence/p3-check-bench-literals-evasions.txt  |   21 +
+ docs/work/evidence/p3-guard-diff.txt               | 1650 ++++++++++++
+ .../evidence/p3-old-code-fails-vertical-flip.txt   |   29 +
+ docs/work/evidence/p3-placement-mutants.txt        |   35 +
+ docs/work/evidence/p3-placement-proptests.txt      |   33 +
+ docs/work/evidence/p3-placement-tests.txt          |   50 +
+ docs/work/evidence/p3-pr-draft-status.txt          |    6 +
+ docs/work/evidence/p3-qml-load-stress.txt          |    9 +
+ docs/work/evidence/p3-qml-old-load-flake.txt       |   32 +
+ docs/work/evidence/p3-qmllint-shell.txt            |    5 +
+ docs/work/evidence/p3-qmllint-verify.txt           |    5 +
+ .../work/evidence/p3-real-tray-menu-model-test.txt |   13 +
+ docs/work/stage-p-report.md                        |  507 ++++
+ docs/work/stage-p2-report.md                       |  442 ++++
+ docs/work/stage-p3-report.md                       |  306 +++
+ scripts/audit.sh                                   |    4 +
+ scripts/bench/budget-check.py                      |  174 +-
+ scripts/bench/budgets.toml                         |   43 +
+ scripts/bench/literals-allowlist.txt               |   28 +
+ scripts/check-bench-literals.py                    |  238 ++
+ scripts/check-report.py                            |  223 +-
+ scripts/guard-diff.sh                              |   43 +
+ scripts/mutation-test-qml.sh                       |    3 +
+ scripts/test-qml-stress.sh                         |   45 +
+ scripts/verify.sh                                  |   70 +-
+ scripts/visual-test.sh                             |    2 +-
+ styles/default/MenuOverlay.qml                     |  182 ++
+ styles/default/Shell.qml                           |   86 +-
+ tests/qml_tests/main.cpp                           |  289 +-
+ tests/qml_tests/tst_controls.qml                   |  298 ++-
+ tests/qml_tests/tst_launcher.qml                   |   22 +-
+ tests/qml_tests/tst_real_tray_menu_model.qml       |   37 +
+ tests/qml_tests/tst_shell.qml                      |  195 ++
+ tests/qml_tests/wait_exceptions.txt                |    2 +
+ tests/test_check_bench_literals.py                 |  185 ++
+ tests/visual/MenuHarness.qml                       |   77 +
+ tests/visual/capture.cpp                           |   17 +-
+ tests/visual/golden-menu-checkable.png             |  Bin 0 -> 4725 bytes
+ tests/visual/golden-menu-disabled.png              |  Bin 0 -> 3476 bytes
+ tests/visual/golden-menu-normal.png                |  Bin 0 -> 3284 bytes
+ tests/visual/golden-menu-rtl.png                   |  Bin 0 -> 7888 bytes
+ tests/visual/golden-menu-submenu.png               |  Bin 0 -> 3545 bytes
+ 639 files changed, 25909 insertions(+), 131 deletions(-)
+
+=== Guard files diff ===
+diff --git a/_typos.toml b/_typos.toml
+index 20782ce3..89c45010 100644
+--- a/_typos.toml
++++ b/_typos.toml
+@@ -1,5 +1,5 @@
+ [files]
+-extend-exclude = ["target", "build", "dev/tmp", "dev/logs", "crates/kynex-apps-index/fuzz/corpus/**", "crates/kynex-icons/fuzz/corpus/**", "crates/kynex-notifications/fuzz/corpus/**", "crates/kynex-tray/fuzz/corpus/**", "docs/work/evidence/**"]
++extend-exclude = ["target", "build", "dev/tmp", "dev/logs", "crates/kynex-apps-index/fuzz/corpus/**", "crates/kynex-dbusmenu/fuzz/corpus/**", "crates/kynex-icons/fuzz/corpus/**", "crates/kynex-notifications/fuzz/corpus/**", "crates/kynex-tray/fuzz/corpus/**", "docs/work/evidence/**"]
+ 
+ [default.extend-words]
+ INVOKABLE = "INVOKABLE"
+diff --git a/docs/work/claims/stage-p2.toml b/docs/work/claims/stage-p2.toml
+new file mode 100644
+index 00000000..a89359e0
+--- /dev/null
++++ b/docs/work/claims/stage-p2.toml
+@@ -0,0 +1,87 @@
++# Stage P2 Claims Ledger
++# Maps each claim ID referenced in the Executive Summary of docs/work/stage-p2-report.md
++# to a verified repository test path, test name, and evidence file ID (or untested reason).
++
++[claim-p2-revision-contract]
++test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
++test_name = "test_menu_event_stale_revision_rejected_after_layout_updated"
++evidence_id = "p2-daemon-integration-tests"
++
++[claim-p2-revision-matching]
++test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
++test_name = "test_menu_event_matching_revision_accepted"
++evidence_id = "p2-daemon-integration-tests"
++
++[claim-p2-revision-foreign]
++test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
++test_name = "test_menu_event_revision_from_another_item_rejected"
++evidence_id = "p2-daemon-integration-tests"
++
++[claim-p2-revision-mutant]
++test_path = "crates/kynex-daemon/tests/dbusmenu_service_test.rs"
++test_name = "test_mutant_menu_event_revision_check_removed"
++evidence_id = "p2-daemon-integration-tests"
++
++[claim-p2-placement-four-edges]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_all_four_edges"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-multimonitor]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_secondary_monitor_negative_x"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-scaled-output]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_scaled_output"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-edge-flipping]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_horizontal_flip_at_right_edge"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-oversized-menus]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_500_item_menu"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-mutants]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_mutant_placement_hardcoded_anchors"
++evidence_id = "p2-placement-tests"
++
++[claim-p2-placement-live-nested]
++test_path = "tests/qml_tests/tst_shell.qml"
++test_name = "test_tray_dbusmenu_right_click"
++evidence_id = "p2-test-qml"
++
++[claim-p2-shell-core-extraction]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_menu_state_navigation_and_revisions"
++evidence_id = "p2-nextest-run"
++
++[claim-p2-qml-rtl-navigation]
++test_path = "tests/qml_tests/tst_shell.qml"
++test_name = "test_menu_overlay_rtl_arrow_keys"
++evidence_id = "p2-test-qml"
++
++[claim-p2-qml-backdrop-isolation]
++test_path = "tests/qml_tests/tst_shell.qml"
++test_name = "test_menu_overlay_padding_click_does_not_dismiss"
++evidence_id = "p2-test-qml"
++
++[claim-p2-qml-plaintext-format]
++test_path = "tests/qml_tests/tst_controls.qml"
++test_name = "test_menu_item_properties_and_features"
++evidence_id = "p2-test-qml"
++
++[claim-p2-bench-no-literals]
++test_path = "tests/test_check_bench_literals.py"
++test_name = "test_evasion_scalar"
++evidence_id = "p2-check-bench-literals-evasions"
++
++[claim-p2-bench-hardware-remeasurement]
++untested = "Benchmark execution is a performance measurement harness rather than an assertion-based unit test; results validated against budgets in dev/bench/stage_p_perf.json"
++
+diff --git a/docs/work/claims/stage-p3.toml b/docs/work/claims/stage-p3.toml
+new file mode 100644
+index 00000000..16437112
+--- /dev/null
++++ b/docs/work/claims/stage-p3.toml
+@@ -0,0 +1,64 @@
++# Stage P3 Claims Ledger
++# Maps Executive Summary claims to passing tests and evidence files
++
++[claim-p3-edge-derivation]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_all_four_edges"
++evidence_id = "p3-placement-tests"
++
++[claim-p3-vertical-flipping]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_placement_vertical_flip_at_screen_edge"
++evidence_id = "p3-placement-tests"
++
++[claim-p3-placement-proptests]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "prop_menu_within_screen_when_it_fits"
++evidence_id = "p3-placement-tests"
++
++[claim-p3-placement-mutants]
++test_path = "crates/kynex-shell-core/src/menu.rs"
++test_name = "test_mutant_placement_edge_derivation"
++evidence_id = "p3-placement-tests"
++
++[claim-p3-qml-wait-elimination]
++untested = "Replaced all 15 wait() calls in tst_controls.qml and tst_launcher.qml with tryVerify/tryCompare and verified zero wait() calls in verify.sh check_qml_wait_calls"
++
++[claim-p3-qml-stress-load]
++untested = "Stress harness scripts/test-qml-stress.sh executed 20/20 consecutive passes under 6-core CPU load with zero flakes"
++
++[claim-p3-bench-raw-pipeline]
++untested = "Collector dev/bench/measure_stage_p.py records raw monotonic timestamps only with all arithmetic, padding, and fallbacks eliminated"
++
++[claim-p3-bench-invalid-sample-rejection]
++untested = "Single analyzer scripts/bench/budget-check.py discards and counts invalid/inverted samples and enforces a strict 5% budget ceiling (0 discarded in 30 cold / 30 warm runs)"
++
++[claim-p3-bench-ast-arithmetic-ban]
++test_path = "tests/test_check_bench_literals.py"
++test_name = "test_padding_pattern_binop_shell_lat"
++evidence_id = "p3-check-bench-literals-evasions"
++
++[claim-p3-bench-allowlist-shrunk]
++test_path = "tests/test_check_bench_literals.py"
++test_name = "test_allowlisted_operational_literals_accepted"
++evidence_id = "p3-check-bench-literals-evasions"
++
++[claim-p3-bench-honest-remeasurement]
++untested = "Stage P benchmarks re-measured honestly via clock_gettime(CLOCK_MONOTONIC) and smaps_rollup: cold p50 6.45 ms / p95 25.66 ms, warm p50 8.02 ms / p95 19.81 ms, 500-item 14.40 ms, 0 invalid samples"
++
++[claim-p3-qmllint-parity]
++untested = "Aligned verify.sh qmllint invocation to pass --compiler warning --max-warnings 0 across all QML files, matching auditor invocation"
++
++[claim-p3-tray-menu-arity-fix]
++untested = "Resolved TrayMenuModel.open 15-parameter arity mismatch in plugins.qmltypes, verified clean compilation with qmllint --compiler warning"
++
++[claim-p3-real-tray-menu-qml-test]
++test_path = "crates/kynex-shell/tests/real_tray_menu_model_test.rs"
++test_name = "test_real_tray_menu_model_qml_call"
++evidence_id = "p3-real-tray-menu-model-test"
++
++[claim-p3-guard-diff-control]
++untested = "Implemented scripts/guard-diff.sh and extended scripts/check-report.py to strictly audit and verify 1:1 guard file changes against reports"
++
++[claim-p3-stage-p2-audit-notes]
++untested = "Added comprehensive audit notes in docs/work/stage-p2-report.md Section 12 detailing retractions and explanations for AUD-P2-01, AUD-P2-03, and VM performance variance"
+diff --git a/scripts/audit.sh b/scripts/audit.sh
+index bdc93128..ee2f2877 100755
+--- a/scripts/audit.sh
++++ b/scripts/audit.sh
+@@ -18,5 +18,9 @@ if [[ -f Cargo.toml ]]; then
+   mkdir -p dev/tmp && have cargo-cyclonedx && cargo cyclonedx --format json --override-filename sbom 2>/dev/null && echo "SBOM written" || echo "cargo-cyclonedx not installed"
+   echo; echo "### 6. Duplicate crate versions"; cargo tree --workspace -d 2>/dev/null | head -40
+ fi
++if [[ -f scripts/test-qml-stress.sh ]]; then
++  echo; echo "### 8. QML suite 20x stress test under CPU load"
++  ./scripts/test-qml-stress.sh || rc=1
++fi
+ echo; echo "### 7. Manual review (agent): re-read the diff as a hostile reviewer; fill docs/SECURITY_CHECKLIST.md for new code"
+ exit $rc
+diff --git a/scripts/bench/budget-check.py b/scripts/bench/budget-check.py
+index 9a0fa493..36159c8f 100755
+--- a/scripts/bench/budget-check.py
++++ b/scripts/bench/budget-check.py
+@@ -6,6 +6,7 @@ Usage: scripts/bench/budget-check.py [benchmark.json] [--budgets scripts/bench/b
+ 
+ import argparse
+ import json
++import math
+ import os
+ import sys
+ import tomllib
+@@ -25,6 +26,12 @@ def load_budgets(path):
+         return tomllib.load(f)
+ 
+ 
++NS_PER_MS = 1_000_000.0
++PERCENT = 100.0
++KB_PER_MB = 1024.0
++MAX_INVALID_PCT = 5.0
++
++
+ def validate_and_compute_metric(bench, key, alt_keys=()):
+     keys_to_check = [key] + list(alt_keys)
+     found_key = None
+@@ -59,14 +66,6 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
+         )
+         sys.exit(1)
+ 
+-    for s in val["samples"]:
+-        if not isinstance(s, (int, float)):
+-            print(
+-                f"ERROR: Metric '{found_key}' samples must contain only numbers, found {s}!",
+-                file=sys.stderr,
+-            )
+-            sys.exit(1)
+-
+     if "method" not in val or not isinstance(val["method"], str) or len(val["method"].strip()) == 0:
+         print(
+             f"ERROR: Metric '{found_key}' is missing a valid 'method' description string!",
+@@ -74,27 +73,92 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
+         )
+         sys.exit(1)
+ 
+-    samples = sorted(val["samples"])
++    raw_samples = val["samples"]
++    valid_samples = []
++    invalid_count = 0
++
++    for s in raw_samples:
++        if isinstance(s, dict):
++            start = s.get("start_ns", s.get("start"))
++            end = s.get("end_ns", s.get("end"))
++            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
++                invalid_count += 1
++            elif end < start:
++                invalid_count += 1
++            else:
++                lat_ms = (end - start) / NS_PER_MS
++                valid_samples.append(lat_ms)
++        elif isinstance(s, (list, tuple)) and len(s) == 2:
++            start, end = s[0], s[1]
++            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
++                invalid_count += 1
++            elif end < start:
++                invalid_count += 1
++            else:
++                lat_ms = (end - start) / NS_PER_MS
++                valid_samples.append(lat_ms)
++        elif isinstance(s, (int, float)):
++            if s < 0:
++                invalid_count += 1
++            else:
++                valid_samples.append(float(s))
++        else:
++            invalid_count += 1
++
++    total_samples = len(valid_samples) + invalid_count
++    invalid_pct = (invalid_count / total_samples * PERCENT) if total_samples > 0 else 0.0
++
++    print(
++        f"  [metric: {found_key}] total={total_samples}, valid={len(valid_samples)}, invalid_discarded={invalid_count} ({invalid_pct:.2f}%)"
++    )
++
++    if invalid_pct > MAX_INVALID_PCT:
++        print(
++            f"ERROR: Metric '{found_key}' exceeded invalid sample threshold: {invalid_count}/{total_samples} ({invalid_pct:.2f}% > {MAX_INVALID_PCT}%)",
++            file=sys.stderr,
++        )
++        sys.exit(1)
++
++    if not valid_samples:
++        print(
++            f"ERROR: Metric '{found_key}' has zero valid samples!",
++            file=sys.stderr,
++        )
++        sys.exit(1)
++
++    samples = sorted(valid_samples)
+     n = len(samples)
+ 
+     def calc_percentile(p):
+         if n == 1:
+             return float(samples[0])
+-        k = (n - 1) * (p / 100.0)
++        k = (n - 1) * (p / PERCENT)
+         f = int(k)
+         c = min(f + 1, n - 1)
+         d = k - f
+         return float(samples[f] + d * (samples[c] - samples[f]))
+ 
++    mean_val = sum(samples) / float(n)
++    variance_val = (
++        sum((x - mean_val) ** 2 for x in samples) / (n - 1)
++        if n > 1
++        else 0.0
++    )
++    stdev_val = math.sqrt(variance_val)
++
+     return {
+         "samples": samples,
+         "method": val["method"].strip(),
+         "p50": calc_percentile(50),
+         "p95": calc_percentile(95),
+         "p99": calc_percentile(99),
+-        "mean": sum(samples) / float(n),
++        "mean": mean_val,
++        "variance": variance_val,
++        "stdev": stdev_val,
+         "max": max(samples),
+         "min": min(samples),
++        "invalid_count": invalid_count,
++        "total_samples": total_samples,
+     }
+ 
+ 
+@@ -153,7 +217,7 @@ def main():
+     gnome_baseline = budgets["session_idle_pss"]["gnome_baseline_mb"]
+     ratio_ceiling = budgets["session_idle_pss"]["ratio_ceiling"]
+     max_allowed_pss = gnome_baseline * ratio_ceiling
+-    pct_of_gnome = (total_pss / gnome_baseline) * 100.0 if gnome_baseline > 0 else 0.0
++    pct_of_gnome = (total_pss / gnome_baseline) * PERCENT if gnome_baseline > 0 else 0.0
+     pss_status = "MET" if total_pss <= max_allowed_pss else "NOT MET"
+     pss_measured = (
+         f"**{total_pss:.1f} MB PSS** (`kwin_wayland` {kwin_pss:.1f} MB + "
+@@ -405,6 +469,86 @@ def main():
+         tray_flood_cpu_measured = "**~4.2% CPU**"
+         tray_flood_cpu_notes = "Peak CPU during 10,000-signal flood (rate limited to 10/s per item)."
+ 
++    # 13a. Tray menu open latency (cold)
++    m_cold = validate_and_compute_metric(bench, "menu_open_latency_cold")
++    if m_cold:
++        m_cold_p50 = m_cold["p50"]
++        m_cold_p95 = m_cold["p95"]
++        max_m_cold = budgets.get("menu_open_latency_cold", {}).get("max_ms", 50.0)
++        menu_cold_status = "MET" if m_cold_p95 <= max_m_cold else "NOT MET"
++        menu_cold_measured = f"**{m_cold_p50:.2f} ms (p50)**, **{m_cold_p95:.2f} ms (p95)**"
++        menu_cold_notes = f"Right-click to first menu frame (cold, {len(m_cold['samples'])} samples; method: {m_cold['method']})."
++    else:
++        menu_cold_status = "UNMEASURABLE"
++        menu_cold_measured = "Unmeasured"
++        menu_cold_notes = "Tray menu cold latency."
++
++    # 13b. Tray menu open latency (warm)
++    m_warm = validate_and_compute_metric(bench, "menu_open_latency_warm")
++    if m_warm:
++        m_warm_p50 = m_warm["p50"]
++        m_warm_p95 = m_warm["p95"]
++        max_m_warm = budgets.get("menu_open_latency_warm", {}).get("max_ms", 50.0)
++        menu_warm_status = "MET" if m_warm_p95 <= max_m_warm else "NOT MET"
++        menu_warm_measured = f"**{m_warm_p50:.2f} ms (p50)**, **{m_warm_p95:.2f} ms (p95)**"
++        menu_warm_notes = f"Right-click to first menu frame (warm, {len(m_warm['samples'])} samples; method: {m_warm['method']})."
++    else:
++        menu_warm_status = "UNMEASURABLE"
++        menu_warm_measured = "Unmeasured"
++        menu_warm_notes = "Tray menu warm latency."
++
++    # 13c. 500-item menu latency
++    m_500 = validate_and_compute_metric(bench, "menu_500_items_latency")
++    if m_500:
++        m_500_p95 = m_500["p95"]
++        max_m_500 = budgets.get("menu_500_items_latency", {}).get("max_ms", 50.0)
++        menu_500_status = "MET" if m_500_p95 <= max_m_500 else "NOT MET"
++        menu_500_measured = f"**{m_500_p95:.2f} ms (p95)**"
++        menu_500_notes = f"500-item menu parse & presentation ({len(m_500['samples'])} samples; method: {m_500['method']})."
++    else:
++        menu_500_status = "UNMEASURABLE"
++        menu_500_measured = "Unmeasured"
++        menu_500_notes = "500-item menu parse & presentation."
++
++    # 13d. Menu daemon PSS plateau
++    m_d_pss = validate_and_compute_metric(bench, "menu_idle_daemon_pss")
++    if m_d_pss:
++        m_d_pss_val = m_d_pss["max"]
++        max_m_d_pss = budgets.get("menu_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
++        menu_d_pss_status = "MET" if m_d_pss_val <= max_m_d_pss else "NOT MET"
++        menu_d_pss_measured = f"**{m_d_pss_val:.1f} MB PSS**"
++        menu_d_pss_notes = f"Daemon PSS after 100 menu open/close cycles plateau ({len(m_d_pss['samples'])} samples; method: {m_d_pss['method']})."
++    else:
++        menu_d_pss_status = "UNMEASURABLE"
++        menu_d_pss_measured = "Unmeasured"
++        menu_d_pss_notes = "Daemon PSS after 100 menu open/close cycles."
++
++    # 13e. Menu shell PSS plateau
++    m_s_pss = validate_and_compute_metric(bench, "menu_idle_shell_pss")
++    if m_s_pss:
++        m_s_pss_val = m_s_pss["max"]
++        max_m_s_pss = budgets.get("menu_idle_shell_pss", {}).get("max_pss_mb", 100.0)
++        menu_s_pss_status = "MET" if m_s_pss_val <= max_m_s_pss else "NOT MET"
++        menu_s_pss_measured = f"**{m_s_pss_val:.1f} MB PSS**"
++        menu_s_pss_notes = f"Shell PSS after 100 menu open/close cycles plateau ({len(m_s_pss['samples'])} samples; method: {m_s_pss['method']})."
++    else:
++        menu_s_pss_status = "UNMEASURABLE"
++        menu_s_pss_measured = "Unmeasured"
++        menu_s_pss_notes = "Shell PSS after 100 menu open/close cycles."
++
++    # 13f. Menu flood CPU
++    m_cpu = validate_and_compute_metric(bench, "menu_flood_cpu")
++    if m_cpu:
++        m_cpu_val = m_cpu["max"]
++        max_m_cpu = budgets.get("menu_flood_cpu", {}).get("max_cpu_pct", 20.0)
++        menu_flood_cpu_status = "MET" if m_cpu_val <= max_m_cpu else "NOT MET"
++        menu_flood_cpu_measured = f"**{m_cpu_val:.1f}% CPU**"
++        menu_flood_cpu_notes = f"Peak CPU during 10,000 LayoutUpdated flood ({len(m_cpu['samples'])} samples; method: {m_cpu['method']})."
++    else:
++        menu_flood_cpu_status = "UNMEASURABLE"
++        menu_flood_cpu_measured = "Unmeasured"
++        menu_flood_cpu_notes = "Peak CPU during LayoutUpdated flood."
++
+     rows = [
+         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
+         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
+@@ -429,6 +573,12 @@ def main():
+         (budgets["tray_item_registration_latency_warm"]["name"], budgets["tray_item_registration_latency_warm"]["target"], tray_warm_measured, tray_warm_status, tray_warm_notes),
+         (budgets["tray_idle_daemon_pss"]["name"], budgets["tray_idle_daemon_pss"]["target"], tray_pss_measured, tray_pss_status, tray_pss_notes),
+         (budgets["tray_flood_cpu"]["name"], budgets["tray_flood_cpu"]["target"], tray_flood_cpu_measured, tray_flood_cpu_status, tray_flood_cpu_notes),
++        (budgets["menu_open_latency_cold"]["name"], budgets["menu_open_latency_cold"]["target"], menu_cold_measured, menu_cold_status, menu_cold_notes),
++        (budgets["menu_open_latency_warm"]["name"], budgets["menu_open_latency_warm"]["target"], menu_warm_measured, menu_warm_status, menu_warm_notes),
++        (budgets["menu_500_items_latency"]["name"], budgets["menu_500_items_latency"]["target"], menu_500_measured, menu_500_status, menu_500_notes),
++        (budgets["menu_idle_daemon_pss"]["name"], budgets["menu_idle_daemon_pss"]["target"], menu_d_pss_measured, menu_d_pss_status, menu_d_pss_notes),
++        (budgets["menu_idle_shell_pss"]["name"], budgets["menu_idle_shell_pss"]["target"], menu_s_pss_measured, menu_s_pss_status, menu_s_pss_notes),
++        (budgets["menu_flood_cpu"]["name"], budgets["menu_flood_cpu"]["target"], menu_flood_cpu_measured, menu_flood_cpu_status, menu_flood_cpu_notes),
+     ]
+ 
+     if args.markdown:
+diff --git a/scripts/bench/budgets.toml b/scripts/bench/budgets.toml
+index df3df6ee..c4851e81 100644
+--- a/scripts/bench/budgets.toml
++++ b/scripts/bench/budgets.toml
+@@ -159,3 +159,46 @@ max_cpu_pct = 20.0
+ unit = "%"
+ phase = "Phase 5"
+ 
++[menu_open_latency_cold]
++name = "Tray menu: right-click -> first visible frame (cold)"
++target = "< 50 ms (p95)"
++max_ms = 50.0
++unit = "ms"
++phase = "Phase 5"
++
++[menu_open_latency_warm]
++name = "Tray menu: right-click -> first visible frame (warm)"
++target = "< 50 ms (p95)"
++max_ms = 50.0
++unit = "ms"
++phase = "Phase 5"
++
++[menu_500_items_latency]
++name = "Tray menu: 500-item menu parse & first frame latency"
++target = "< 50 ms"
++max_ms = 50.0
++unit = "ms"
++phase = "Phase 5"
++
++[menu_idle_daemon_pss]
++name = "Daemon PSS after 100 menu open/close cycles plateau"
++target = "< 15 MB PSS"
++max_pss_mb = 15.0
++unit = "MB"
++phase = "Phase 5"
++
++[menu_idle_shell_pss]
++name = "Shell PSS after 100 menu open/close cycles plateau"
++target = "< 100 MB PSS in VM llvmpipe (< 50 MB on hardware)"
++max_pss_mb = 100.0
++unit = "MB"
++phase = "Phase 5"
++
++[menu_flood_cpu]
++name = "Tray menu: 10,000 LayoutUpdated flood CPU"
++target = "< 20% during flood"
++max_cpu_pct = 20.0
++unit = "%"
++phase = "Phase 5"
++
++
+diff --git a/scripts/bench/literals-allowlist.txt b/scripts/bench/literals-allowlist.txt
+new file mode 100644
+index 00000000..ad3646ec
+--- /dev/null
++++ b/scripts/bench/literals-allowlist.txt
+@@ -0,0 +1,28 @@
++# Benchmark numeric literals allowlist
++# Format: file | line text | one-line justification
++dev/bench/measure_stage_p.py | KB_PER_MB = 1024.0 | Unit scale conversion factor (KB to MB)
++dev/bench/measure_stage_p.py | PERCENT = 100.0 | Unit scale conversion factor (percentage)
++dev/bench/measure_stage_p.py | DBUS_TIMEOUT_MS = 2000 | CLI default D-Bus synchronous call timeout (ms)
++dev/bench/measure_stage_p.py | SAMPLE_INTERVAL_SEC = 0.05 | CLI default CPU sampling interval (seconds)
++dev/bench/measure_stage_p.py | SIGKILL = 9 | Standard POSIX kill signal constant
++dev/bench/measure_stage_p.py | MENU_VERSION = 3 | Canonical dbusmenu protocol version constant
++dev/bench/measure_stage_p.py | ZERO = 0.0 | Default floating-point zero constant for uninitialized metrics
++dev/bench/measure_stage_p.py | if delta_sec > 0: | Delta divisor non-zero guard check
++dev/bench/measure_stage_p.py | total_kb = 0 | Initial accumulator counter for smaps memory parsing
++dev/bench/measure_stage_p.py | item_count=5, | CLI default tray menu item count
++dev/bench/measure_stage_p.py | self.revision = 1 | Initial dbusmenu layout revision sequence number
++dev/bench/measure_stage_p.py | for idx in range(1, count + 1): | Sequential 1-based item index iterator
++dev/bench/measure_stage_p.py | lbl = labels[idx - 1] | Zero-based array indexing offset
++dev/bench/measure_stage_p.py | return (0, {}, children) | Dbusmenu root item ID specification
++dev/bench/measure_stage_p.py | return GLib.Variant("i", 0) | Default WindowId value for system tray item
++dev/bench/measure_stage_p.py | time.sleep(0.2) | Inter-process synchronization polling delay
++dev/bench/measure_stage_p.py | time.sleep(0.1) | Inter-process synchronization polling delay
++dev/bench/measure_stage_p.py | time.sleep(2.0) | Compositor initialization settle delay
++dev/bench/measure_stage_p.py | time.sleep(0.5) | Signal flood completion settle delay
++dev/bench/measure_stage_p.py | time.sleep(0.8) | Cold test shell process spin-up delay
++dev/bench/measure_stage_p.py | offset = os.path.getsize(cold_log) if os.path.exists(cold_log) else 0 | Initial file read offset
++dev/bench/measure_stage_p.py | time.sleep(0.05) | Execution delay / polling interval
++dev/bench/measure_stage_p.py | time.sleep(1.5) | Warm benchmark shell initialization settle delay
++dev/bench/measure_stage_p.py | "menu-500-app", "500-Item App", item_count=500 | Benchmark stress test 500-item count
++dev/bench/measure_stage_p.py | GLib.Variant("(ui)", (rev, 0)), | Dbusmenu parent node ID for layout update signal
++dev/bench/measure_stage_p.py | json.dump(perf_data, f, indent=2) | Output JSON formatting indentation
+diff --git a/scripts/check-bench-literals.py b/scripts/check-bench-literals.py
+new file mode 100755
+index 00000000..c0cfe34f
+--- /dev/null
++++ b/scripts/check-bench-literals.py
+@@ -0,0 +1,238 @@
++#!/usr/bin/env python3
++"""AST-based numeric literal checker and benchmark integrity enforcement.
++
++Enforces:
++1. Zero hardcoded metric values in benchmark collectors and analyzers.
++2. Strict prohibition of measurement data manipulation: no numeric literal may appear
++   in a BinOp or AugAssign together with any variable derived from measurements or samples.
++   (This rule is unconditional and cannot be bypassed via allowlist).
++3. Every permitted numeric literal (CLI defaults, unit constants, loop bounds) must be
++   listed with a one-line justification in scripts/bench/literals-allowlist.txt.
++"""
++
++import ast
++import os
++import sys
++
++ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
++ALLOWLIST_PATH = os.path.join(ROOT_DIR, "scripts/bench/literals-allowlist.txt")
++
++MEASUREMENT_NAME_PATTERNS = (
++    "sample",
++    "measur",
++    "lat",
++    "e2e",
++    "elapsed",
++    "pss",
++    "rss",
++    "cpu",
++    "frame",
++    "timestamp",
++    "shell_lat",
++)
++
++
++def load_allowlist(allowlist_path):
++    allowed = set()
++    if not os.path.isfile(allowlist_path):
++        return allowed
++    with open(allowlist_path, "r", encoding="utf-8") as f:
++        for line in f:
++            line = line.strip()
++            if not line or line.startswith("#"):
++                continue
++            parts = line.split("|")
++            if len(parts) >= 3:
++                file_rel = os.path.normpath(parts[0].strip())
++                line_text = "|".join(parts[1:-1]).strip()
++                allowed.add((file_rel, line_text))
++            elif len(parts) == 2:
++                file_rel = os.path.normpath(parts[0].strip())
++                line_text = parts[1].strip()
++                allowed.add((file_rel, line_text))
++    return allowed
++
++
++def is_numeric_literal_node(node):
++    if (
++        isinstance(node, ast.Constant)
++        and isinstance(node.value, (int, float, complex))
++        and not isinstance(node.value, bool)
++    ):
++        return True, repr(node.value)
++    if (
++        isinstance(node, ast.Call)
++        and isinstance(node.func, ast.Name)
++        and node.func.id in ("float", "int")
++        and node.args
++        and isinstance(node.args[0], ast.Constant)
++        and isinstance(node.args[0].value, str)
++    ):
++        try:
++            float(node.args[0].value)
++            return True, f"{node.func.id}({node.args[0].value!r})"
++        except ValueError:
++            pass
++    return False, ""
++
++
++def find_measurement_name(node):
++    for child in ast.walk(node):
++        if isinstance(child, ast.Name):
++            name_lower = child.id.lower()
++            if any(p in name_lower for p in MEASUREMENT_NAME_PATTERNS):
++                return child.id
++    return None
++
++
++def find_forbidden_measurement_arithmetic(fpath, source_lines):
++    tree = ast.parse("".join(source_lines), filename=fpath)
++    violations = []
++    for node in ast.walk(tree):
++        hit = False
++        reason = ""
++        if isinstance(node, ast.BinOp):
++            left_lit, left_desc = is_numeric_literal_node(node.left)
++            right_lit, right_desc = is_numeric_literal_node(node.right)
++            if left_lit:
++                m_name = find_measurement_name(node.right)
++                if m_name:
++                    hit = True
++                    reason = f"Numeric literal {left_desc} in BinOp with measurement variable '{m_name}'"
++            elif right_lit:
++                m_name = find_measurement_name(node.left)
++                if m_name:
++                    hit = True
++                    reason = f"Numeric literal {right_desc} in BinOp with measurement variable '{m_name}'"
++        elif isinstance(node, ast.AugAssign):
++            target_name = find_measurement_name(node.target)
++            if target_name:
++                val_lit, val_desc = is_numeric_literal_node(node.value)
++                if val_lit:
++                    hit = True
++                    reason = f"Numeric literal {val_desc} in AugAssign on measurement variable '{target_name}'"
++                else:
++                    for child in ast.walk(node.value):
++                        c_lit, c_desc = is_numeric_literal_node(child)
++                        if c_lit:
++                            hit = True
++                            reason = f"Numeric literal {c_desc} in AugAssign on measurement variable '{target_name}'"
++                            break
++
++        if hit and hasattr(node, "lineno"):
++            lineno = node.lineno
++            line_text = source_lines[lineno - 1].strip()
++            violations.append(
++                (
++                    lineno,
++                    line_text,
++                    f"FORBIDDEN_MEASUREMENT_ARITHMETIC: {reason}",
++                )
++            )
++    return violations
++
++
++def find_numeric_literals(fpath, source_lines):
++    tree = ast.parse("".join(source_lines), filename=fpath)
++    hits = []
++
++    # Ignore structural language constructs: Subscript indices, range() arguments, len() comparisons, sys.exit()
++    ignored_nodes = set()
++    for parent in ast.walk(tree):
++        if isinstance(parent, ast.Subscript):
++            if isinstance(parent.slice, ast.Constant):
++                ignored_nodes.add(parent.slice)
++            elif isinstance(parent.slice, ast.UnaryOp) and isinstance(parent.slice.operand, ast.Constant):
++                ignored_nodes.add(parent.slice.operand)
++        elif isinstance(parent, ast.Call) and isinstance(parent.func, ast.Name) and parent.func.id == "range":
++            for arg in parent.args:
++                if isinstance(arg, ast.Constant):
++                    ignored_nodes.add(arg)
++        elif isinstance(parent, ast.Call) and isinstance(parent.func, ast.Name) and parent.func.id in ("exit", "len", "round"):
++            for arg in parent.args:
++                if isinstance(arg, ast.Constant):
++                    ignored_nodes.add(arg)
++        elif (
++            isinstance(parent, ast.Call)
++            and isinstance(parent.func, ast.Attribute)
++            and parent.func.attr in ("exit", "group")
++        ):
++            for arg in parent.args:
++                if isinstance(arg, ast.Constant):
++                    ignored_nodes.add(arg)
++
++    for node in ast.walk(tree):
++        if node in ignored_nodes:
++            continue
++        hit, val_desc = is_numeric_literal_node(node)
++        if hit and hasattr(node, "lineno"):
++            lineno = node.lineno
++            line_text = source_lines[lineno - 1].strip()
++            hits.append((lineno, line_text, val_desc))
++    return hits
++
++
++def check_files(files, allowlist):
++    violations = []
++    for fpath in files:
++        rel_path = os.path.normpath(os.path.relpath(fpath, ROOT_DIR))
++        with open(fpath, "r", encoding="utf-8") as f:
++            lines = f.readlines()
++
++        # 1. Strictly forbidden measurement arithmetic: CANNOT be allowlisted
++        forbidden = find_forbidden_measurement_arithmetic(fpath, lines)
++        seen_forbidden = set()
++        for lineno, line_text, reason in forbidden:
++            if lineno in seen_forbidden:
++                continue
++            seen_forbidden.add(lineno)
++            violations.append((rel_path, lineno, line_text, reason))
++
++        # 2. General numeric literals: must match allowlist
++        hits = find_numeric_literals(fpath, lines)
++        seen_lines = set()
++        for lineno, line_text, val_desc in hits:
++            if lineno in seen_lines or lineno in seen_forbidden:
++                continue
++            seen_lines.add(lineno)
++            if (rel_path, line_text) not in allowlist:
++                violations.append((rel_path, lineno, line_text, val_desc))
++    return violations
++
++
++def main():
++    allowlist = load_allowlist(ALLOWLIST_PATH)
++    if len(sys.argv) > 1:
++        target_files = [os.path.abspath(p) for p in sys.argv[1:]]
++    else:
++        target_files = [
++            os.path.join(ROOT_DIR, "dev/bench/measure_stage_p.py"),
++        ]
++
++    violations = check_files(target_files, allowlist)
++    if violations:
++        print(
++            "ERROR: Benchmark literal or measurement integrity violation(s) detected:",
++            file=sys.stderr,
++        )
++        for rel_path, lineno, line_text, val_desc in violations:
++            print(
++                f"  {rel_path}:{lineno} [{val_desc}]: {line_text}",
++                file=sys.stderr,
++            )
++        print(f"\nTotal violations: {len(violations)}", file=sys.stderr)
++        print(
++            "Measurement arithmetic with literals is unconditionally forbidden. "
++            "All operational literals must have justifications in scripts/bench/literals-allowlist.txt.",
++            file=sys.stderr,
++        )
++        sys.exit(1)
++
++    print(
++        f"PASS: All numeric literals in {len(target_files)} benchmark files match allowlist ({len(allowlist)} allowed lines; zero measurement arithmetic)."
++    )
++    sys.exit(0)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/check-report.py b/scripts/check-report.py
+index 953cee2d..6e31895d 100755
+--- a/scripts/check-report.py
++++ b/scripts/check-report.py
+@@ -4,16 +4,24 @@
+ import glob
+ import os
+ import re
++import subprocess
+ import sys
++import tomllib
+ 
+ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ EVIDENCE_DIR = os.path.join(ROOT_DIR, "docs/work/evidence")
++CLAIMS_DIR = os.path.join(ROOT_DIR, "docs/work/claims")
+ 
+ 
+ def find_newest_report():
+     reports = glob.glob(os.path.join(ROOT_DIR, "docs/work/*-report.md"))
+     if not reports:
+         return None
++    # Prioritize active stage reports
++    for stage in ("stage-p3", "stage-p2"):
++        p = os.path.join(ROOT_DIR, f"docs/work/{stage}-report.md")
++        if os.path.isfile(p):
++            return p
+     # Sort by mtime descending
+     reports.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+     return reports[0]
+@@ -31,6 +39,207 @@ def is_contiguous_subslice(sub, full):
+     return False
+ 
+ 
++def verify_claims(report_path, content, report_name):
++    stage_name = re.sub(r"-report\.md$", "", report_name)
++    claims_file = os.path.join(CLAIMS_DIR, f"{stage_name}.toml")
++
++    # If stage-p2 or claims file exists, require claims verification
++    if "p2" in report_name or "stage-p2" in report_name or os.path.isfile(claims_file):
++        if not os.path.isfile(claims_file):
++            print(f"ERROR: Missing claims ledger file: {claims_file}", file=sys.stderr)
++            return False
++
++        print(f"Checking claims ledger in {os.path.basename(claims_file)}...")
++        with open(claims_file, "rb") as cf:
++            raw_claims = tomllib.load(cf)
++
++        claims_dict = raw_claims.get("claims", raw_claims) if isinstance(raw_claims.get("claims"), dict) else raw_claims
++
++        # Extract Executive Summary section
++        exec_match = re.search(
++            r"^#+\s+(?:\d+\.\s*)?Executive Summary[^\n]*\n([\s\S]*?)(?=^#+\s+|\Z)",
++            content,
++            re.MULTILINE | re.IGNORECASE,
++        )
++        if not exec_match:
++            print(f"ERROR: Executive Summary section not found in {report_name}!", file=sys.stderr)
++            return False
++
++        exec_text = exec_match.group(1)
++        bullet_pattern = re.compile(r"^\s*(?:[-*]|\d+\.)\s+(.+)$", re.MULTILINE)
++        bullets = bullet_pattern.findall(exec_text)
++
++        if not bullets:
++            print(f"ERROR: No bullet items found in Executive Summary of {report_name}!", file=sys.stderr)
++            return False
++
++        claims_referenced = []
++        failed_claims = False
++
++        for b in bullets:
++            b_clean = b.strip()
++            claim_m = re.search(r"\{claim:([a-zA-Z0-9_\-]+)\}\s*$", b_clean)
++            if not claim_m:
++                print(f"  FAILED: Executive summary bullet does not end with {{claim:<id>}}:\n    '{b_clean}'", file=sys.stderr)
++                failed_claims = True
++                continue
++            cid = claim_m.group(1)
++            claims_referenced.append(cid)
++
++        for cid in claims_referenced:
++            if cid not in claims_dict:
++                print(f"  FAILED: Claim '{cid}' referenced in executive summary is not defined in {claims_file}!", file=sys.stderr)
++                failed_claims = True
++
++        for cid in claims_dict.keys():
++            if cid not in claims_referenced:
++                print(f"  FAILED: Claim '{cid}' defined in {claims_file} is not referenced in executive summary!", file=sys.stderr)
++                failed_claims = True
++
++        for cid, entry in claims_dict.items():
++            if not isinstance(entry, dict):
++                print(f"  FAILED: Claim '{cid}' entry must be a dictionary!", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            if "untested" in entry:
++                reason = entry["untested"]
++                print(f"  [UNTESTED] claim '{cid}': {reason}")
++                continue
++
++            test_path = entry.get("test_path")
++            test_name = entry.get("test_name")
++            evidence_id = entry.get("evidence_id")
++
++            if not (test_path and test_name and evidence_id):
++                print(
++                    f"  FAILED: Claim '{cid}' must specify 'test_path', 'test_name', and 'evidence_id' (or 'untested')!",
++                    file=sys.stderr,
++                )
++                failed_claims = True
++                continue
++
++            abs_test_path = os.path.join(ROOT_DIR, test_path)
++            if not os.path.isfile(abs_test_path):
++                print(f"  FAILED: Test path '{test_path}' does not exist for claim '{cid}'!", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            try:
++                with open(abs_test_path, "r", encoding="utf-8") as tf:
++                    test_file_content = tf.read()
++            except Exception as ex:
++                print(f"  FAILED: Cannot read test file '{test_path}': {ex}", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            if test_name not in test_file_content:
++                print(f"  FAILED: Test name '{test_name}' not found in repo at '{test_path}' for claim '{cid}'!", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            ev_path = os.path.join(EVIDENCE_DIR, f"{evidence_id}.txt")
++            if not os.path.isfile(ev_path):
++                print(f"  FAILED: Evidence file '{ev_path}' does not exist for claim '{cid}'!", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            try:
++                with open(ev_path, "r", encoding="utf-8") as ef:
++                    ev_lines = ef.readlines()
++            except Exception as ex:
++                print(f"  FAILED: Cannot read evidence file '{ev_path}': {ex}", file=sys.stderr)
++                failed_claims = True
++                continue
++
++            pass_found = False
++            for line in ev_lines:
++                if test_name in line:
++                    line_s = line.strip()
++                    if re.search(r"\b(?:ok|OK|PASSED|PASS)\b", line_s) and not re.search(r"\b(?:FAILED|FAIL|panicked)\b", line_s):
++                        pass_found = True
++                        break
++
++            if not pass_found:
++                print(
++                    f"  FAILED: Evidence file '{evidence_id}.txt' does not contain passing line for test '{test_name}' (claim '{cid}')!",
++                    file=sys.stderr,
++                )
++                failed_claims = True
++            else:
++                print(f"  ✓ Claim '{cid}' verified: {test_path} :: {test_name} in evidence/{evidence_id}.txt")
++
++        if failed_claims:
++            return False
++
++        print(f"SUCCESS: All {len(claims_dict)} claims in {os.path.basename(claims_file)} verified.")
++    return True
++
++
++def verify_guard_changes(report_path, content, report_name):
++    # Only enforce for stage-p3 or reports containing GUARD CHANGES
++    guard_match = re.search(
++        r"^#+\s+(?:\d+\.\s*)?GUARD CHANGES[^\n]*\n([\s\S]*?)(?=^#+\s+|\Z)",
++        content,
++        re.MULTILINE | re.IGNORECASE,
++    )
++
++    is_p3 = any(tok in report_name for tok in ("p3", "stage-p3"))
++    if not guard_match:
++        if is_p3:
++            print(f"ERROR: GUARD CHANGES section not found in {report_name}!", file=sys.stderr)
++            return False
++        return True
++
++    guard_text = guard_match.group(1)
++    bullet_pattern = re.compile(r"^\s*(?:[-*]|\d+\.)\s+(.+)$", re.MULTILINE)
++    bullets = bullet_pattern.findall(guard_text)
++
++    files_in_report = set()
++    for b in bullets:
++        m = re.search(
++            r"^\s*`?([a-zA-Z0-9_\-\./]+(?:\.[a-zA-Z0-9]+|\.toml|\.txt|\.sh|\.py|\.md|\.yaml|\.json))`?\s*[:\-]",
++            b,
++        )
++        if m:
++            files_in_report.add(m.group(1).strip())
++        else:
++            backticked = re.findall(r"`([^`]+)`", b)
++            if backticked:
++                files_in_report.add(backticked[0].strip())
++
++    guard_script = os.path.join(ROOT_DIR, "scripts/guard-diff.sh")
++    if not os.path.isfile(guard_script):
++        print(f"ERROR: scripts/guard-diff.sh not found for guard verification!", file=sys.stderr)
++        return False
++
++    res = subprocess.run([guard_script, "--list"], capture_output=True, text=True)
++    if res.returncode != 0:
++        print(f"ERROR: scripts/guard-diff.sh --list failed with code {res.returncode}:\n{res.stderr}", file=sys.stderr)
++        return False
++
++    expected_files = set(line.strip() for line in res.stdout.splitlines() if line.strip())
++
++    print(f"Checking GUARD CHANGES in {report_name} against scripts/guard-diff.sh...")
++    missing_in_report = expected_files - files_in_report
++    extra_in_report = files_in_report - expected_files
++
++    if missing_in_report:
++        print(f"ERROR: Changed guard files missing from GUARD CHANGES in {report_name}:", file=sys.stderr)
++        for f in sorted(missing_in_report):
++            print(f"  - {f}", file=sys.stderr)
++        return False
++
++    if extra_in_report:
++        print(f"ERROR: Files listed in GUARD CHANGES were not reported by scripts/guard-diff.sh:", file=sys.stderr)
++        for f in sorted(extra_in_report):
++            print(f"  - {f}", file=sys.stderr)
++        return False
++
++    print(f"SUCCESS: All {len(expected_files)} guard changes in {report_name} match scripts/guard-diff.sh exactly.")
++    return True
++
++
+ def verify_report(report_path):
+     if not os.path.isfile(report_path):
+         print(f"ERROR: Report file not found: {report_path}", file=sys.stderr)
+@@ -38,7 +247,7 @@ def verify_report(report_path):
+ 
+     report_name = os.path.basename(report_path)
+     file_size = os.path.getsize(report_path)
+-    if ("o2" in report_name or "stage-o2" in report_name) and file_size > 150 * 1024:
++    if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")) and file_size > 150 * 1024:
+         print(
+             f"ERROR: Report {report_name} exceeds 150 KB limit ({file_size / 1024:.1f} KB)!",
+             file=sys.stderr,
+@@ -48,6 +257,14 @@ def verify_report(report_path):
+     with open(report_path, "r", encoding="utf-8") as f:
+         content = f.read()
+ 
++    # Claims ledger verification
++    if not verify_claims(report_path, content, report_name):
++        return False
++
++    # Guard changes verification
++    if not verify_guard_changes(report_path, content, report_name):
++        return False
++
+     # Match code blocks starting with ```raw:<id> or ```raw:<id>:L<a>-L<b>
+     pattern = re.compile(
+         r"^(`{3,})raw:([a-zA-Z0-9_\.\-]+)(?::L(\d+)-L(\d+))?[^\n]*\n([\s\S]*?)\n\1",
+@@ -59,7 +276,7 @@ def verify_report(report_path):
+ 
+     if not matches:
+         # If this is stage-n2-report.md or later, require at least one raw block
+-        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2")):
++        if any(tok in report_name for tok in ("n2", "stage-o", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")):
+             print(f"ERROR: No ```raw:<id> blocks found in {report_name}!", file=sys.stderr)
+             return False
+         print(f"Notice: No ```raw:<id> blocks found in legacy report {report_name} (skipped).")
+@@ -128,7 +345,7 @@ def verify_report(report_path):
+                     f"  ✓ ```raw:{evidence_id}:L{start_line}-L{end_line} verified verbatim ({num_lines} lines)"
+                 )
+         else:
+-            if "o2" in report_name or "stage-o2" in report_name:
++            if any(tok in report_name for tok in ("o2", "stage-o2", "p2", "stage-p2", "p3", "stage-p3")):
+                 print(
+                     f"  FAILED: Block ```raw:{evidence_id} in {report_name} must specify explicit line range :L<a>-L<b> (<= 60 lines)!",
+                     file=sys.stderr,
+diff --git a/scripts/verify.sh b/scripts/verify.sh
+index a829e552..17eef36c 100755
+--- a/scripts/verify.sh
++++ b/scripts/verify.sh
+@@ -53,19 +53,57 @@ fi
+ mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
+ if ((${#QMLFILES[@]})); then
+   if [[ -n "$QMLLINT" ]]; then
+-    QMLLINT_ARGS=(-I crates/kynex-shell/qml)
+-    if "$QMLLINT" --help 2>&1 | grep -q -- '--compiler'; then
+-      QMLLINT_ARGS+=(--compiler warning)
+-    fi
+-    if "$QMLLINT" --help 2>&1 | grep -q -- '--max-warnings'; then
+-      QMLLINT_ARGS+=(--max-warnings 0)
+-    fi
++    QMLLINT_ARGS=(-I crates/kynex-shell/qml --compiler warning --max-warnings 0)
+     step "qmllint" "$QMLLINT" "${QMLLINT_ARGS[@]}" "${QMLFILES[@]}"
+   else
+     skip "qmllint" "not installed"
+   fi
+ fi
+ 
++# shellcheck disable=SC2317,SC2329
++check_qml_wait_calls() {
++  local exc_file="tests/qml_tests/wait_exceptions.txt"
++  local -a allowed=()
++  if [[ -f "$exc_file" ]]; then
++    mapfile -t allowed < <(grep -v '^\s*#' "$exc_file" | grep -v '^\s*$' || true)
++    if ((${#allowed[@]} > 3)); then
++      echo "ERROR: tests/qml_tests/wait_exceptions.txt has ${#allowed[@]} exceptions; maximum allowed is 3" >&2
++      return 1
++    fi
++  fi
++
++  local wait_hits
++  wait_hits=$(grep -rnE '\bwait\(' tests/qml_tests/*.qml 2>/dev/null || true)
++  if [[ -z "$wait_hits" ]]; then
++    return 0
++  fi
++
++  local unallowed=()
++  while IFS= read -r hit; do
++    [[ -z "$hit" ]] && continue
++    local is_exc=0
++    for exc in "${allowed[@]}"; do
++      if [[ "$hit" == *"$exc"* ]]; then
++        is_exc=1
++        break
++      fi
++    done
++    if ((!is_exc)); then
++      unallowed+=("$hit")
++    fi
++  done <<< "$wait_hits"
++
++  if ((${#unallowed[@]} > 0)); then
++    echo "ERROR: Found unexempted wait() calls in tests/qml_tests/*.qml:" >&2
++    printf '  %s\n' "${unallowed[@]}" >&2
++    echo "Use tryVerify/tryCompare or register a justified exception (max 3) in tests/qml_tests/wait_exceptions.txt" >&2
++    return 1
++  fi
++  return 0
++}
++
++step "qml wait check" check_qml_wait_calls
++
+ mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
+ have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true
+ 
+@@ -94,19 +132,13 @@ if [[ -f scripts/check-report.py ]]; then
+   step "work report evidence check" ./scripts/check-report.py
+ fi
+ 
+-# shellcheck disable=SC2317,SC2329
+-check_no_literal_metrics() {
+-  local matches
+-  matches=$(grep -nE '^\s*(peak_[a-zA-Z0-9_]*|tray_[a-zA-Z0-9_]*|[a-zA-Z0-9_]*_p50|[a-zA-Z0-9_]*_p95|[a-zA-Z0-9_]*_p99|[a-zA-Z0-9_]*_cpu|[a-zA-Z0-9_]*_pss)\s*=\s*[0-9]+(\.[0-9]+)?\s*$' dev/bench/*.py 2>/dev/null || true)
+-  if [[ -n "$matches" ]]; then
+-    echo "ERROR: Literal metric values detected in benchmark scripts:" >&2
+-    echo "$matches" >&2
+-    return 1
+-  fi
+-  return 0
+-}
++if [[ -f scripts/check-bench-literals.py ]]; then
++  step "ast benchmark literal check" ./scripts/check-bench-literals.py
++fi
+ 
+-step "no literal benchmark metrics" check_no_literal_metrics
++if [[ -f tests/test_check_bench_literals.py ]]; then
++  step "ast benchmark literal evasion test" python3 tests/test_check_bench_literals.py
++fi
+ 
+ if [[ -f tests/test_budget_scalar_rejection.py ]]; then
+   step "budget-check scalar rejection test" python3 tests/test_budget_scalar_rejection.py
+
+=== Changed guard files count ===
+Changed guard files: 10

@@ -1,0 +1,6 @@
+=== COMMAND ===
+gh pr view 27 --json number,title,isDraft,url
+=== TIMESTAMP: 2026-11-11T17:37:46Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+{"isDraft":true,"number":27,"title":"feat(tray): implement dbusmenu protocol and shell menu surface (Stage P)","url":"https://github.com/saifmnasri/kynex-shell/pull/27"}

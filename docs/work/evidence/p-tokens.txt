@@ -1,0 +1,6 @@
+=== COMMAND ===
+bash -c ./scripts/check-style-tokens.py "styles" && ./scripts/check-style-tokens.py "crates/kynex-shell/qml" && echo "Style tokens lint PASS"
+=== TIMESTAMP: 2026-11-11T14:51:37Z ===
+=== EXIT CODE: 0 ===
+=== RAW OUTPUT ===
+Style tokens lint PASS
