@@ -7,6 +7,7 @@ fn main() {
         .files([
             "src/clock.rs",
             "src/launcher.rs",
+            "src/menu.rs",
             "src/network.rs",
             "src/notifications.rs",
             "src/power.rs",

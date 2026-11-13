@@ -42,6 +42,7 @@ tokio = { version = "1", features = ["full"] }
 zbus = { version = "6", default-features = false, features = ["tokio", "proxy", "service", "tracing"] }
 
 kynex-common = { path = "crates/kynex-common", version = "0.1.0" }
+kynex-dbusmenu = { path = "crates/kynex-dbusmenu", version = "0.1.0" }
 kynex-icons = { path = "crates/kynex-icons", version = "0.1.0" }
 kynex-ipc = { path = "crates/kynex-ipc", version = "0.1.0" }
 kynex-notifications = { path = "crates/kynex-notifications", version = "0.1.0" }

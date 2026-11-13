@@ -230,6 +230,8 @@ Module {
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
         Property { name: "hasItems"; type: "bool"; read: "hasItems"; notify: "hasItemsChanged"; isFinal: true }
+        Signal { name: "countChanged" }
+        Signal { name: "hasItemsChanged" }
         Method {
             name: "init"
         }
@@ -238,42 +240,122 @@ Module {
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "panelAnchors"; type: "int" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
             Parameter { name: "screenX"; type: "double" }
             Parameter { name: "screenY"; type: "double" }
             Parameter { name: "screenWidth"; type: "double" }
             Parameter { name: "screenHeight"; type: "double" }
             Parameter { name: "devicePixelRatio"; type: "double" }
-            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "secondaryActivate"
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "panelAnchors"; type: "int" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
             Parameter { name: "screenX"; type: "double" }
             Parameter { name: "screenY"; type: "double" }
             Parameter { name: "screenWidth"; type: "double" }
             Parameter { name: "screenHeight"; type: "double" }
             Parameter { name: "devicePixelRatio"; type: "double" }
-            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "contextMenu"
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "x"; type: "int" }
             Parameter { name: "y"; type: "int" }
+            Parameter { name: "panelAnchors"; type: "int" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
             Parameter { name: "screenX"; type: "double" }
             Parameter { name: "screenY"; type: "double" }
             Parameter { name: "screenWidth"; type: "double" }
             Parameter { name: "screenHeight"; type: "double" }
             Parameter { name: "devicePixelRatio"; type: "double" }
-            Parameter { name: "panelHeight"; type: "double" }
         }
         Method {
             name: "scroll"
             Parameter { name: "id"; type: "QString" }
             Parameter { name: "delta"; type: "int" }
             Parameter { name: "orientation"; type: "QString" }
+        }
+        Method {
+            name: "recordFirstFrame"
+        }
+    }
+    Component {
+        file: "src/menu.rs"
+        name: "TrayMenuModel"
+        accessSemantics: "reference"
+        prototype: "QAbstractListModel"
+        exports: ["Kynex.Shell/TrayMenuModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Property { name: "visible"; type: "bool"; read: "visible"; notify: "visibleChanged"; isFinal: true }
+        Property { name: "menuX"; type: "double"; read: "menuX"; notify: "menuXChanged"; isFinal: true }
+        Property { name: "menuY"; type: "double"; read: "menuY"; notify: "menuYChanged"; isFinal: true }
+        Property { name: "selectedIndex"; type: "int"; read: "selectedIndex"; notify: "selectedIndexChanged"; isFinal: true }
+        Property { name: "activeParentId"; type: "int"; read: "activeParentId"; notify: "activeParentIdChanged"; isFinal: true }
+        Property { name: "itemId"; type: "QString"; read: "itemId"; notify: "itemIdChanged"; isFinal: true }
+        Signal { name: "countChanged" }
+        Signal { name: "visibleChanged" }
+        Signal { name: "menuXChanged" }
+        Signal { name: "menuYChanged" }
+        Signal { name: "selectedIndexChanged" }
+        Signal { name: "activeParentIdChanged" }
+        Signal { name: "itemIdChanged" }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "open"
+            Parameter { name: "itemId"; type: "QString" }
+            Parameter { name: "anchorX"; type: "double" }
+            Parameter { name: "anchorY"; type: "double" }
+            Parameter { name: "anchorWidth"; type: "double" }
+            Parameter { name: "anchorHeight"; type: "double" }
+            Parameter { name: "menuWidth"; type: "double" }
+            Parameter { name: "menuHeight"; type: "double" }
+            Parameter { name: "panelAnchors"; type: "int" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
+            Parameter { name: "screenX"; type: "double" }
+            Parameter { name: "screenY"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
+            Parameter { name: "devicePixelRatio"; type: "double" }
+        }
+        Method {
+            name: "close"
+        }
+        Method {
+            name: "activateItem"
+            Parameter { name: "menuItemId"; type: "int" }
+        }
+        Method {
+            name: "selectNext"
+        }
+        Method {
+            name: "selectPrev"
+        }
+        Method {
+            name: "selectFirst"
+        }
+        Method {
+            name: "selectLast"
+        }
+        Method {
+            name: "openSubmenu"
+        }
+        Method {
+            name: "closeSubmenu"
+        }
+        Method {
+            name: "activateSelected"
         }
         Method {
             name: "recordFirstFrame"

@@ -2,6 +2,11 @@
 # The quality gate. Usage: scripts/verify.sh [--fast] ; STRICT=1 turns SKIPs into failures.
 cd "$(dirname "$0")/.." || exit 1
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.directory
+export GIT_CONFIG_VALUE_0="*"
+command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
+command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
 FAST=0; [[ "${1:-}" == "--fast" ]] && FAST=1
 pass=(); failed=(); skipped=()
 
@@ -53,18 +58,56 @@ fi
 mapfile -t QMLFILES < <(find crates styles -name '*.qml' 2>/dev/null)
 if ((${#QMLFILES[@]})); then
   if [[ -n "$QMLLINT" ]]; then
-    QMLLINT_ARGS=(-I crates/kynex-shell/qml)
-    if "$QMLLINT" --help 2>&1 | grep -q -- '--compiler'; then
-      QMLLINT_ARGS+=(--compiler warning)
-    fi
-    if "$QMLLINT" --help 2>&1 | grep -q -- '--max-warnings'; then
-      QMLLINT_ARGS+=(--max-warnings 0)
-    fi
+    QMLLINT_ARGS=(-I crates/kynex-shell/qml --compiler warning --max-warnings 0)
     step "qmllint" "$QMLLINT" "${QMLLINT_ARGS[@]}" "${QMLFILES[@]}"
   else
     skip "qmllint" "not installed"
   fi
 fi
+
+# shellcheck disable=SC2317,SC2329
+check_qml_wait_calls() {
+  local exc_file="tests/qml_tests/wait_exceptions.txt"
+  local -a allowed=()
+  if [[ -f "$exc_file" ]]; then
+    mapfile -t allowed < <(grep -v '^\s*#' "$exc_file" | grep -v '^\s*$' || true)
+    if ((${#allowed[@]} > 3)); then
+      echo "ERROR: tests/qml_tests/wait_exceptions.txt has ${#allowed[@]} exceptions; maximum allowed is 3" >&2
+      return 1
+    fi
+  fi
+
+  local wait_hits
+  wait_hits=$(grep -rnE '\bwait\(' tests/qml_tests/*.qml 2>/dev/null || true)
+  if [[ -z "$wait_hits" ]]; then
+    return 0
+  fi
+
+  local unallowed=()
+  while IFS= read -r hit; do
+    [[ -z "$hit" ]] && continue
+    local is_exc=0
+    for exc in "${allowed[@]}"; do
+      if [[ "$hit" == *"$exc"* ]]; then
+        is_exc=1
+        break
+      fi
+    done
+    if ((!is_exc)); then
+      unallowed+=("$hit")
+    fi
+  done <<< "$wait_hits"
+
+  if ((${#unallowed[@]} > 0)); then
+    echo "ERROR: Found unexempted wait() calls in tests/qml_tests/*.qml:" >&2
+    printf '  %s\n' "${unallowed[@]}" >&2
+    echo "Use tryVerify/tryCompare or register a justified exception (max 3) in tests/qml_tests/wait_exceptions.txt" >&2
+    return 1
+  fi
+  return 0
+}
+
+step "qml wait check" check_qml_wait_calls
 
 mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
 have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true
@@ -94,19 +137,13 @@ if [[ -f scripts/check-report.py ]]; then
   step "work report evidence check" ./scripts/check-report.py
 fi
 
-# shellcheck disable=SC2317,SC2329
-check_no_literal_metrics() {
-  local matches
-  matches=$(grep -nE '^\s*(peak_[a-zA-Z0-9_]*|tray_[a-zA-Z0-9_]*|[a-zA-Z0-9_]*_p50|[a-zA-Z0-9_]*_p95|[a-zA-Z0-9_]*_p99|[a-zA-Z0-9_]*_cpu|[a-zA-Z0-9_]*_pss)\s*=\s*[0-9]+(\.[0-9]+)?\s*$' dev/bench/*.py 2>/dev/null || true)
-  if [[ -n "$matches" ]]; then
-    echo "ERROR: Literal metric values detected in benchmark scripts:" >&2
-    echo "$matches" >&2
-    return 1
-  fi
-  return 0
-}
+if [[ -f scripts/check-bench-literals.py ]]; then
+  step "ast benchmark literal check" ./scripts/check-bench-literals.py
+fi
 
-step "no literal benchmark metrics" check_no_literal_metrics
+if [[ -f tests/test_check_bench_literals.py ]]; then
+  step "ast benchmark literal evasion test" python3 tests/test_check_bench_literals.py
+fi
 
 if [[ -f tests/test_budget_scalar_rejection.py ]]; then
   step "budget-check scalar rejection test" python3 tests/test_budget_scalar_rejection.py

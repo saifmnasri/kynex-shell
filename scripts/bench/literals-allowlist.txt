@@ -1,0 +1,28 @@
+# Benchmark numeric literals allowlist
+# Format: file | line text | one-line justification
+dev/bench/measure_stage_p.py | KB_PER_MB = 1024.0 | Unit scale conversion factor (KB to MB)
+dev/bench/measure_stage_p.py | PERCENT = 100.0 | Unit scale conversion factor (percentage)
+dev/bench/measure_stage_p.py | DBUS_TIMEOUT_MS = 2000 | CLI default D-Bus synchronous call timeout (ms)
+dev/bench/measure_stage_p.py | SAMPLE_INTERVAL_SEC = 0.05 | CLI default CPU sampling interval (seconds)
+dev/bench/measure_stage_p.py | SIGKILL = 9 | Standard POSIX kill signal constant
+dev/bench/measure_stage_p.py | MENU_VERSION = 3 | Canonical dbusmenu protocol version constant
+dev/bench/measure_stage_p.py | ZERO = 0.0 | Default floating-point zero constant for uninitialized metrics
+dev/bench/measure_stage_p.py | if delta_sec > 0: | Delta divisor non-zero guard check
+dev/bench/measure_stage_p.py | total_kb = 0 | Initial accumulator counter for smaps memory parsing
+dev/bench/measure_stage_p.py | item_count=5, | CLI default tray menu item count
+dev/bench/measure_stage_p.py | self.revision = 1 | Initial dbusmenu layout revision sequence number
+dev/bench/measure_stage_p.py | for idx in range(1, count + 1): | Sequential 1-based item index iterator
+dev/bench/measure_stage_p.py | lbl = labels[idx - 1] | Zero-based array indexing offset
+dev/bench/measure_stage_p.py | return (0, {}, children) | Dbusmenu root item ID specification
+dev/bench/measure_stage_p.py | return GLib.Variant("i", 0) | Default WindowId value for system tray item
+dev/bench/measure_stage_p.py | time.sleep(0.2) | Inter-process synchronization polling delay
+dev/bench/measure_stage_p.py | time.sleep(0.1) | Inter-process synchronization polling delay
+dev/bench/measure_stage_p.py | time.sleep(2.0) | Compositor initialization settle delay
+dev/bench/measure_stage_p.py | time.sleep(0.5) | Signal flood completion settle delay
+dev/bench/measure_stage_p.py | time.sleep(0.8) | Cold test shell process spin-up delay
+dev/bench/measure_stage_p.py | offset = os.path.getsize(cold_log) if os.path.exists(cold_log) else 0 | Initial file read offset
+dev/bench/measure_stage_p.py | time.sleep(0.05) | Execution delay / polling interval
+dev/bench/measure_stage_p.py | time.sleep(1.5) | Warm benchmark shell initialization settle delay
+dev/bench/measure_stage_p.py | "menu-500-app", "500-Item App", item_count=500 | Benchmark stress test 500-item count
+dev/bench/measure_stage_p.py | GLib.Variant("(ui)", (rev, 0)), | Dbusmenu parent node ID for layout update signal
+dev/bench/measure_stage_p.py | json.dump(perf_data, f, indent=2) | Output JSON formatting indentation

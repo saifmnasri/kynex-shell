@@ -29,6 +29,10 @@ pub const ROLE_LETTER_BADGE: i32 = 266;
 pub const ROLE_IS_MENU: i32 = 267;
 /// Role ID for associated window ID.
 pub const ROLE_WINDOW_ID: i32 = 268;
+/// Role ID for associated dbusmenu object path.
+pub const ROLE_MENU_PATH: i32 = 269;
+/// Role ID for whether item exports a dbusmenu.
+pub const ROLE_HAS_MENU: i32 = 270;
 
 /// Static table of all tray role IDs and their corresponding QML property names.
 pub const TRAY_ROLES: &[(i32, &str)] = &[
@@ -44,6 +48,8 @@ pub const TRAY_ROLES: &[(i32, &str)] = &[
     (ROLE_LETTER_BADGE, "letterBadge"),
     (ROLE_IS_MENU, "isMenu"),
     (ROLE_WINDOW_ID, "windowId"),
+    (ROLE_MENU_PATH, "menuPath"),
+    (ROLE_HAS_MENU, "hasMenu"),
 ];
 
 /// Returns the static role name mapping table.
@@ -79,6 +85,8 @@ pub fn tray_item_role_value(item: &TrayUiItem, role: i32) -> Option<TrayRoleValu
         ROLE_LETTER_BADGE => Some(TrayRoleValue::Text(item.letter_badge.clone())),
         ROLE_IS_MENU => Some(TrayRoleValue::Bool(item.is_menu)),
         ROLE_WINDOW_ID => Some(TrayRoleValue::Int(item.window_id)),
+        ROLE_MENU_PATH => Some(TrayRoleValue::Text(item.menu_path.clone())),
+        ROLE_HAS_MENU => Some(TrayRoleValue::Bool(item.has_menu)),
         _ => None,
     }
 }
@@ -225,6 +233,7 @@ pub fn compute_letter_badge(text: &str) -> String {
 
 /// Pure-Rust representation of a system tray item for UI presentation.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct TrayUiItem {
     /// Unique item identifier string (e.g. `":1.42/StatusNotifierItem"`).
     pub id: String,
@@ -250,6 +259,10 @@ pub struct TrayUiItem {
     pub is_menu: bool,
     /// Window ID if associated with a window.
     pub window_id: i32,
+    /// Associated dbusmenu object path if exported.
+    pub menu_path: String,
+    /// Whether item exports a valid dbusmenu.
+    pub has_menu: bool,
     /// Validated RGBA pixmap bytes.
     pub icon_pixmap: Vec<u8>,
     /// Width of `icon_pixmap`.
@@ -288,6 +301,8 @@ impl TrayUiItem {
             letter_badge: compute_letter_badge(badge_source),
             is_menu: info.is_menu,
             window_id: info.window_id,
+            menu_path: info.menu_path.clone(),
+            has_menu: !info.menu_path.is_empty(),
             icon_pixmap: info.icon_pixmap.clone(),
             icon_pixmap_width: info.icon_pixmap_width,
             icon_pixmap_height: info.icon_pixmap_height,
@@ -396,6 +411,7 @@ mod tests {
             attention_pixmap: Vec::new(),
             attention_pixmap_width: 0,
             attention_pixmap_height: 0,
+            menu_path: "/MenuBar".to_string(),
         };
 
         let ui_item = TrayUiItem::from_ipc(&info);
@@ -439,6 +455,8 @@ mod tests {
             letter_badge: "I".to_string(),
             is_menu: false,
             window_id: 0,
+            menu_path: String::new(),
+            has_menu: false,
             icon_pixmap: Vec::new(),
             icon_pixmap_width: 0,
             icon_pixmap_height: 0,
@@ -495,6 +513,8 @@ mod tests {
             letter_badge: "A".to_string(),
             is_menu: true,
             window_id: 42,
+            menu_path: "/MenuBar".to_string(),
+            has_menu: true,
             icon_pixmap: vec![0u8; 4],
             icon_pixmap_width: 1,
             icon_pixmap_height: 1,
@@ -548,9 +568,17 @@ mod tests {
             tray_item_role_value(&item, ROLE_WINDOW_ID),
             Some(TrayRoleValue::Int(42))
         );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_MENU_PATH),
+            Some(TrayRoleValue::Text("/MenuBar".to_string()))
+        );
+        assert_eq!(
+            tray_item_role_value(&item, ROLE_HAS_MENU),
+            Some(TrayRoleValue::Bool(true))
+        );
         assert_eq!(tray_item_role_value(&item, 999), None);
 
-        assert_eq!(tray_role_names().len(), 12);
+        assert_eq!(tray_role_names().len(), 14);
         for &(r_id, r_name) in tray_role_names() {
             assert!(tray_item_role_value(&item, r_id).is_some());
             assert_ne!(r_name, "");
@@ -635,6 +663,7 @@ mod tests {
             attention_pixmap: Vec::new(),
             attention_pixmap_width: 0,
             attention_pixmap_height: 0,
+            menu_path: "/MenuBar".to_string(),
         };
 
         // ItemAdded

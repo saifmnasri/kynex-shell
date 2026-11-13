@@ -858,6 +858,7 @@ async fn test_fdo_watcher_and_item_state_pixmaps() -> Result<(), Box<dyn Error>>
         is_menu: false,
         window_id: 0,
         attention_icon_name: None,
+        menu_path: Some("/MenuBar".to_string()),
         attention_pixmap: Some(kynex_tray::ValidatedPixmap {
             width: 1,
             height: 1,

@@ -1,0 +1,2 @@
+# Allowed wait() exceptions in tests/qml_tests/*.qml (at most 3).
+# Format: <file>:<test_name_or_pattern> - <justification>

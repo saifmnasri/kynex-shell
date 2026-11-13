@@ -203,6 +203,19 @@ Item {
             compare(shell.notificationLoader.item.notificationModel, shell.notificationModel);
         }
 
+        function test_menu_overlay_loader_ready_binding() {
+            compare(shell.menuOverlayLoaded, false);
+            shell.trayMenuModel.visible = true;
+            compare(shell.menuOverlayLoaded, true);
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready;
+            });
+            verify(shell.menuOverlayLoader.item !== null);
+            compare(shell.menuOverlayLoader.item.menuModel, shell.trayMenuModel);
+            shell.trayMenuModel.visible = false;
+        }
+
         function test_tray_initial_state() {
             compare(shell.trayModel.count, 0);
             compare(shell.trayArea.visible, false, "Tray area should be hidden when count is 0");
@@ -448,6 +461,188 @@ Item {
             compare(shell.trayModel.lastScreenX, -1920);
             compare(shell.trayModel.lastScreenY, 0);
             compare(shell.trayModel.lastPanelHeight, 48);
+        }
+
+        function test_tray_dbusmenu_right_click() {
+            shell.trayModel.clear();
+            compare(shell.trayRepeater.count, 0);
+
+            // Add item with hasMenu = true and a menuPath
+            shell.trayModel.addItem(
+                "dbusmenu-item-id",
+                "Menu App",
+                "Active",
+                "test-icon",
+                false,
+                "",
+                "Menu Title",
+                "Menu Desc",
+                false,
+                "M",
+                false,
+                0,
+                "/MenuBar",
+                true
+            );
+
+            compare(shell.trayRepeater.count, 1);
+            let btn = shell.trayRepeater.itemAt(0);
+            verify(btn !== null);
+
+            // Reset mock states
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+
+            let clickX = btn.width / 2;
+            let clickY = btn.height / 2;
+
+            // Right click -> should invoke trayMenuModel.open, NOT trayModel.contextMenu
+            LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.RightButton);
+
+            compare(shell.trayMenuModel.visible, true);
+            compare(shell.trayMenuModel.itemId, "dbusmenu-item-id");
+            compare(shell.trayModel.lastContextMenuId, "");
+
+            // Placement proof: menu is placed strictly ABOVE the bottom panel and above the tray icon
+            let panelTopY = shell.screenHeight - shell.height;
+            let iconTopY = panelTopY + (shell.height - btn.height) / 2;
+            console.log("BOTTOM PANEL MENU PLACEMENT: icon_y=" + iconTopY + " panel_y=" + panelTopY + " menu_y=" + shell.trayMenuModel.menuY + " menu_h=" + shell.trayMenuModel.menuHeight + " menu_x=" + shell.trayMenuModel.menuX + " menu_w=" + shell.trayMenuModel.menuWidth + " screen_h=" + shell.screenHeight);
+            verify(shell.trayMenuModel.menuY < panelTopY, "Menu Y must be above bottom panel");
+            verify(shell.trayMenuModel.menuY < iconTopY, "Menu Y must be above tray icon");
+            verify(shell.trayMenuModel.menuY >= 0, "Menu Y must be inside output top edge");
+            verify(shell.trayMenuModel.menuX >= 0, "Menu X must be inside output left edge");
+            verify(shell.trayMenuModel.menuX + shell.trayMenuModel.menuWidth <= shell.screenWidth, "Menu X + width must be inside output right edge");
+
+            // Closing menu hides overlay
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+        }
+
+        function test_menu_overlay_padding_click_does_not_dismiss() {
+            shell.trayMenuModel.clear();
+            shell.trayMenuModel.addItem(1, "Item 1", "", 0, 0, 0, 0, false, "", true);
+            shell.trayMenuModel.visible = true;
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            let overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+            verify(overlay.menuContainer.width > 0, "menuContainer must have explicit width");
+            verify(overlay.menuContainer.height > 0, "menuContainer must have explicit height");
+
+            // Click on padding area inside menuContainer (padding/border at (2, 2))
+            LayoutHelper.sendMouseClick(overlay.menuContainer, 2, 2, Qt.LeftButton);
+            compare(shell.trayMenuModel.visible, true, "Click inside menuContainer padding must not dismiss menu");
+
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+        }
+
+        function test_menu_overlay_backdrop_click_dismisses() {
+            shell.trayMenuModel.clear();
+            shell.trayMenuModel.addItem(1, "Item 1", "", 0, 0, 0, 0, false, "", true);
+            shell.trayMenuModel.visible = true;
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            let overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+
+            // Click backdrop outside the menuContainer (e.g. top-left corner (10, 10))
+            LayoutHelper.sendMouseClick(overlay.backdropMouse, 10, 10, Qt.LeftButton);
+            compare(shell.trayMenuModel.visible, false, "Click on backdrop outside menu must dismiss menu");
+        }
+
+        function test_menu_overlay_initial_layout_mirroring() {
+            // 1. Test LTR locale
+            LayoutHelper.setRtl(false);
+            shell.trayMenuModel.clear();
+            shell.trayMenuModel.addItem(1, "Item 1", "", 0, 0, 0, 0, false, "", true);
+            shell.trayMenuModel.visible = true;
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            let overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+
+            compare(overlay.LayoutMirroring.enabled, false, "In LTR LayoutMirroring.enabled must be false");
+            compare(overlay.LayoutMirroring.childrenInherit, true, "LayoutMirroring.childrenInherit must be true");
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+
+            // 2. Test RTL locale
+            shell.menuOverlayLoaded = false;
+            LayoutHelper.setRtl(true);
+            shell.trayMenuModel.visible = true;
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+
+            compare(overlay.LayoutMirroring.enabled, true, "In RTL locale MenuOverlay LayoutMirroring.enabled must be true");
+            compare(overlay.LayoutMirroring.childrenInherit, true, "In RTL LayoutMirroring.childrenInherit must be true");
+            shell.trayMenuModel.close();
+            compare(shell.trayMenuModel.visible, false);
+
+            // Reset to LTR
+            LayoutHelper.setRtl(false);
+        }
+
+        function test_menu_overlay_rtl_arrow_keys() {
+            shell.trayMenuModel.clear();
+            shell.trayMenuModel.addItem(1, "Item 1", "", 0, 0, 0, 0, true, "", true);
+            shell.trayMenuModel.visible = true;
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            let overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+
+            // LTR mode: Right opens submenu, Left closes submenu
+            overlay.LayoutMirroring.enabled = false;
+            let initialOpenCount = shell.trayMenuModel.openSubmenuCount;
+            let initialCloseCount = shell.trayMenuModel.closeSubmenuCount;
+
+            overlay.rightShortcut.activated();
+            compare(shell.trayMenuModel.openSubmenuCount, initialOpenCount + 1, "In LTR Right arrow must open submenu");
+
+            overlay.leftShortcut.activated();
+            compare(shell.trayMenuModel.closeSubmenuCount, initialCloseCount + 1, "In LTR Left arrow must close submenu");
+
+            // RTL mode: Left opens submenu, Right closes submenu
+            overlay.LayoutMirroring.enabled = true;
+            initialOpenCount = shell.trayMenuModel.openSubmenuCount;
+            initialCloseCount = shell.trayMenuModel.closeSubmenuCount;
+
+            overlay.leftShortcut.activated();
+            compare(shell.trayMenuModel.openSubmenuCount, initialOpenCount + 1, "In RTL Left arrow must open submenu");
+
+            overlay.rightShortcut.activated();
+            compare(shell.trayMenuModel.closeSubmenuCount, initialCloseCount + 1, "In RTL Right arrow must close submenu");
+
+            // Reset
+            overlay.LayoutMirroring.enabled = false;
+            shell.trayMenuModel.close();
+        }
+
+        function test_menu_overlay_esc_key_dismisses() {
+            shell.trayMenuModel.clear();
+            shell.trayMenuModel.addItem(1, "Item 1", "", 0, 0, 0, 0, false, "", true);
+            shell.trayMenuModel.visible = true;
+
+            tryVerify(function() {
+                return shell.menuOverlayLoader.status === Loader.Ready && shell.menuOverlayLoader.item !== null;
+            });
+            let overlay = shell.menuOverlayLoader.item;
+            verify(overlay !== null);
+
+            overlay.escShortcut.activated();
+            compare(shell.trayMenuModel.visible, false, "Esc key must close menu");
         }
     }
 }

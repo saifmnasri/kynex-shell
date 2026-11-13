@@ -28,9 +28,9 @@ use kynex_shell_core::coordinates::{
 };
 pub use kynex_shell_core::tray::{
     handle_tray_event, tray_item_role_value, tray_role_names, TrayEvent, TrayPixmapCache,
-    TrayRoleValue, TrayUiItem, TrayUiState, ROLE_HAS_PIXMAP, ROLE_ICON_NAME, ROLE_ID,
-    ROLE_IS_ATTENTION, ROLE_IS_MENU, ROLE_LETTER_BADGE, ROLE_PIXMAP_ID, ROLE_STATUS, ROLE_TITLE,
-    ROLE_TOOLTIP_TEXT, ROLE_TOOLTIP_TITLE, ROLE_WINDOW_ID,
+    TrayRoleValue, TrayUiItem, TrayUiState, ROLE_HAS_MENU, ROLE_HAS_PIXMAP, ROLE_ICON_NAME,
+    ROLE_ID, ROLE_IS_ATTENTION, ROLE_IS_MENU, ROLE_LETTER_BADGE, ROLE_MENU_PATH, ROLE_PIXMAP_ID,
+    ROLE_STATUS, ROLE_TITLE, ROLE_TOOLTIP_TEXT, ROLE_TOOLTIP_TITLE, ROLE_WINDOW_ID,
 };
 use tracing::{info, warn};
 use zbus::fdo::DBusProxy;
@@ -166,12 +166,14 @@ pub mod qobject {
             id: &QString,
             x: i32,
             y: i32,
+            panel_anchors: i32,
+            panel_width: f64,
+            panel_height: f64,
             screen_x: f64,
             screen_y: f64,
             screen_width: f64,
             screen_height: f64,
             device_pixel_ratio: f64,
-            panel_height: f64,
         );
 
         /// Invokes secondary activation on target item with screen geometry.
@@ -182,12 +184,14 @@ pub mod qobject {
             id: &QString,
             x: i32,
             y: i32,
+            panel_anchors: i32,
+            panel_width: f64,
+            panel_height: f64,
             screen_x: f64,
             screen_y: f64,
             screen_width: f64,
             screen_height: f64,
             device_pixel_ratio: f64,
-            panel_height: f64,
         );
 
         /// Invokes context menu on target item with screen geometry.
@@ -198,12 +202,14 @@ pub mod qobject {
             id: &QString,
             x: i32,
             y: i32,
+            panel_anchors: i32,
+            panel_width: f64,
+            panel_height: f64,
             screen_x: f64,
             screen_y: f64,
             screen_width: f64,
             screen_height: f64,
             device_pixel_ratio: f64,
-            panel_height: f64,
         );
 
         /// Invokes scroll action on target item.
@@ -327,28 +333,34 @@ impl qobject::TrayModel {
 
     /// Invokes primary activation on target item with screen geometry.
     #[allow(clippy::too_many_arguments)]
+    /// Invokes primary activation on target item with screen geometry.
+    #[allow(clippy::too_many_arguments)]
     pub fn activate(
         self: Pin<&mut Self>,
         id: &QString,
         x: i32,
         y: i32,
+        panel_anchors: i32,
+        panel_width: f64,
+        panel_height: f64,
         screen_x: f64,
         screen_y: f64,
         screen_width: f64,
         screen_height: f64,
         device_pixel_ratio: f64,
-        panel_height: f64,
     ) {
         let id_str = id.to_string();
         let (screen_x, screen_y) = project_tray_coordinates(
             x,
             y,
+            panel_anchors,
+            panel_width,
+            panel_height,
             screen_x,
             screen_y,
             screen_width,
             screen_height,
             device_pixel_ratio,
-            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_activate_call(&id_str, screen_x, screen_y).await;
@@ -362,23 +374,27 @@ impl qobject::TrayModel {
         id: &QString,
         x: i32,
         y: i32,
+        panel_anchors: i32,
+        panel_width: f64,
+        panel_height: f64,
         screen_x: f64,
         screen_y: f64,
         screen_width: f64,
         screen_height: f64,
         device_pixel_ratio: f64,
-        panel_height: f64,
     ) {
         let id_str = id.to_string();
         let (screen_x, screen_y) = project_tray_coordinates(
             x,
             y,
+            panel_anchors,
+            panel_width,
+            panel_height,
             screen_x,
             screen_y,
             screen_width,
             screen_height,
             device_pixel_ratio,
-            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_secondary_activate_call(&id_str, screen_x, screen_y).await;
@@ -392,23 +408,27 @@ impl qobject::TrayModel {
         id: &QString,
         x: i32,
         y: i32,
+        panel_anchors: i32,
+        panel_width: f64,
+        panel_height: f64,
         screen_x: f64,
         screen_y: f64,
         screen_width: f64,
         screen_height: f64,
         device_pixel_ratio: f64,
-        panel_height: f64,
     ) {
         let id_str = id.to_string();
         let (screen_x, screen_y) = project_tray_coordinates(
             x,
             y,
+            panel_anchors,
+            panel_width,
+            panel_height,
             screen_x,
             screen_y,
             screen_width,
             screen_height,
             device_pixel_ratio,
-            panel_height,
         );
         tokio::spawn(async move {
             let _ = send_context_menu_call(&id_str, screen_x, screen_y).await;
@@ -436,17 +456,20 @@ impl qobject::TrayModel {
 pub fn project_tray_coordinates(
     x: i32,
     y: i32,
+    panel_anchors: i32,
+    panel_width: f64,
+    panel_height: f64,
     screen_x: f64,
     screen_y: f64,
     screen_width: f64,
     screen_height: f64,
     device_pixel_ratio: f64,
-    panel_height: f64,
 ) -> (i32, i32) {
+    let anchors = SurfaceAnchors::from_bits(panel_anchors.cast_unsigned());
     map_to_screen_coordinates(
-        SurfaceAnchors::top_panel(),
+        anchors,
         PanelSize {
-            width: screen_width,
+            width: panel_width,
             height: panel_height,
         },
         OutputGeometry {
@@ -771,6 +794,8 @@ mod tests {
             letter_badge: "T".to_string(),
             is_menu: false,
             window_id: 0,
+            menu_path: String::new(),
+            has_menu: false,
             icon_pixmap: Vec::new(),
             icon_pixmap_width: 0,
             icon_pixmap_height: 0,
@@ -805,13 +830,15 @@ mod tests {
             letter_badge: "I".to_string(),
             is_menu: false,
             window_id: 1234,
+            menu_path: "/MenuBar".to_string(),
+            has_menu: true,
             icon_pixmap: vec![0; 16],
             icon_pixmap_width: 2,
             icon_pixmap_height: 2,
         };
 
         let role_names = create_tray_role_names();
-        assert_eq!(role_names.len(), 12);
+        assert_eq!(role_names.len(), 14);
         assert_eq!(role_names.get(&ROLE_ID).unwrap().to_string(), "id");
         assert_eq!(role_names.get(&ROLE_TITLE).unwrap().to_string(), "title");
         assert_eq!(role_names.get(&ROLE_STATUS).unwrap().to_string(), "status");
@@ -847,6 +874,14 @@ mod tests {
         assert_eq!(
             role_names.get(&ROLE_WINDOW_ID).unwrap().to_string(),
             "windowId"
+        );
+        assert_eq!(
+            role_names.get(&ROLE_MENU_PATH).unwrap().to_string(),
+            "menuPath"
+        );
+        assert_eq!(
+            role_names.get(&ROLE_HAS_MENU).unwrap().to_string(),
+            "hasMenu"
         );
 
         let v_id = tray_item_role_variant(&item, ROLE_ID);
@@ -974,6 +1009,8 @@ mod tests {
             letter_badge: "T".to_string(),
             is_menu: false,
             window_id: 0,
+            menu_path: String::new(),
+            has_menu: false,
             icon_pixmap: Vec::new(),
             icon_pixmap_width: 0,
             icon_pixmap_height: 0,
@@ -991,14 +1028,24 @@ mod tests {
 
     #[test]
     fn test_project_tray_coordinates_negative_screen_origin() {
-        // Output on secondary display positioned to the left (negative origin)
-        let (sx, sy) = project_tray_coordinates(100, 20, -1920.0, 0.0, 1920.0, 1080.0, 1.0, 48.0);
+        // Output on secondary display positioned to the left (negative origin) with bottom panel (anchors: 2|4|8 = 14)
+        let (sx, sy) =
+            project_tray_coordinates(100, 20, 14, 1920.0, 48.0, -1920.0, 0.0, 1920.0, 1080.0, 1.0);
+        // y in output = 1080 - 48 + 20 = 1052. x = -1920 + 100 = -1820.
         assert_eq!(sx, -1820);
-        assert_eq!(sy, 20);
+        assert_eq!(sy, 1052);
 
-        // Standard primary display
-        let (px, py) = project_tray_coordinates(150, 25, 0.0, 0.0, 1920.0, 1080.0, 1.0, 40.0);
+        // Standard primary display with bottom panel
+        let (px, py) =
+            project_tray_coordinates(150, 25, 14, 1920.0, 40.0, 0.0, 0.0, 1920.0, 1080.0, 1.0);
+        // y in output = 1080 - 40 + 25 = 1065.
         assert_eq!(px, 150);
-        assert_eq!(py, 25);
+        assert_eq!(py, 1065);
+
+        // Top panel (anchors: 1|4|8 = 13)
+        let (tx, ty) =
+            project_tray_coordinates(150, 25, 13, 1920.0, 40.0, 0.0, 0.0, 1920.0, 1080.0, 1.0);
+        assert_eq!(tx, 150);
+        assert_eq!(ty, 25);
     }
 }

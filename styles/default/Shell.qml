@@ -36,9 +36,11 @@ LayerSurface {
     readonly property alias launcherModel: launcherModel
     readonly property alias notificationModel: notificationModel
     readonly property alias trayModel: trayModel
+    readonly property alias trayMenuModel: trayMenuModel
     readonly property alias taskbarList: taskbarList
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
+    readonly property alias menuOverlayLoader: menuOverlayLoader
     readonly property alias trayArea: trayArea
     readonly property alias trayRepeater: trayRepeater
     readonly property alias networkText: networkText
@@ -131,10 +133,40 @@ LayerSurface {
         Component.onCompleted: trayModel.init()
     }
 
+    TrayMenuModel {
+        id: trayMenuModel
+        Component.onCompleted: trayMenuModel.init()
+    }
+
+    property bool menuOverlayLoaded: false
+
+    Connections {
+        target: trayMenuModel
+        function onVisibleChanged(): void {
+            if (trayMenuModel.visible) {
+                panel.menuOverlayLoaded = true;
+            }
+        }
+    }
+
+    Loader {
+        id: menuOverlayLoader
+        active: panel.menuOverlayLoaded
+        source: "MenuOverlay.qml"
+
+        Binding {
+            target: menuOverlayLoader.item
+            property: "menuModel"
+            value: trayMenuModel
+            when: menuOverlayLoader.status === Loader.Ready
+        }
+    }
+
     Connections {
         target: panel
         function onFrameSwapped(): void {
             trayModel.recordFirstFrame();
+            trayMenuModel.recordFirstFrame();
         }
     }
 
@@ -251,6 +283,8 @@ LayerSurface {
                     required property string letterBadge
                     required property bool isMenu
                     required property int windowId
+                    required property string menuPath
+                    required property bool hasMenu
 
                     readonly property alias mouseArea: trayMouseArea
                     readonly property alias iconImage: trayIconImage
@@ -316,33 +350,57 @@ LayerSurface {
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
 
                         onClicked: function(mouse) {
-                            var globalPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
-                            var gx = Math.round(globalPos.x);
-                            var gy = Math.round(globalPos.y);
+                            var clickPos = trayBtn.mapToItem(null, mouse.x, mouse.y);
+                            var gx = Math.round(clickPos.x);
+                            var gy = Math.round(clickPos.y);
                             if (mouse.button === Qt.LeftButton) {
                                 trayModel.activate(trayBtn.id, gx, gy,
+                                                   panel.anchors,
+                                                   panel.width,
+                                                   panel.height,
                                                    panel.screenVirtualX,
                                                    panel.screenVirtualY,
                                                    panel.screenWidth,
                                                    panel.screenHeight,
-                                                   panel.screenDevicePixelRatio,
-                                                   panel.height);
+                                                   panel.screenDevicePixelRatio);
                             } else if (mouse.button === Qt.MiddleButton) {
                                 trayModel.secondaryActivate(trayBtn.id, gx, gy,
+                                                            panel.anchors,
+                                                            panel.width,
+                                                            panel.height,
                                                             panel.screenVirtualX,
                                                             panel.screenVirtualY,
                                                             panel.screenWidth,
                                                             panel.screenHeight,
-                                                            panel.screenDevicePixelRatio,
-                                                            panel.height);
+                                                            panel.screenDevicePixelRatio);
                             } else if (mouse.button === Qt.RightButton) {
-                                trayModel.contextMenu(trayBtn.id, gx, gy,
-                                                      panel.screenVirtualX,
-                                                      panel.screenVirtualY,
-                                                      panel.screenWidth,
-                                                      panel.screenHeight,
-                                                      panel.screenDevicePixelRatio,
-                                                      panel.height);
+                                if (trayBtn.hasMenu) {
+                                    var btnPos = trayBtn.mapToItem(null, 0, 0);
+                                    var bx = Math.round(btnPos.x);
+                                    var by = Math.round(btnPos.y);
+                                    var menuW = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
+                                    var menuH = Style.spacing.panel + Style.spacing.panel + Style.spacing.panel;
+                                    trayMenuModel.open(trayBtn.id, bx, by, trayBtn.width, trayBtn.height,
+                                                       menuW, menuH,
+                                                       panel.anchors,
+                                                       panel.width,
+                                                       panel.height,
+                                                       panel.screenVirtualX,
+                                                       panel.screenVirtualY,
+                                                       panel.screenWidth,
+                                                       panel.screenHeight,
+                                                       panel.screenDevicePixelRatio);
+                                } else {
+                                    trayModel.contextMenu(trayBtn.id, gx, gy,
+                                                          panel.anchors,
+                                                          panel.width,
+                                                          panel.height,
+                                                          panel.screenVirtualX,
+                                                          panel.screenVirtualY,
+                                                          panel.screenWidth,
+                                                          panel.screenHeight,
+                                                          panel.screenDevicePixelRatio);
+                                }
                             }
                         }
 
