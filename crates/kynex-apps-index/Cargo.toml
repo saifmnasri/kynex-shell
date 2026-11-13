@@ -12,7 +12,7 @@ workspace = true
 [dependencies]
 thiserror.workspace = true
 tracing.workspace = true
-notify = { version = "6.1.1", default-features = false, features = ["crossbeam-channel"] }
+notify = { version = "8.2.2", default-features = false, features = ["crossbeam-channel"] }
 
 [dev-dependencies]
 tempfile = "3.17"
