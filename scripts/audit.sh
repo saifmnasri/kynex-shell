@@ -22,5 +22,5 @@ if [[ -f scripts/test-qml-stress.sh ]]; then
   echo; echo "### 8. QML suite 20x stress test under CPU load"
   ./scripts/test-qml-stress.sh || rc=1
 fi
-echo; echo "### 7. Manual review (agent): re-read the diff as a hostile reviewer; fill docs/SECURITY_CHECKLIST.md for new code"
+echo; echo "### 7. Manual review: re-read the diff as a hostile reviewer; verify security checklist for new code"
 exit $rc

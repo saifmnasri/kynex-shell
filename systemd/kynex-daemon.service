@@ -16,7 +16,7 @@ RestartSec=2s
 # in an unprivileged user session. Directives requiring unprivileged user namespaces
 # or root privileges (PrivateNetwork, ProtectHostname, ProtectSystem, ProtectHome,
 # PrivateTmp, ProtectKernelTunables, ProtectControlGroups, ProtectProc, ProcSubset,
-# IPAddressDeny) are omitted per docs/THREAT_MODEL.md and D-029.
+# IPAddressDeny) are omitted per threat model and systemd user session design.
 NoNewPrivileges=yes
 RestrictAddressFamilies=AF_UNIX
 SystemCallFilter=@system-service

@@ -180,7 +180,7 @@ def main():
     parser.add_argument(
         "--markdown",
         action="store_true",
-        help="Output GitHub Flavored Markdown table for docs/PERFORMANCE.md",
+        help="Output GitHub Flavored Markdown table for performance benchmarks",
     )
     args = parser.parse_args()
 

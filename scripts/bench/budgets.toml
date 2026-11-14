@@ -1,5 +1,5 @@
 # Machine-readable performance budgets for Kynex Shell.
-# Methodology and baseline definitions: docs/PERFORMANCE.md
+# Methodology and baseline definitions: performance benchmarks
 
 [session_idle_pss]
 name = "Complete session idle memory (PSS)"

@@ -11,7 +11,7 @@ export GIT_CONFIG_VALUE_0="*"
 command -v git >/dev/null 2>&1 && git config --system --add safe.directory "*" 2>/dev/null || true
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory "*" 2>/dev/null || true
 
-if [ ! -d "${ROOT_DIR}/.git" ] || ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+if [ ! -e "${ROOT_DIR}/.git" ] || ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "ERROR: Not a git repository. Cannot determine guard diff without git history." >&2
     exit 1
 fi
