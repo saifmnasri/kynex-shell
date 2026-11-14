@@ -1,9 +1,0 @@
-=== COMMAND ===
-timeout 10s cargo test --manifest-path /tmp/kynex_worktree_fail/Cargo.toml -p kynex-daemon --test tray_service_test test_signal_flood_decoupled_resilience
-=== TIMESTAMP: 2026-11-11T02:01:00Z ===
-=== EXIT CODE: 124 ===
-=== RAW OUTPUT ===
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
-     Running tests/tray_service_test.rs (/tmp/kynex_worktree_fail/target/debug/deps/tray_service_test-6317c0111af1ba96)
-
-running 1 test

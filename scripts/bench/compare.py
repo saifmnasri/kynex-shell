@@ -107,7 +107,7 @@ def main():
             sys.exit(0)
         else:
             print(f"\nFAIL: {msg}")
-            print(f"To accept this growth, pass --allow and document rationale in docs/PERFORMANCE.md.")
+            print(f"To accept this growth, pass --allow and document rationale in performance logs.")
             sys.exit(1)
     else:
         print(f"\nPASS: Memory delta for kynex-shell is within budget threshold (<= +{args.pss_mb_threshold:.1f} MB and <= +{args.pss_pct_threshold:.1f}%).")

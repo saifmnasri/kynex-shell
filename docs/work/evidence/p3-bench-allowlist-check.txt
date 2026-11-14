@@ -1,6 +1,0 @@
-=== COMMAND ===
-wc -l scripts/bench/literals-allowlist.txt
-=== TIMESTAMP: 2026-11-12T15:57:03Z ===
-=== EXIT CODE: 0 ===
-=== RAW OUTPUT ===
-28 scripts/bench/literals-allowlist.txt
