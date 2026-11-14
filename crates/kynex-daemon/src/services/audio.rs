@@ -6,6 +6,7 @@
 //! with a 5 restarts/minute cap.
 
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -559,7 +560,7 @@ pub async fn run_audio_service(server: AudioServer, backend: Arc<dyn AudioBacken
 
     let mut restart_times: Vec<Instant> = Vec::new();
     let mut consecutive_failures: u32 = 0;
-    let mut coalescer = EventCoalescer::new(25);
+    let mut coalescer = EventCoalescer::default();
     let start_instant = Instant::now();
 
     loop {
@@ -595,43 +596,55 @@ pub async fn run_audio_service(server: AudioServer, backend: Arc<dyn AudioBacken
         };
 
         let mut reader = BoundedLineReader::new();
-        let mut buf = [0u8; 1024];
+        let mut buf = [0u8; 8192];
+        let mut timer: Option<Pin<Box<tokio::time::Sleep>>> = None;
 
         loop {
             tokio::select! {
+                () = async {
+                    match timer.as_mut() {
+                        Some(sleep) => sleep.await,
+                        None => std::future::pending::<()>().await,
+                    }
+                } => {
+                    timer = None;
+                    if let Ok(updated) = backend.get_status().await {
+                        server.update_state(updated).await;
+                    }
+                    let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
+                    if let Some(next_delay) = coalescer.on_debounced_run(now_ms) {
+                        timer = Some(Box::pin(tokio::time::sleep(Duration::from_millis(next_delay))));
+                    }
+                }
                 read_res = stdout.read(&mut buf) => {
                     match read_res {
                         Ok(0) => {
                             debug!("Audio subscribe stream reached EOF");
+                            if coalescer.is_scheduled() {
+                                if let Ok(updated) = backend.get_status().await {
+                                    server.update_state(updated).await;
+                                }
+                                let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
+                                let _ = coalescer.on_debounced_run(now_ms);
+                            }
                             break;
                         }
                         Ok(n) => {
-                            let lines = reader.feed(&buf[..n]);
-                            for line in lines.into_iter().flatten() {
-                                if let Some(event) = parse_subscribe_line(&line) {
-                                    if matches!(event, AudioEvent::SinkChanged(_) | AudioEvent::ServerChanged) {
-                                        let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
-                                        match coalescer.handle_event(now_ms) {
-                                            CoalesceAction::TriggerImmediate => {
-                                                if let Ok(updated) = backend.get_status().await {
-                                                    server.update_state(updated).await;
+                            let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
+                            reader.feed_each(&buf[..n], |line_res| {
+                                if let Ok(line) = line_res {
+                                    if let Some(event) = parse_subscribe_line(line) {
+                                        if matches!(event, AudioEvent::SinkChanged(_) | AudioEvent::ServerChanged) {
+                                            match coalescer.handle_event(now_ms) {
+                                                CoalesceAction::ScheduleDebounce(delay) => {
+                                                    timer = Some(Box::pin(tokio::time::sleep(Duration::from_millis(delay))));
                                                 }
+                                                CoalesceAction::AlreadyScheduled => {}
                                             }
-                                            CoalesceAction::ScheduleDebounce(delay) => {
-                                                let backend_clone = Arc::clone(&backend);
-                                                let server_clone = server.clone();
-                                                tokio::spawn(async move {
-                                                    tokio::time::sleep(Duration::from_millis(delay)).await;
-                                                    if let Ok(updated) = backend_clone.get_status().await {
-                                                        server_clone.update_state(updated).await;
-                                                    }
-                                                });
-                                            }
-                                            CoalesceAction::AlreadyScheduled => {}
                                         }
                                     }
                                 }
-                            }
+                            });
                         }
                         Err(e) => {
                             warn!("Error reading audio subscribe stream: {e}");

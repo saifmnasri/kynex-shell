@@ -15,7 +15,7 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures_util::StreamExt;
 use kynex_audio::{
@@ -1453,5 +1453,202 @@ async fn test_audio_subscribe_child_exit_and_restart() -> Result<(), Box<dyn Err
     tokio::time::sleep(Duration::from_millis(300)).await;
     handle.abort();
     let _ = handle.await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mutant_coalesce_final_state() -> Result<(), Box<dyn Error>> {
+    let _serial = TEST_SERIAL_LOCK.lock().await;
+    let harness = FakePactlHarness::new(30, false)?;
+    harness.create_fifo()?;
+    harness.set_state(30, false, false, 0, "fifo");
+    set_pactl_path_override(Some(harness.path().to_path_buf()));
+
+    let bus = TestBus::new().await?;
+    let backend = Arc::new(PactlAudioBackend::new());
+    let server = AudioServer::new(backend.clone());
+
+    let conn = zbus::connection::Builder::address(bus.address())
+        .name("org.kynexos.Daemon")
+        .serve_at("/org/kynexos/Daemon/Audio", server.clone())
+        .build()
+        .await?;
+
+    if let Ok(emitter) = zbus::object_server::SignalEmitter::new(&conn, "/org/kynexos/Daemon/Audio")
+    {
+        server.set_emitter(emitter).await;
+    }
+
+    let service_handle = tokio::spawn(run_audio_service(server.clone(), backend.clone()));
+
+    let client_conn = zbus::connection::Builder::address(bus.address())
+        .build()
+        .await?;
+    let proxy = Audio1Proxy::builder(&client_conn)
+        .destination("org.kynexos.Daemon")
+        .path("/org/kynexos/Daemon/Audio")
+        .build()
+        .await?;
+
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(proxy.volume().await?, 30);
+
+    let mut vol_changed = proxy.receive_volume_changed().await;
+
+    // Set authoritative final state to 88
+    harness.set_state(88, false, false, 0, "fifo");
+
+    // Write a burst of rapid events, then stop (silence)
+    let fifo_path = harness.fifo_path().to_path_buf();
+    let fifo_task = tokio::task::spawn_blocking(move || -> Result<(), std::io::Error> {
+        let mut f = File::create(&fifo_path)?;
+        for _ in 0..10 {
+            f.write_all(b"Event 'change' on sink #0\n")?;
+        }
+        f.flush()?;
+        // Silence follows
+        std::thread::sleep(Duration::from_millis(300));
+        drop(f);
+        Ok(())
+    });
+
+    let mut final_delivered = false;
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while Instant::now() < deadline {
+        match tokio::time::timeout(Duration::from_millis(300), vol_changed.next()).await {
+            Ok(Some(change)) => {
+                if change.get().await? == 88 {
+                    final_delivered = true;
+                    break;
+                }
+            }
+            _ => {
+                if proxy.volume().await? == 88 {
+                    final_delivered = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    assert!(
+        final_delivered,
+        "Mutant killed: Final volume (88) delivered after burst followed by silence"
+    );
+
+    fifo_task.await??;
+    service_handle.abort();
+    let _ = service_handle.await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_coalesce_flood_and_isolated_latency() -> Result<(), Box<dyn Error>> {
+    let _serial = TEST_SERIAL_LOCK.lock().await;
+    let harness = FakePactlHarness::new(20, false)?;
+    harness.create_fifo()?;
+    harness.set_state(20, false, false, 0, "fifo");
+    set_pactl_path_override(Some(harness.path().to_path_buf()));
+
+    let bus = TestBus::new().await?;
+    let backend = Arc::new(PactlAudioBackend::new());
+    let server = AudioServer::new(backend.clone());
+
+    let conn = zbus::connection::Builder::address(bus.address())
+        .name("org.kynexos.Daemon")
+        .serve_at("/org/kynexos/Daemon/Audio", server.clone())
+        .build()
+        .await?;
+
+    if let Ok(emitter) = zbus::object_server::SignalEmitter::new(&conn, "/org/kynexos/Daemon/Audio")
+    {
+        server.set_emitter(emitter).await;
+    }
+
+    let service_handle = tokio::spawn(run_audio_service(server.clone(), backend.clone()));
+
+    let client_conn = zbus::connection::Builder::address(bus.address())
+        .build()
+        .await?;
+    let proxy = Audio1Proxy::builder(&client_conn)
+        .destination("org.kynexos.Daemon")
+        .path("/org/kynexos/Daemon/Audio")
+        .build()
+        .await?;
+
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(proxy.volume().await?, 20);
+
+    let mut vol_changed = proxy.receive_volume_changed().await;
+
+    // 1. Isolated event test: latency must arrive within 25ms + processing (<= 60ms)
+    harness.set_state(45, false, false, 0, "fifo");
+    let fifo_path = harness.fifo_path().to_path_buf();
+    let (tx, rx) = tokio::sync::oneshot::channel::<Instant>();
+    let fifo_task = tokio::task::spawn_blocking(move || -> Result<(), std::io::Error> {
+        let mut f = File::create(&fifo_path)?;
+        // Send isolated event
+        let t0 = Instant::now();
+        let _ = tx.send(t0);
+        f.write_all(b"Event 'change' on sink #0\n")?;
+        f.flush()?;
+        std::thread::sleep(Duration::from_millis(100));
+
+        // 2. 10,000-event flood
+        for _ in 0..10_000 {
+            f.write_all(b"Event 'change' on sink #0\n")?;
+        }
+        f.flush()?;
+        std::thread::sleep(Duration::from_millis(300));
+        drop(f);
+        Ok(())
+    });
+
+    let t0 = rx.await?;
+    let mut isolated_received = false;
+    let mut latency_ms = 0.0;
+    while let Ok(Some(change)) =
+        tokio::time::timeout(Duration::from_millis(200), vol_changed.next()).await
+    {
+        if change.get().await? == 45 {
+            latency_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            isolated_received = true;
+            break;
+        }
+    }
+    assert!(
+        isolated_received,
+        "Isolated event volume change (45) received"
+    );
+    assert!(
+        latency_ms >= 20.0,
+        "Isolated event debounced with 25ms base window (got {latency_ms:.2}ms)"
+    );
+    assert!(
+        latency_ms <= 150.0,
+        "Isolated event arrives within 25ms base window plus processing (got {latency_ms:.2}ms)"
+    );
+
+    // Update state for flood final value
+    harness.set_state(95, false, false, 0, "fifo");
+
+    // Wait for flood to complete and final value (95) to arrive
+    let mut flood_final_received = false;
+    let deadline = Instant::now() + Duration::from_secs(4);
+    while Instant::now() < deadline {
+        if proxy.volume().await? == 95 {
+            flood_final_received = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert!(
+        flood_final_received,
+        "Final value (95) arrived after 10,000-event flood"
+    );
+
+    fifo_task.await??;
+    service_handle.abort();
+    let _ = service_handle.await;
     Ok(())
 }

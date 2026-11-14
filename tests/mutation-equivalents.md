@@ -50,7 +50,7 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 
 ## 4. Stage Q Named Mutants (Audio & Quick Settings)
 
-All 10 required security and robustness mutants for Stage Q have dedicated named unit/integration tests that fail if the security mechanism is removed or bypassed:
+All 14 required security, robustness, and coalescing mutants for Stage Q have dedicated named unit/integration tests that fail if the mechanism is removed or bypassed:
 
 | Mutant Identifier | Security Mechanism / Invariant | Killing Test Path & Name | Status |
 |---|---|---|---|
@@ -64,4 +64,8 @@ All 10 required security and robustness mutants for Stage Q have dedicated named
 | `MUTANT_ARGV_ONLY` | Subprocess spawned directly with argv array without shell invocation (hostile sink metacharacters preserved verbatim, no shell injection) | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_argv_only_no_shell` | **KILLED** |
 | `MUTANT_READBACK` | SetVolume and SetMuted verify state mutation via authoritative readback | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_readback` | **KILLED** |
 | `MUTANT_DEBOUNCE_FINAL_VALUE` | Slider debouncer guarantees delivery of final settled slider value | `crates/kynex-shell-core/tests/audio_tests.rs::test_mutant_debounce_final_value` | **KILLED** |
+| `MUTANT_COALESCE_WIDENING` | Adaptive coalescer widens window exponentially from 25ms to 250ms during bursts | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_widening` | **KILLED** |
+| `MUTANT_COALESCE_WINDOW_CAP` | Coalescing window strictly capped at 250ms max duration | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_window_cap` | **KILLED** |
+| `MUTANT_COALESCE_RESET` | Coalescing window resets to base 25ms after >= 1000ms quiet period | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_reset` | **KILLED** |
+| `MUTANT_COALESCE_FINAL_STATE` | Final volume state delivered after burst followed by silence | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_coalesce_final_state` | **KILLED** |
 

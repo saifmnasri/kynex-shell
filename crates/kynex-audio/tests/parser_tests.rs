@@ -271,40 +271,174 @@ fn test_bounded_line_reader_line_limit_and_overflow() {
 }
 
 #[test]
-fn test_event_coalescer_timing_and_reset() {
+fn test_event_coalescer_isolated_event() {
     let mut coalescer = EventCoalescer::default();
 
-    // First event at t=100ms -> immediate
+    // Isolated event at t=100ms -> schedule 25ms base debounce
     assert_eq!(
         coalescer.handle_event(100),
-        CoalesceAction::TriggerImmediate
+        CoalesceAction::ScheduleDebounce(25)
     );
+    assert!(coalescer.is_scheduled());
+    assert!(!coalescer.is_dirty());
+    assert_eq!(coalescer.current_window_ms(), 25);
 
-    // Rapid second event at t=105ms -> schedule debounce for 20ms
+    // Debounced task runs at t=125ms with no intermediate events -> idle
+    assert_eq!(coalescer.on_debounced_run(125), None);
+    assert!(!coalescer.is_scheduled());
+    assert!(!coalescer.is_dirty());
+}
+
+#[test]
+fn test_mutant_coalesce_widening() {
+    // Mutant: Exponential window widening removed -> window stays fixed at base 25ms.
+    let mut coalescer = EventCoalescer::default();
+    assert_eq!(coalescer.current_window_ms(), 25);
+
+    // Event 1 at t=0ms -> schedules initial 25ms window
     assert_eq!(
-        coalescer.handle_event(105),
-        CoalesceAction::ScheduleDebounce(20)
+        coalescer.handle_event(0),
+        CoalesceAction::ScheduleDebounce(25)
     );
+    assert_eq!(coalescer.current_window_ms(), 25);
 
-    // Rapid third event at t=110ms -> already scheduled
+    // Event 2 at t=10ms (< 25ms elapsed) -> widens to 50ms
+    assert_eq!(coalescer.handle_event(10), CoalesceAction::AlreadyScheduled);
     assert_eq!(
-        coalescer.handle_event(110),
-        CoalesceAction::AlreadyScheduled
+        coalescer.current_window_ms(),
+        50,
+        "Mutant killed: window widens exponentially from 25 to 50ms on rapid events"
     );
 
-    // Debounced task runs at t=125ms
-    coalescer.on_debounced_run(125);
-
-    // Next event at t=160ms (> 25ms elapsed) -> immediate
+    // Event 3 at t=20ms (< 50ms elapsed) -> widens to 100ms
+    assert_eq!(coalescer.handle_event(20), CoalesceAction::AlreadyScheduled);
     assert_eq!(
-        coalescer.handle_event(160),
-        CoalesceAction::TriggerImmediate
+        coalescer.current_window_ms(),
+        100,
+        "Mutant killed: window widens exponentially from 50 to 100ms on rapid events"
     );
 
-    // Reset resets internal state
+    // Event 4 at t=30ms (< 100ms elapsed) -> widens to 200ms
+    assert_eq!(coalescer.handle_event(30), CoalesceAction::AlreadyScheduled);
+    assert_eq!(
+        coalescer.current_window_ms(),
+        200,
+        "Mutant killed: window widens exponentially from 100 to 200ms on rapid events"
+    );
+
+    // Event 5 at t=40ms (< 200ms elapsed) -> widens to 250ms (capped at 250ms)
+    assert_eq!(coalescer.handle_event(40), CoalesceAction::AlreadyScheduled);
+    assert_eq!(
+        coalescer.current_window_ms(),
+        250,
+        "Mutant killed: window widens to 250ms on rapid events"
+    );
+}
+
+#[test]
+fn test_mutant_coalesce_window_cap() {
+    // Mutant: MAX_COALESCE_WINDOW_MS cap removed -> window expands past 250ms.
+    let mut coalescer = EventCoalescer::default();
+    assert_eq!(coalescer.max_window_ms(), 250);
+
+    // Rapid event sequence
+    coalescer.handle_event(0);
+    coalescer.handle_event(5);
+    coalescer.handle_event(10);
+    coalescer.handle_event(15);
+    coalescer.handle_event(20);
+    assert_eq!(coalescer.current_window_ms(), 250);
+
+    // Further rapid events must NEVER exceed 250ms
+    for t in [25, 30, 35, 40, 45, 50, 60, 70] {
+        coalescer.handle_event(t);
+        assert_eq!(
+            coalescer.current_window_ms(),
+            250,
+            "Mutant killed: coalescing window capped strictly at 250ms at t={t}"
+        );
+    }
+}
+
+#[test]
+fn test_mutant_coalesce_reset() {
+    // Mutant: Quiet period reset removed -> window stays widened at 250ms indefinitely.
+    let mut coalescer = EventCoalescer::default();
+
+    // Rapid burst widens window to 250ms
+    coalescer.handle_event(0);
+    coalescer.handle_event(5);
+    coalescer.handle_event(10);
+    coalescer.handle_event(15);
+    coalescer.handle_event(20);
+    assert_eq!(coalescer.current_window_ms(), 250);
+
+    // Debounce fires at t=25ms
+    let trailing = coalescer.on_debounced_run(25);
+    assert_eq!(trailing, Some(250));
+    // Trailing debounced run completes at t=275ms
+    assert_eq!(coalescer.on_debounced_run(275), None);
+
+    // Inactivity period of 1000ms: event arrives at t=1275ms (1000ms elapsed since t=275ms, or 1255ms since t=20ms)
+    let action = coalescer.handle_event(1275);
+    assert_eq!(
+        coalescer.current_window_ms(),
+        25,
+        "Mutant killed: window resets to 25ms after >= 1000ms of quiet"
+    );
+    assert_eq!(
+        action,
+        CoalesceAction::ScheduleDebounce(25),
+        "Mutant killed: initial debounce after quiet reset is base 25ms"
+    );
+}
+
+#[test]
+fn test_coalesce_final_state_delivery_logic() {
+    let mut coalescer = EventCoalescer::default();
+
+    // Event 1 at t=0
+    assert_eq!(
+        coalescer.handle_event(0),
+        CoalesceAction::ScheduleDebounce(25)
+    );
+    assert!(coalescer.is_scheduled());
+    assert!(!coalescer.is_dirty());
+
+    // Event 2 arrives at t=10 during debounce -> marks dirty
+    assert_eq!(coalescer.handle_event(10), CoalesceAction::AlreadyScheduled);
+    assert!(coalescer.is_dirty());
+
+    // Debounce 1 fires at t=25ms -> returns Some(next_delay) because dirty
+    let next = coalescer.on_debounced_run(25);
+    assert_eq!(next, Some(50));
+    assert!(coalescer.is_scheduled());
+    assert!(!coalescer.is_dirty());
+
+    // Debounce 2 fires at t=75ms with no subsequent events -> returns None (idle)
+    assert_eq!(coalescer.on_debounced_run(75), None);
+    assert!(!coalescer.is_scheduled());
+}
+
+#[test]
+fn test_event_coalescer_timing_and_reset() {
+    let mut coalescer = EventCoalescer::with_limits(25, 250, 1000);
+    assert_eq!(coalescer.min_window_ms(), 25);
+    assert_eq!(coalescer.max_window_ms(), 250);
+    assert_eq!(coalescer.quiet_reset_ms(), 1000);
+    assert_eq!(coalescer.last_event_ms(), None);
+
+    // Event at t=100ms
+    assert_eq!(
+        coalescer.handle_event(100),
+        CoalesceAction::ScheduleDebounce(25)
+    );
+    assert_eq!(coalescer.last_event_ms(), Some(100));
+
+    // Reset clears state
     coalescer.reset();
-    assert_eq!(
-        coalescer.handle_event(161),
-        CoalesceAction::TriggerImmediate
-    );
+    assert_eq!(coalescer.last_event_ms(), None);
+    assert!(!coalescer.is_scheduled());
+    assert!(!coalescer.is_dirty());
+    assert_eq!(coalescer.current_window_ms(), 25);
 }

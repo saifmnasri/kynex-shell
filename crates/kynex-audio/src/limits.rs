@@ -17,3 +17,9 @@ pub const MAX_VOLUME: u32 = 100;
 
 /// Default coalescing debounce duration in milliseconds.
 pub const DEFAULT_COALESCE_DEBOUNCE_MS: u64 = 25;
+
+/// Maximum adaptive coalescing debounce duration in milliseconds (250 ms).
+pub const MAX_COALESCE_WINDOW_MS: u64 = 250;
+
+/// Inactivity interval after which the adaptive coalescing window resets to the minimum (1000 ms).
+pub const QUIET_RESET_MS: u64 = 1000;

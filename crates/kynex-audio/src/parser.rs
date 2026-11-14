@@ -316,6 +316,34 @@ impl BoundedLineReader {
         }
     }
 
+    /// Feeds a chunk of bytes, invoking `callback` for each completed line without heap allocation.
+    pub fn feed_each<F>(&mut self, chunk: &[u8], mut callback: F)
+    where
+        F: FnMut(Result<&str, AudioError>),
+    {
+        for &byte in chunk {
+            if byte == b'\n' {
+                if self.in_overflow {
+                    self.in_overflow = false;
+                    self.buffer.clear();
+                    callback(Err(AudioError::LineTooLong(MAX_LINE_LENGTH)));
+                } else {
+                    let s = std::str::from_utf8(&self.buffer).unwrap_or_default();
+                    callback(Ok(s));
+                    self.buffer.clear();
+                }
+            } else if self.in_overflow {
+                // Drop excess bytes until newline
+            } else if self.buffer.len() >= MAX_LINE_LENGTH {
+                // Buffer filled without seeing a newline
+                self.in_overflow = true;
+                self.buffer.clear();
+            } else {
+                self.buffer.push(byte);
+            }
+        }
+    }
+
     /// Feeds a chunk of bytes and extracts completed lines.
     ///
     /// # Errors
@@ -323,7 +351,6 @@ impl BoundedLineReader {
     /// Yields [`AudioError::LineTooLong`] if a line exceeds [`MAX_LINE_LENGTH`].
     pub fn feed(&mut self, chunk: &[u8]) -> Vec<Result<String, AudioError>> {
         let mut results = Vec::new();
-
         for &byte in chunk {
             if byte == b'\n' {
                 if self.in_overflow {
@@ -345,7 +372,6 @@ impl BoundedLineReader {
                 self.buffer.push(byte);
             }
         }
-
         results
     }
 

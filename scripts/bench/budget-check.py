@@ -617,21 +617,39 @@ def main():
         vol_ext_measured = "Unmeasured"
         vol_ext_notes = "External pactl change to UI update."
 
-    # 14e. Quick Settings shell PSS plateau
+    # 14e1. Shell idle offscreen PSS
+    off_s_pss = validate_and_compute_metric(bench, "shell_idle_offscreen_pss")
+    if off_s_pss:
+        off_s_pss_val = off_s_pss["max"]
+        max_off_s_pss = budgets.get("shell_idle_offscreen_pss", {}).get("max_pss_mb", 48.0)
+        if budgets.get("shell_idle_offscreen_pss", {}).get("status") == "proposed":
+            off_s_pss_status = "PROPOSED (owner approval pending)"
+        else:
+            off_s_pss_status = "MET" if off_s_pss_val <= max_off_s_pss else "NOT MET"
+        off_s_pss_measured = f"**{off_s_pss_val:.1f} MB PSS**"
+        off_s_pss_notes = f"Shell idle PSS, offscreen+software ({len(off_s_pss['samples'])} samples; method: {off_s_pss['method']})."
+    else:
+        off_s_pss_status = "UNMEASURABLE"
+        off_s_pss_measured = "Unmeasured"
+        off_s_pss_notes = "Shell idle offscreen PSS."
+
+    # 14e2. Quick Settings shell PSS plateau (VM nested, informational)
     qs_s_pss = validate_and_compute_metric(bench, "quick_settings_idle_shell_pss")
     if qs_s_pss:
         qs_s_pss_val = qs_s_pss["max"]
-        max_qs_s_pss = budgets.get("quick_settings_idle_shell_pss", {}).get("max_pss_mb", 100.0)
-        if budgets.get("quick_settings_idle_shell_pss", {}).get("status") == "proposed":
+        if budgets.get("quick_settings_idle_shell_pss", {}).get("status") == "informational":
+            qs_s_pss_status = "INFORMATIONAL"
+        elif budgets.get("quick_settings_idle_shell_pss", {}).get("status") == "proposed":
             qs_s_pss_status = "PROPOSED (owner approval pending)"
         else:
+            max_qs_s_pss = budgets.get("quick_settings_idle_shell_pss", {}).get("max_pss_mb", 100.0)
             qs_s_pss_status = "MET" if qs_s_pss_val <= max_qs_s_pss else "NOT MET"
         qs_s_pss_measured = f"**{qs_s_pss_val:.1f} MB PSS**"
         qs_s_pss_notes = f"Shell PSS after 100 quick settings open/close cycles plateau ({len(qs_s_pss['samples'])} samples; method: {qs_s_pss['method']})."
     else:
         qs_s_pss_status = "UNMEASURABLE"
         qs_s_pss_measured = "Unmeasured"
-        qs_s_pss_notes = "Shell PSS after 100 quick settings open/close cycles."
+        qs_s_pss_notes = "Shell PSS after 100 quick settings open/close cycles (VM nested)."
 
     # 14f. Audio daemon PSS plateau
     aud_d_pss = validate_and_compute_metric(bench, "audio_idle_daemon_pss")
@@ -699,6 +717,7 @@ def main():
         (budgets["quick_settings_open_latency_warm"]["name"], budgets["quick_settings_open_latency_warm"]["target"], qs_warm_measured, qs_warm_status, qs_warm_notes),
         (budgets["audio_set_volume_latency"]["name"], budgets["audio_set_volume_latency"]["target"], vol_set_measured, vol_set_status, vol_set_notes),
         (budgets["audio_external_volume_latency"]["name"], budgets["audio_external_volume_latency"]["target"], vol_ext_measured, vol_ext_status, vol_ext_notes),
+        (budgets["shell_idle_offscreen_pss"]["name"], budgets["shell_idle_offscreen_pss"]["target"], off_s_pss_measured, off_s_pss_status, off_s_pss_notes),
         (budgets["quick_settings_idle_shell_pss"]["name"], budgets["quick_settings_idle_shell_pss"]["target"], qs_s_pss_measured, qs_s_pss_status, qs_s_pss_notes),
         (budgets["audio_idle_daemon_pss"]["name"], budgets["audio_idle_daemon_pss"]["target"], aud_d_pss_measured, aud_d_pss_status, aud_d_pss_notes),
         (budgets["audio_event_flood_cpu"]["name"], budgets["audio_event_flood_cpu"]["target"], aud_flood_cpu_measured, aud_flood_cpu_status, aud_flood_cpu_notes),
@@ -708,6 +727,7 @@ def main():
     not_met_count = sum(1 for _, _, _, s, _ in rows if s == "NOT MET")
     unmeasurable_count = sum(1 for _, _, _, s, _ in rows if s == "UNMEASURABLE")
     proposed_count = sum(1 for _, _, _, s, _ in rows if "PROPOSED" in s)
+    info_count = sum(1 for _, _, _, s, _ in rows if s == "INFORMATIONAL")
 
     if args.markdown:
         print("### Current Budget Status Table")
@@ -715,7 +735,7 @@ def main():
         print("|---|---|---|---|---|")
         for name, target, measured, status, notes in rows:
             print(f"| {name} | {target} | {measured} | **{status}** | {notes} |")
-        print(f"\n**Totals (Approved Budgets)**: MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
+        print(f"\n**Totals (Approved Budgets)**: MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | INFORMATIONAL: {info_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
     else:
         print(f"Benchmark File: {args.benchmark_json}")
         print(f"Git SHA: {bench.get('git_sha', 'unknown')} (Profile: {bench.get('build_profile', 'unknown')})\n")
@@ -725,7 +745,7 @@ def main():
         for name, target, measured, status, notes in rows:
             clean_meas = measured.replace("**", "").replace("`", "")[:32]
             print(f"{name:<46}{status:<38}{clean_meas:<35}")
-        print(f"\nTotals (Approved Budgets): MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
+        print(f"\nTotals (Approved Budgets): MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | INFORMATIONAL: {info_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
 
 
 if __name__ == "__main__":
