@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl") {
+    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl" || variant == "quick-settings-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);
         QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
@@ -193,6 +193,21 @@ int main(int argc, char *argv[]) {
         scenario = "disabled";
     } else if (variant == "menu-rtl") {
         qmlFile = "tests/visual/MenuHarness.qml";
+        scenario = "rtl";
+    } else if (variant == "quick-settings-normal") {
+        qmlFile = "tests/visual/QuickSettingsHarness.qml";
+        scenario = "normal";
+    } else if (variant == "quick-settings-muted") {
+        qmlFile = "tests/visual/QuickSettingsHarness.qml";
+        scenario = "muted";
+    } else if (variant == "quick-settings-dnd") {
+        qmlFile = "tests/visual/QuickSettingsHarness.qml";
+        scenario = "dnd";
+    } else if (variant == "quick-settings-no-audio") {
+        qmlFile = "tests/visual/QuickSettingsHarness.qml";
+        scenario = "no-audio";
+    } else if (variant == "quick-settings-rtl") {
+        qmlFile = "tests/visual/QuickSettingsHarness.qml";
         scenario = "rtl";
     }
 

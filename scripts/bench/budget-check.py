@@ -549,6 +549,101 @@ def main():
         menu_flood_cpu_measured = "Unmeasured"
         menu_flood_cpu_notes = "Peak CPU during LayoutUpdated flood."
 
+    # 14a. Quick Settings open latency (cold)
+    qs_cold = validate_and_compute_metric(bench, "quick_settings_open_latency_cold")
+    if qs_cold:
+        qs_cold_p50 = qs_cold["p50"]
+        qs_cold_p95 = qs_cold["p95"]
+        max_qs_cold = budgets.get("quick_settings_open_latency_cold", {}).get("max_ms", 50.0)
+        qs_cold_status = "MET" if qs_cold_p95 <= max_qs_cold else "NOT MET"
+        qs_cold_measured = f"**{qs_cold_p50:.2f} ms (p50)**, **{qs_cold_p95:.2f} ms (p95)**"
+        qs_cold_notes = f"Click to first frame (cold, {len(qs_cold['samples'])} samples; method: {qs_cold['method']})."
+    else:
+        qs_cold_status = "UNMEASURABLE"
+        qs_cold_measured = "Unmeasured"
+        qs_cold_notes = "Quick settings cold latency."
+
+    # 14b. Quick Settings open latency (warm)
+    qs_warm = validate_and_compute_metric(bench, "quick_settings_open_latency_warm")
+    if qs_warm:
+        qs_warm_p50 = qs_warm["p50"]
+        qs_warm_p95 = qs_warm["p95"]
+        max_qs_warm = budgets.get("quick_settings_open_latency_warm", {}).get("max_ms", 16.0)
+        qs_warm_status = "MET" if qs_warm_p95 <= max_qs_warm else "NOT MET"
+        qs_warm_measured = f"**{qs_warm_p50:.2f} ms (p50)**, **{qs_warm_p95:.2f} ms (p95)**"
+        qs_warm_notes = f"Click to first frame (warm, {len(qs_warm['samples'])} samples; method: {qs_warm['method']})."
+    else:
+        qs_warm_status = "UNMEASURABLE"
+        qs_warm_measured = "Unmeasured"
+        qs_warm_notes = "Quick settings warm latency."
+
+    # 14c. Audio SetVolume latency
+    vol_set = validate_and_compute_metric(bench, "audio_set_volume_latency")
+    if vol_set:
+        vol_set_p50 = vol_set["p50"]
+        vol_set_p95 = vol_set["p95"]
+        max_vol_set = budgets.get("audio_set_volume_latency", {}).get("max_ms", 50.0)
+        vol_set_status = "MET" if vol_set_p95 <= max_vol_set else "NOT MET"
+        vol_set_measured = f"**{vol_set_p50:.2f} ms (p50)**, **{vol_set_p95:.2f} ms (p95)**"
+        vol_set_notes = f"SetVolume D-Bus call to UI slider update ({len(vol_set['samples'])} samples; method: {vol_set['method']})."
+    else:
+        vol_set_status = "UNMEASURABLE"
+        vol_set_measured = "Unmeasured"
+        vol_set_notes = "SetVolume D-Bus call to UI slider update."
+
+    # 14d. Audio external volume latency
+    vol_ext = validate_and_compute_metric(bench, "audio_external_volume_latency")
+    if vol_ext:
+        vol_ext_p50 = vol_ext["p50"]
+        vol_ext_p95 = vol_ext["p95"]
+        max_vol_ext = budgets.get("audio_external_volume_latency", {}).get("max_ms", 50.0)
+        vol_ext_status = "MET" if vol_ext_p95 <= max_vol_ext else "NOT MET"
+        vol_ext_measured = f"**{vol_ext_p50:.2f} ms (p50)**, **{vol_ext_p95:.2f} ms (p95)**"
+        vol_ext_notes = f"External pactl change to UI update ({len(vol_ext['samples'])} samples; method: {vol_ext['method']})."
+    else:
+        vol_ext_status = "UNMEASURABLE"
+        vol_ext_measured = "Unmeasured"
+        vol_ext_notes = "External pactl change to UI update."
+
+    # 14e. Quick Settings shell PSS plateau
+    qs_s_pss = validate_and_compute_metric(bench, "quick_settings_idle_shell_pss")
+    if qs_s_pss:
+        qs_s_pss_val = qs_s_pss["max"]
+        max_qs_s_pss = budgets.get("quick_settings_idle_shell_pss", {}).get("max_pss_mb", 100.0)
+        qs_s_pss_status = "MET" if qs_s_pss_val <= max_qs_s_pss else "NOT MET"
+        qs_s_pss_measured = f"**{qs_s_pss_val:.1f} MB PSS**"
+        qs_s_pss_notes = f"Shell PSS after 100 quick settings open/close cycles plateau ({len(qs_s_pss['samples'])} samples; method: {qs_s_pss['method']})."
+    else:
+        qs_s_pss_status = "UNMEASURABLE"
+        qs_s_pss_measured = "Unmeasured"
+        qs_s_pss_notes = "Shell PSS after 100 quick settings open/close cycles."
+
+    # 14f. Audio daemon PSS plateau
+    aud_d_pss = validate_and_compute_metric(bench, "audio_idle_daemon_pss")
+    if aud_d_pss:
+        aud_d_pss_val = aud_d_pss["max"]
+        max_aud_d_pss = budgets.get("audio_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
+        aud_d_pss_status = "MET" if aud_d_pss_val <= max_aud_d_pss else "NOT MET"
+        aud_d_pss_measured = f"**{aud_d_pss_val:.1f} MB PSS**"
+        aud_d_pss_notes = f"Daemon PSS with audio backend running after 100 cycles plateau ({len(aud_d_pss['samples'])} samples; method: {aud_d_pss['method']})."
+    else:
+        aud_d_pss_status = "UNMEASURABLE"
+        aud_d_pss_measured = "Unmeasured"
+        aud_d_pss_notes = "Daemon PSS with audio backend running."
+
+    # 14g. Audio event flood CPU
+    aud_cpu = validate_and_compute_metric(bench, "audio_event_flood_cpu")
+    if aud_cpu:
+        aud_cpu_val = aud_cpu["max"]
+        max_aud_cpu = budgets.get("audio_event_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        aud_flood_cpu_status = "MET" if aud_cpu_val <= max_aud_cpu else "NOT MET"
+        aud_flood_cpu_measured = f"**{aud_cpu_val:.1f}% CPU**"
+        aud_flood_cpu_notes = f"Peak CPU during 10,000-event subscribe flood ({len(aud_cpu['samples'])} samples; method: {aud_cpu['method']})."
+    else:
+        aud_flood_cpu_status = "UNMEASURABLE"
+        aud_flood_cpu_measured = "Unmeasured"
+        aud_flood_cpu_notes = "Peak CPU during 10,000-event subscribe flood."
+
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),
         (budgets["idle_cpu"]["name"], budgets["idle_cpu"]["target"], cpu_measured, cpu_status, cpu_notes),
@@ -579,6 +674,13 @@ def main():
         (budgets["menu_idle_daemon_pss"]["name"], budgets["menu_idle_daemon_pss"]["target"], menu_d_pss_measured, menu_d_pss_status, menu_d_pss_notes),
         (budgets["menu_idle_shell_pss"]["name"], budgets["menu_idle_shell_pss"]["target"], menu_s_pss_measured, menu_s_pss_status, menu_s_pss_notes),
         (budgets["menu_flood_cpu"]["name"], budgets["menu_flood_cpu"]["target"], menu_flood_cpu_measured, menu_flood_cpu_status, menu_flood_cpu_notes),
+        (budgets["quick_settings_open_latency_cold"]["name"], budgets["quick_settings_open_latency_cold"]["target"], qs_cold_measured, qs_cold_status, qs_cold_notes),
+        (budgets["quick_settings_open_latency_warm"]["name"], budgets["quick_settings_open_latency_warm"]["target"], qs_warm_measured, qs_warm_status, qs_warm_notes),
+        (budgets["audio_set_volume_latency"]["name"], budgets["audio_set_volume_latency"]["target"], vol_set_measured, vol_set_status, vol_set_notes),
+        (budgets["audio_external_volume_latency"]["name"], budgets["audio_external_volume_latency"]["target"], vol_ext_measured, vol_ext_status, vol_ext_notes),
+        (budgets["quick_settings_idle_shell_pss"]["name"], budgets["quick_settings_idle_shell_pss"]["target"], qs_s_pss_measured, qs_s_pss_status, qs_s_pss_notes),
+        (budgets["audio_idle_daemon_pss"]["name"], budgets["audio_idle_daemon_pss"]["target"], aud_d_pss_measured, aud_d_pss_status, aud_d_pss_notes),
+        (budgets["audio_event_flood_cpu"]["name"], budgets["audio_event_flood_cpu"]["target"], aud_flood_cpu_measured, aud_flood_cpu_status, aud_flood_cpu_notes),
     ]
 
     if args.markdown:

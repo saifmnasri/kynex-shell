@@ -32,6 +32,7 @@ LayerSurface {
 
     readonly property alias powerModel: powerModel
     readonly property alias networkModel: networkModel
+    readonly property alias audioModel: audioModel
     readonly property alias windowListModel: windowListModel
     readonly property alias launcherModel: launcherModel
     readonly property alias notificationModel: notificationModel
@@ -41,9 +42,13 @@ LayerSurface {
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
     readonly property alias menuOverlayLoader: menuOverlayLoader
+    readonly property alias quickSettingsLoader: quickSettingsLoader
+    readonly property alias statusArea: statusArea
     readonly property alias trayArea: trayArea
     readonly property alias trayRepeater: trayRepeater
     readonly property alias networkText: networkText
+    readonly property alias statusFocusScope: statusFocusScope
+    readonly property alias volumeStatusIcon: volumeStatusIcon
     readonly property string networkTooltipText: networkModel.connected
         ? (networkModel.wifi
             ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
@@ -138,7 +143,104 @@ LayerSurface {
         Component.onCompleted: trayMenuModel.init()
     }
 
+    AudioModel {
+        id: audioModel
+        Component.onCompleted: audioModel.init()
+    }
+
     property bool menuOverlayLoaded: false
+    property bool quickSettingsLoaded: false
+    property bool quickSettingsOpen: false
+
+    function toggleQuickSettings(): void {
+        audioModel.toggleQuickSettings();
+    }
+
+    Connections {
+        target: audioModel
+        function onOpenChanged(): void {
+            if (audioModel.open) {
+                panel.quickSettingsLoaded = true;
+            }
+            panel.quickSettingsOpen = audioModel.open;
+        }
+    }
+
+    onQuickSettingsOpenChanged: {
+        if (panel.quickSettingsOpen) {
+            panel.quickSettingsLoaded = true;
+        }
+        if (audioModel.open !== panel.quickSettingsOpen) {
+            audioModel.open = panel.quickSettingsOpen;
+        }
+    }
+
+    Loader {
+        id: quickSettingsLoader
+        active: panel.quickSettingsLoaded
+        source: "QuickSettings.qml"
+
+        Binding {
+            target: quickSettingsLoader.item
+            property: "audioModel"
+            value: audioModel
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "notificationModel"
+            value: notificationModel
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "networkModel"
+            value: networkModel
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "powerModel"
+            value: powerModel
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "isOpen"
+            value: panel.quickSettingsOpen
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "anchorX"
+            value: statusArea.x
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "anchorY"
+            value: statusArea.y
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "anchorWidth"
+            value: statusArea.width
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "anchorHeight"
+            value: statusArea.height
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "panelAnchorsBits"
+            value: panel.anchors
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "panelWidth"
+            value: panel.width
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "panelHeight"
+            value: panel.height
+        }
+    }
 
     Connections {
         target: trayMenuModel
@@ -438,27 +540,84 @@ LayerSurface {
             }
         }
 
-        Row {
+        Rectangle {
             id: statusArea
             anchors.right: parent.right
             anchors.rightMargin: Style.spacing.large
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.spacing.medium
+            implicitWidth: statusRow.implicitWidth + Style.spacing.medium + Style.spacing.medium
+            implicitHeight: panel.height - Style.spacing.small - Style.spacing.small
+            width: implicitWidth
+            height: implicitHeight
+            radius: Style.radius.small
+            color: statusAreaMouse.containsMouse ? Style.colors.surface : "transparent"
+            border.color: statusFocusScope.activeFocus ? Style.colors.focusRing : "transparent"
+            border.width: statusFocusScope.activeFocus ? 1 : 0
 
-            Item {
-                id: networkIndicator
-                visible: networkModel.present
-                width: networkRow.implicitWidth
-                height: networkRow.implicitHeight
-                anchors.verticalCenter: parent.verticalCenter
+            Accessible.role: Accessible.Button
+            Accessible.name: "Quick Settings"
+            Accessible.onPressAction: panel.toggleQuickSettings()
 
+            FocusScope {
+                id: statusFocusScope
+                anchors.fill: parent
+                activeFocusOnTab: true
+
+                Keys.onReturnPressed: panel.toggleQuickSettings()
+                Keys.onSpacePressed: panel.toggleQuickSettings()
+            }
+
+            MouseArea {
+                id: statusAreaMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: panel.toggleQuickSettings()
+            }
+
+            Row {
+                id: statusRow
+                anchors.centerIn: parent
+                spacing: Style.spacing.medium
+
+                // Volume indicator
                 Row {
-                    id: networkRow
+                    id: volumeIndicator
+                    visible: audioModel.present
+                    spacing: Style.spacing.small
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        id: volumeStatusIcon
+                        text: audioModel.muted ? "🔇" : (audioModel.volume === 0 ? "🔈" : (audioModel.volume < Number("50") ? "🔉" : "🔊"))
+                        textFormat: Text.PlainText
+                        color: audioModel.muted ? Style.colors.textMuted : Style.colors.text
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: audioModel.muted ? "Muted" : (audioModel.volume + "%")
+                        textFormat: Text.PlainText
+                        color: audioModel.muted ? Style.colors.textMuted : Style.colors.text
+                        font.family: Style.typography.family
+                        font.pixelSize: Style.typography.basePx
+                        font.bold: true
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // Network indicator
+                Row {
+                    id: networkIndicator
+                    visible: networkModel.present
                     spacing: Style.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
 
                     Text {
                         text: networkModel.connected ? (networkModel.wifi ? "📶" : (networkModel.ethernet ? "🌐" : "🔗")) : "🚫"
+                        textFormat: Text.PlainText
                         color: networkModel.connected ? (networkModel.weak ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
                         font.family: Style.typography.family
                         font.pixelSize: Style.typography.basePx
@@ -469,6 +628,7 @@ LayerSurface {
                         id: networkText
                         visible: networkModel.connected
                         text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
+                        textFormat: Text.PlainText
                         color: networkModel.weak ? Style.colors.warning : Style.colors.text
                         font.family: Style.typography.family
                         font.pixelSize: Style.typography.basePx
@@ -477,41 +637,16 @@ LayerSurface {
                     }
                 }
 
-                MouseArea {
-                    id: networkHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-
-                    Loader {
-                        id: networkTooltipLoader
-                        active: networkHover.containsMouse
-                        sourceComponent: Component {
-                            KynexTooltip {
-                                text: panel.networkTooltipText
-                                visible: true
-                                anchors.bottom: parent.top
-                                anchors.bottomMargin: Style.spacing.small
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                        }
-                    }
-                }
-            }
-
-            Item {
-                id: batteryIndicator
-                visible: powerModel.present
-                width: batteryRow.implicitWidth
-                height: batteryRow.implicitHeight
-                anchors.verticalCenter: parent.verticalCenter
-
+                // Battery indicator
                 Row {
-                    id: batteryRow
+                    id: batteryIndicator
+                    visible: powerModel.present
                     spacing: Style.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
 
                     Text {
                         text: powerModel.charging ? "⚡" : "🔋"
+                        textFormat: Text.PlainText
                         color: powerModel.charging ? Style.colors.success : (powerModel.low ? Style.colors.warning : Style.colors.textMuted)
                         font.family: Style.typography.family
                         font.pixelSize: Style.typography.basePx
@@ -520,31 +655,12 @@ LayerSurface {
 
                     Text {
                         text: Math.round(powerModel.percentage) + "%"
+                        textFormat: Text.PlainText
                         color: powerModel.low ? Style.colors.warning : Style.colors.text
                         font.family: Style.typography.family
                         font.pixelSize: Style.typography.basePx
                         font.bold: true
                         anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                MouseArea {
-                    id: batteryHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-
-                    Loader {
-                        id: batteryTooltipLoader
-                        active: batteryHover.containsMouse
-                        sourceComponent: Component {
-                            KynexTooltip {
-                                text: (powerModel.charging ? "Battery Charging: " : "Battery: ") + Math.round(powerModel.percentage) + "%"
-                                visible: true
-                                anchors.bottom: parent.top
-                                anchors.bottomMargin: Style.spacing.small
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                        }
                     }
                 }
             }

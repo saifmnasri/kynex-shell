@@ -86,6 +86,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let fdo_watcher_server = FdoStatusNotifierWatcherServer::new(Arc::clone(&tray_shared));
     let tray_server = TrayServer::new(Arc::clone(&tray_shared));
 
+    #[cfg(feature = "test-hooks")]
+    if let Ok(path) = std::env::var("KYNEX_TEST_PACTL_PATH") {
+        kynex_daemon::services::audio::set_pactl_path_override(Some(std::path::PathBuf::from(
+            path,
+        )));
+    }
+
+    let audio_backend: Arc<dyn kynex_daemon::services::audio::AudioBackend> =
+        Arc::new(kynex_daemon::services::audio::PactlAudioBackend::new());
+    let audio_server = kynex_daemon::services::audio::AudioServer::new(Arc::clone(&audio_backend));
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -103,6 +114,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(STATUS_NOTIFIER_WATCHER_PATH, kde_watcher_server.clone())
         .serve_at(STATUS_NOTIFIER_WATCHER_PATH, fdo_watcher_server.clone())
         .serve_at(TRAY_PATH, tray_server.clone())
+        .serve_at(kynex_ipc::audio::AUDIO_PATH, audio_server.clone())
         .build()
         .await?;
 
@@ -187,6 +199,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tray_server.set_emitter(tray_emitter).await;
     } else {
         warn!("Failed to create SignalEmitter for Tray1");
+    }
+
+    if let Ok(audio_emitter) = SignalEmitter::new(&session_conn, kynex_ipc::audio::AUDIO_PATH) {
+        audio_server.set_emitter(audio_emitter).await;
+        tokio::spawn(kynex_daemon::services::audio::run_audio_service(
+            audio_server.clone(),
+            audio_backend,
+        ));
+    } else {
+        warn!("Failed to create SignalEmitter for Audio1");
     }
 
     let (kde_claimed, fdo_watcher_claimed) = try_acquire_watcher_names(&session_conn).await;

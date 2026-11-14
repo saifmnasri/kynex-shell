@@ -21,7 +21,7 @@ use cxx_qt_lib::{
     QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QStringList, QVariant,
 };
 use futures_util::StreamExt;
-use kynex_ipc::notifications::{Notifications1Proxy, NOTIFICATIONS_INTERFACE, NOTIFICATIONS_PATH};
+use kynex_ipc::notifications::{Notifications1Proxy, NOTIFICATIONS_PATH};
 use kynex_ipc::DAEMON_DESTINATION;
 use tracing::{info, warn};
 use zbus::fdo::DBusProxy;
@@ -257,6 +257,7 @@ pub mod qobject {
         #[base = QAbstractListModel]
         #[qml_element]
         #[qproperty(i32, count)]
+        #[qproperty(bool, do_not_disturb, READ, NOTIFY)]
         type NotificationModel = super::NotificationModelRust;
 
         /// Initializes background D-Bus listeners.
@@ -301,6 +302,11 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "recordFirstFrame"]
         fn record_first_frame(self: Pin<&mut Self>);
+
+        /// Sets Do Not Disturb mode on daemon.
+        #[qinvokable]
+        #[cxx_name = "setDoNotDisturb"]
+        fn set_do_not_disturb(self: Pin<&mut Self>, enabled: bool);
     }
 
     unsafe extern "RustQt" {
@@ -323,6 +329,7 @@ pub mod qobject {
 pub struct NotificationModelRust {
     pub(crate) state: NotificationUiState,
     pub(crate) count: i32,
+    pub(crate) do_not_disturb: bool,
     pub(crate) first_frame_pending: bool,
     pub(crate) last_shown_time: Option<std::time::Instant>,
 }
@@ -443,6 +450,20 @@ impl qobject::NotificationModel {
     pub fn record_first_frame(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().record_first_frame();
     }
+
+    /// Sets Do Not Disturb mode on daemon.
+    pub fn set_do_not_disturb(self: Pin<&mut Self>, enabled: bool) {
+        tokio::spawn(async move {
+            let _ = send_set_do_not_disturb_call(enabled).await;
+        });
+    }
+}
+
+/// Sends SetDoNotDisturb D-Bus call to daemon.
+pub async fn send_set_do_not_disturb_call(enabled: bool) -> zbus::Result<()> {
+    let conn = zbus::connection::Builder::session().build().await?;
+    let proxy = Notifications1Proxy::new(&conn).await?;
+    proxy.set_do_not_disturb(enabled).await
 }
 
 /// Sends Dismiss D-Bus call to daemon.
@@ -540,7 +561,6 @@ async fn init_signal_stream(conn: &zbus::Connection) -> Option<MessageStream> {
     let rule = MatchRule::builder()
         .msg_type(Type::Signal)
         .path(NOTIFICATIONS_PATH)
-        .interface(NOTIFICATIONS_INTERFACE)
         .build()
         .ok()?;
     MessageStream::for_match_rule(rule, conn, None).await.ok()
@@ -610,6 +630,27 @@ pub fn handle_notification_signal_message(
     }
 }
 
+/// Extracts DoNotDisturb property update from a PropertiesChanged signal if present.
+#[must_use]
+pub fn parse_properties_changed_dnd(msg: &zbus::Message) -> Option<bool> {
+    let header = msg.header();
+    let member = header.member()?;
+    if member.as_str() == "PropertiesChanged" {
+        if let Ok((_iface, changed, _invalidated)) = msg.body().deserialize::<(
+            String,
+            std::collections::HashMap<String, zbus::OwnedVariant>,
+            Vec<String>,
+        )>() {
+            if let Some(val) = changed.get("DoNotDisturb") {
+                if let Ok(dnd) = bool::try_from(val) {
+                    return Some(dnd);
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Handles a NameOwnerChanged event for the daemon destination.
 /// Returns whether the daemon disconnected and state should be reset.
 pub fn handle_name_owner_changed_event(
@@ -626,12 +667,14 @@ pub fn handle_name_owner_changed_event(
 }
 
 /// Event loop for notification D-Bus signals and name changes.
-pub async fn run_notification_listener_loop<F>(
+pub async fn run_notification_listener_loop<F, G>(
     conn: &zbus::Connection,
     mut on_state_change: F,
+    mut on_dnd_change: G,
     mut shutdown: tokio::sync::watch::Receiver<bool>,
 ) where
     F: FnMut(NotificationUiState),
+    G: FnMut(bool),
 {
     let dbus_proxy = match DBusProxy::new(conn).await {
         Ok(p) => p,
@@ -673,6 +716,8 @@ pub async fn run_notification_listener_loop<F>(
                 if let Ok(msg) = msg {
                     if handle_notification_signal_message(&mut state, &msg) {
                         on_state_change(state.clone());
+                    } else if let Some(dnd) = parse_properties_changed_dnd(&msg) {
+                        on_dnd_change(dnd);
                     }
                 }
             }
@@ -689,10 +734,16 @@ pub async fn run_notification_listener_loop<F>(
                     let new_owner_str = new_owner.as_ref().map(|o| o.as_str());
                     if handle_name_owner_changed_event(&mut state, new_owner_str) {
                         on_state_change(state.clone());
+                        on_dnd_change(false);
                         signal_stream = None;
                     } else {
                         info!("kynex-daemon registered on bus; reconnecting notification stream");
                         signal_stream = init_signal_stream(conn).await;
+                        if let Ok(proxy) = Notifications1Proxy::new(conn).await {
+                            if let Ok(dnd) = proxy.do_not_disturb().await {
+                                on_dnd_change(dnd);
+                            }
+                        }
                     }
                 }
             }
@@ -710,11 +761,27 @@ pub async fn run_notification_listener(qt_thread: cxx_qt::CxxQtThread<qobject::N
         }
     };
 
+    if let Ok(proxy) = Notifications1Proxy::new(&session_conn).await {
+        if let Ok(dnd) = proxy.do_not_disturb().await {
+            let _ = qt_thread.queue(move |mut qobj| {
+                qobj.as_mut().rust_mut().do_not_disturb = dnd;
+                qobj.as_mut().do_not_disturb_changed();
+            });
+        }
+    }
+
     let (_tx, rx) = tokio::sync::watch::channel(false);
+    let qt_thread_dnd = qt_thread.clone();
     run_notification_listener_loop(
         &session_conn,
         move |state| {
             dispatch_state(&qt_thread, state);
+        },
+        move |dnd| {
+            let _ = qt_thread_dnd.queue(move |mut qobj| {
+                qobj.as_mut().rust_mut().do_not_disturb = dnd;
+                qobj.as_mut().do_not_disturb_changed();
+            });
         },
         rx,
     )
@@ -730,6 +797,7 @@ pub async fn run_notification_listener(qt_thread: cxx_qt::CxxQtThread<qobject::N
 )]
 mod tests {
     use super::*;
+    use kynex_ipc::notifications::NOTIFICATIONS_INTERFACE;
 
     #[test]
     fn test_compute_letter_badge() {
@@ -1006,6 +1074,7 @@ mod tests {
                     move |state| {
                         let _ = state_tx.try_send(state);
                     },
+                    |_| {},
                     rx,
                 )
                 .await;

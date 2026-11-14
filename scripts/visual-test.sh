@@ -35,7 +35,7 @@ QT_QPA_FONTDIR="$(pwd)/assets/fonts"
 export QT_QPA_FONTDIR
 mkdir -p /tmp/fc-cache
 
-VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100" "launcher-results" "launcher-no-results" "launcher-empty" "launcher-rtl" "menu-normal" "menu-checkable" "menu-submenu" "menu-disabled" "menu-rtl")
+VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100" "launcher-results" "launcher-no-results" "launcher-empty" "launcher-rtl" "menu-normal" "menu-checkable" "menu-submenu" "menu-disabled" "menu-rtl" "quick-settings-normal" "quick-settings-muted" "quick-settings-dnd" "quick-settings-no-audio" "quick-settings-rtl")
 TEMP_DIR=$(mktemp -d /tmp/kynex-visual-XXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 

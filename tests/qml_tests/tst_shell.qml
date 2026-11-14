@@ -644,5 +644,57 @@ Item {
             overlay.escShortcut.activated();
             compare(shell.trayMenuModel.visible, false, "Esc key must close menu");
         }
+
+        function test_shell_status_area_toggles_quick_settings() {
+            compare(shell.quickSettingsOpen, false);
+            compare(shell.quickSettingsLoaded, false);
+
+            // Accessibility properties on statusArea
+            compare(shell.statusArea.Accessible.role, Accessible.Button);
+            compare(shell.statusArea.Accessible.name, "Quick Settings");
+            compare(shell.statusFocusScope.activeFocusOnTab, true);
+
+            // Focus ring border on statusArea
+            compare(shell.statusArea.border.width, 0);
+            shell.statusFocusScope.forceActiveFocus();
+            tryVerify(function() { return shell.statusFocusScope.activeFocus; });
+            compare(shell.statusArea.border.width, 1);
+            compare(shell.statusArea.border.color, Style.colors.focusRing);
+
+            // Accessible press action toggles quick settings
+            shell.statusArea.Accessible.pressAction();
+            compare(shell.quickSettingsLoaded, true);
+            compare(shell.quickSettingsOpen, true);
+
+            tryVerify(function() {
+                return shell.quickSettingsLoader.status === Loader.Ready && shell.quickSettingsLoader.item !== null;
+            });
+
+            shell.statusArea.Accessible.pressAction();
+            compare(shell.quickSettingsOpen, false);
+
+            // Volume indicator icon levels
+            shell.audioModel.present = true;
+            shell.audioModel.muted = true;
+            compare(shell.volumeStatusIcon.text, "🔇");
+
+            shell.audioModel.muted = false;
+            shell.audioModel.volume = 0;
+            compare(shell.volumeStatusIcon.text, "🔈");
+
+            shell.audioModel.volume = 25;
+            compare(shell.volumeStatusIcon.text, "🔉");
+
+            shell.audioModel.volume = 75;
+            compare(shell.volumeStatusIcon.text, "🔊");
+        }
+
+        function test_shell_quick_settings_open_property_syncs_audio_model() {
+            compare(shell.audioModel.open, false);
+            shell.quickSettingsOpen = true;
+            tryVerify(function() { return shell.audioModel.open === true; });
+            shell.quickSettingsOpen = false;
+            tryVerify(function() { return shell.audioModel.open === false; });
+        }
     }
 }

@@ -5,6 +5,7 @@ use cxx_qt_build::{CxxQtBuilder, QmlModule};
 fn main() {
     CxxQtBuilder::new_qml_module(QmlModule::new("Kynex.Shell"))
         .files([
+            "src/audio.rs",
             "src/clock.rs",
             "src/launcher.rs",
             "src/menu.rs",

@@ -17,6 +17,8 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 | 3 | `crates/kynex-shell/qml/Kynex/Controls/KynexSearchField.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.EditableText` with `activeFocusOnTab=true` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 | 4 | `styles/default/Shell.qml` | `when: launcherLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `launcherLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: launcherLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
 | 5 | `styles/default/Shell.qml` | `when: notificationLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `notificationLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: notificationLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
+| 6 | `styles/default/Shell.qml` | `when: menuOverlayLoader.status === Loader.Ready` | delete | Qt Quick `Binding` evaluates target property assignment only when target is non-null; since `menuOverlayLoader.item` is null until status is `Loader.Ready`, target remains null prior to completion, rendering `when: menuOverlayLoader.status === Loader.Ready` semantically equivalent to unconditional binding. |
+| 7 | `styles/default/Shell.qml` | `Accessible.focusable: true` | delete | Qt Quick `QQuickAccessibleAttached::role()` for `Accessible.Button` automatically defaults `QAccessible::Focusable` to true in the Qt Quick C++ accessibility bridge. |
 
 ---
 
@@ -37,9 +39,29 @@ Only mutants with a rigorous one-line proof of equivalence are retained:
 
 ## 3. Summary Statistics
 
-- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/*.qml` (9 files)
-- **Total Mutants Generated**: 289
-- **Mutants Killed**: 284 / 289 (**98.3%**)
-- **Truly Equivalent Survivors**: 5 / 289 (**1.7%**)
+- **Target Files**: `crates/kynex-shell/qml/Kynex/Controls/*.qml` and `styles/default/*.qml` (13 files)
+- **Total Mutants Generated**: 418
+- **Mutants Killed**: 411 / 418 (**98.3%**)
+- **Truly Equivalent Survivors**: 7 / 418 (**1.7%**)
 - **Unjustified Survivors**: 0
 - **Status**: 100% of non-equivalent mutants killed.
+
+---
+
+## 4. Stage Q Named Mutants (Audio & Quick Settings)
+
+All 10 required security and robustness mutants for Stage Q have dedicated named unit/integration tests that fail if the security mechanism is removed or bypassed:
+
+| Mutant Identifier | Security Mechanism / Invariant | Killing Test Path & Name | Status |
+|---|---|---|---|
+| `MUTANT_RANGE_CLAMP` | Volume parser clamps parsed volume strictly to 0..=100 | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_range_clamp` | **KILLED** |
+| `MUTANT_RATE_LIMIT` | Global rate limiter strictly caps mutations to 20 calls/sec | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_rate_limit` | **KILLED** |
+| `MUTANT_LINE_CAP` | BoundedLineReader truncates and discards lines exceeding 4 KiB | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_line_cap` | **KILLED** |
+| `MUTANT_DEVICE_CAP` | Device parser bounds total parsed sinks to <= 64 | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_device_cap` | **KILLED** |
+| `MUTANT_BACKOFF_CAP` | Subprocess restart manager caps restarts to 5 per minute | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_backoff_cap` | **KILLED** |
+| `MUTANT_SANITIZER` | Device name sanitizer strips ASCII control chars and Unicode bidi overrides | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_sanitizer` | **KILLED** |
+| `MUTANT_TIMEOUT` | Short subprocess calls are killed if exceeding 2.0 s timeout | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_timeout` | **KILLED** |
+| `MUTANT_ARGV_ONLY` | Subprocess spawned directly with argv array without shell invocation | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_argv_only` | **KILLED** |
+| `MUTANT_READBACK` | SetVolume and SetMuted verify state mutation via authoritative readback | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_readback` | **KILLED** |
+| `MUTANT_DEBOUNCE_FINAL_VALUE` | Slider debouncer guarantees delivery of final settled slider value | `crates/kynex-shell-core/tests/audio_tests.rs::test_slider_debouncer_coalesces_rapid_burst_and_sends_final_value` | **KILLED** |
+
