@@ -161,6 +161,65 @@ fn test_quick_settings_placement_bottom_panel_opens_above() {
 }
 
 #[test]
+fn test_quick_settings_placement_negative_origin_output_local_contract() {
+    // Secondary monitor positioned at global compositor coordinate x = -1920 (left of primary display).
+    // In Wayland LayerShell, popup coordinates must be OUTPUT-LOCAL [0, 1920], NOT global [-1920, 0].
+    let negative_origin_screen = OutputGeometry {
+        x: -1920.0,
+        y: 0.0,
+        width: 1920.0,
+        height: 1080.0,
+        scale: 1.0,
+    };
+    let anchors = SurfaceAnchors {
+        top: false,
+        bottom: true,
+        left: true,
+        right: true,
+    };
+    let panel = PanelSize {
+        width: 1920.0,
+        height: 48.0,
+    };
+    let anchor_local = Point::new(1700.0, 4.0);
+    let popup_width = 360.0;
+    let popup_height = 420.0;
+
+    let pos = compute_quick_settings_placement(
+        anchors,
+        panel,
+        anchor_local,
+        200.0,
+        40.0,
+        popup_width,
+        popup_height,
+        negative_origin_screen,
+    );
+
+    // Position MUST be strictly output-local (landing within [0, 1920] and [0, 1080]), NOT offset by -1920
+    assert!(
+        pos.x >= 0.0 && pos.x + popup_width <= 1920.0,
+        "Output-local popup x ({}) + width ({}) must stay inside output boundary [0, 1920]",
+        pos.x,
+        popup_width
+    );
+    assert!(
+        pos.y >= 0.0 && pos.y + popup_height <= 1080.0,
+        "Output-local popup y ({}) + height ({}) must stay inside output boundary [0, 1080]",
+        pos.y,
+        popup_height
+    );
+    assert_eq!(
+        pos.x, 1540.0,
+        "Popup horizontal flip stays in output bounds"
+    );
+    assert_eq!(
+        pos.y, 616.0,
+        "Popup vertical positioning above bottom panel stays in output bounds"
+    );
+}
+
+#[test]
 fn test_mutant_debounce_final_value() {
     // Mutant: debouncer drops trailing value -> final slider position lost.
     let mut debouncer = SliderDebouncer::new(50);

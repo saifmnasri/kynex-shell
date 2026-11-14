@@ -146,6 +146,19 @@ impl AudioState {
 }
 
 /// Computes the clamped placement for the Quick Settings overlay popup.
+///
+/// # Coordinate System Contract
+///
+/// **Returns OUTPUT-LOCAL surface coordinates** (relative to `(0, 0)` of the target output's
+/// `LayerSurface`, NOT global compositor coordinates).
+///
+/// In Wayland, each output-spanning or panel-anchored `LayerSurface` establishes its own
+/// local coordinate origin `(0, 0)` at the top-left of that specific output. Therefore,
+/// the output's global position (`output_geometry.x` and `output_geometry.y`, such as `x = -1920.0`
+/// for an output positioned to the left of the primary display) is intentionally unused by
+/// this placement function; adding the global origin would erroneously shift the popup outside
+/// the output-local surface. Only `output_geometry.width` and `output_geometry.height` are used
+/// to bound the placement within the output.
 #[must_use]
 #[allow(clippy::too_many_arguments)]
 pub fn compute_quick_settings_placement(
@@ -156,7 +169,7 @@ pub fn compute_quick_settings_placement(
     anchor_height: f64,
     popup_width: f64,
     popup_height: f64,
-    screen: OutputGeometry,
+    output_geometry: OutputGeometry,
 ) -> Point {
     compute_menu_placement(
         anchors,
@@ -166,6 +179,6 @@ pub fn compute_quick_settings_placement(
         anchor_height,
         popup_width,
         popup_height,
-        screen,
+        output_geometry,
     )
 }

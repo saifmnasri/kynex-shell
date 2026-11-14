@@ -61,7 +61,7 @@ All 10 required security and robustness mutants for Stage Q have dedicated named
 | `MUTANT_BACKOFF_CAP` | Subprocess restart manager caps restarts to 5 per minute | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_backoff_cap` | **KILLED** |
 | `MUTANT_SANITIZER` | Device name sanitizer strips ASCII control chars and Unicode bidi overrides | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_sanitizer` | **KILLED** |
 | `MUTANT_TIMEOUT` | Short subprocess calls are killed if exceeding 2.0 s timeout | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_timeout` | **KILLED** |
-| `MUTANT_ARGV_ONLY` | Subprocess spawned directly with argv array without shell invocation | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_argv_only` | **KILLED** |
+| `MUTANT_ARGV_ONLY` | Subprocess spawned directly with argv array without shell invocation (hostile sink metacharacters preserved verbatim, no shell injection) | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_argv_only_no_shell` | **KILLED** |
 | `MUTANT_READBACK` | SetVolume and SetMuted verify state mutation via authoritative readback | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_readback` | **KILLED** |
-| `MUTANT_DEBOUNCE_FINAL_VALUE` | Slider debouncer guarantees delivery of final settled slider value | `crates/kynex-shell-core/tests/audio_tests.rs::test_slider_debouncer_coalesces_rapid_burst_and_sends_final_value` | **KILLED** |
+| `MUTANT_DEBOUNCE_FINAL_VALUE` | Slider debouncer guarantees delivery of final settled slider value | `crates/kynex-shell-core/tests/audio_tests.rs::test_mutant_debounce_final_value` | **KILLED** |
 

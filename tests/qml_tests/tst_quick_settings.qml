@@ -195,6 +195,43 @@ Item {
             quickSettings.audioModel = mockAudio;
         }
 
+        function test_placement_negative_origin() {
+            // For an output whose compositor position is at x = -1920,
+            // QuickSettings surface coordinates must be output-local (landing within [0, width])
+            let comp = Qt.createComponent("../../styles/default/QuickSettings.qml");
+            let qsNegativeOrigin = comp.createObject(root, {
+                "audioModel": mockAudio,
+                "notificationModel": mockNotifications,
+                "networkModel": mockNetwork,
+                "powerModel": mockPower,
+                "panelAnchorsBits": 8, // Bottom
+                "panelWidth": 1920,
+                "panelHeight": 48,
+                "anchorX": 1700,
+                "anchorY": 1032,
+                "anchorWidth": 200,
+                "anchorHeight": 48,
+                "width": 1920,
+                "height": 1080,
+                "isOpen": true
+            });
+            verify(qsNegativeOrigin !== null, "QuickSettings should instantiate on negative origin output");
+            tryVerify(function() { return qsNegativeOrigin.visible; });
+
+            // Assert that coordinates actually used by QuickSettings.qml land strictly inside that output [0, 1920] x [0, 1080]
+            verify(qsNegativeOrigin.popupX >= 0, "popupX must be >= 0 in output-local space");
+            verify(qsNegativeOrigin.popupX + qsNegativeOrigin.cardContainer.width <= qsNegativeOrigin.width,
+                   "popupContainer must land completely inside the output width");
+            verify(qsNegativeOrigin.popupY >= 0, "popupY must be >= 0 in output-local space");
+            verify(qsNegativeOrigin.popupY + qsNegativeOrigin.cardContainer.height <= qsNegativeOrigin.height,
+                   "popupContainer must land completely inside the output height");
+
+            // Specifically verify it was not displaced by global -1920 offset
+            compare(qsNegativeOrigin.popupX, qsNegativeOrigin.anchorX + qsNegativeOrigin.anchorWidth - qsNegativeOrigin.popupWidth);
+
+            qsNegativeOrigin.destroy();
+        }
+
         function test_rtl_mirroring() {
             LayoutHelper.setRtl(true);
             let comp = Qt.createComponent("../../styles/default/QuickSettings.qml");

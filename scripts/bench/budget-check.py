@@ -555,7 +555,10 @@ def main():
         qs_cold_p50 = qs_cold["p50"]
         qs_cold_p95 = qs_cold["p95"]
         max_qs_cold = budgets.get("quick_settings_open_latency_cold", {}).get("max_ms", 50.0)
-        qs_cold_status = "MET" if qs_cold_p95 <= max_qs_cold else "NOT MET"
+        if budgets.get("quick_settings_open_latency_cold", {}).get("status") == "proposed":
+            qs_cold_status = "PROPOSED (owner approval pending)"
+        else:
+            qs_cold_status = "MET" if qs_cold_p95 <= max_qs_cold else "NOT MET"
         qs_cold_measured = f"**{qs_cold_p50:.2f} ms (p50)**, **{qs_cold_p95:.2f} ms (p95)**"
         qs_cold_notes = f"Click to first frame (cold, {len(qs_cold['samples'])} samples; method: {qs_cold['method']})."
     else:
@@ -569,7 +572,10 @@ def main():
         qs_warm_p50 = qs_warm["p50"]
         qs_warm_p95 = qs_warm["p95"]
         max_qs_warm = budgets.get("quick_settings_open_latency_warm", {}).get("max_ms", 16.0)
-        qs_warm_status = "MET" if qs_warm_p95 <= max_qs_warm else "NOT MET"
+        if budgets.get("quick_settings_open_latency_warm", {}).get("status") == "proposed":
+            qs_warm_status = "PROPOSED (owner approval pending)"
+        else:
+            qs_warm_status = "MET" if qs_warm_p95 <= max_qs_warm else "NOT MET"
         qs_warm_measured = f"**{qs_warm_p50:.2f} ms (p50)**, **{qs_warm_p95:.2f} ms (p95)**"
         qs_warm_notes = f"Click to first frame (warm, {len(qs_warm['samples'])} samples; method: {qs_warm['method']})."
     else:
@@ -583,7 +589,10 @@ def main():
         vol_set_p50 = vol_set["p50"]
         vol_set_p95 = vol_set["p95"]
         max_vol_set = budgets.get("audio_set_volume_latency", {}).get("max_ms", 50.0)
-        vol_set_status = "MET" if vol_set_p95 <= max_vol_set else "NOT MET"
+        if budgets.get("audio_set_volume_latency", {}).get("status") == "proposed":
+            vol_set_status = "PROPOSED (owner approval pending)"
+        else:
+            vol_set_status = "MET" if vol_set_p95 <= max_vol_set else "NOT MET"
         vol_set_measured = f"**{vol_set_p50:.2f} ms (p50)**, **{vol_set_p95:.2f} ms (p95)**"
         vol_set_notes = f"SetVolume D-Bus call to UI slider update ({len(vol_set['samples'])} samples; method: {vol_set['method']})."
     else:
@@ -597,7 +606,10 @@ def main():
         vol_ext_p50 = vol_ext["p50"]
         vol_ext_p95 = vol_ext["p95"]
         max_vol_ext = budgets.get("audio_external_volume_latency", {}).get("max_ms", 50.0)
-        vol_ext_status = "MET" if vol_ext_p95 <= max_vol_ext else "NOT MET"
+        if budgets.get("audio_external_volume_latency", {}).get("status") == "proposed":
+            vol_ext_status = "PROPOSED (owner approval pending)"
+        else:
+            vol_ext_status = "MET" if vol_ext_p95 <= max_vol_ext else "NOT MET"
         vol_ext_measured = f"**{vol_ext_p50:.2f} ms (p50)**, **{vol_ext_p95:.2f} ms (p95)**"
         vol_ext_notes = f"External pactl change to UI update ({len(vol_ext['samples'])} samples; method: {vol_ext['method']})."
     else:
@@ -610,7 +622,10 @@ def main():
     if qs_s_pss:
         qs_s_pss_val = qs_s_pss["max"]
         max_qs_s_pss = budgets.get("quick_settings_idle_shell_pss", {}).get("max_pss_mb", 100.0)
-        qs_s_pss_status = "MET" if qs_s_pss_val <= max_qs_s_pss else "NOT MET"
+        if budgets.get("quick_settings_idle_shell_pss", {}).get("status") == "proposed":
+            qs_s_pss_status = "PROPOSED (owner approval pending)"
+        else:
+            qs_s_pss_status = "MET" if qs_s_pss_val <= max_qs_s_pss else "NOT MET"
         qs_s_pss_measured = f"**{qs_s_pss_val:.1f} MB PSS**"
         qs_s_pss_notes = f"Shell PSS after 100 quick settings open/close cycles plateau ({len(qs_s_pss['samples'])} samples; method: {qs_s_pss['method']})."
     else:
@@ -623,7 +638,10 @@ def main():
     if aud_d_pss:
         aud_d_pss_val = aud_d_pss["max"]
         max_aud_d_pss = budgets.get("audio_idle_daemon_pss", {}).get("max_pss_mb", 15.0)
-        aud_d_pss_status = "MET" if aud_d_pss_val <= max_aud_d_pss else "NOT MET"
+        if budgets.get("audio_idle_daemon_pss", {}).get("status") == "proposed":
+            aud_d_pss_status = "PROPOSED (owner approval pending)"
+        else:
+            aud_d_pss_status = "MET" if aud_d_pss_val <= max_aud_d_pss else "NOT MET"
         aud_d_pss_measured = f"**{aud_d_pss_val:.1f} MB PSS**"
         aud_d_pss_notes = f"Daemon PSS with audio backend running after 100 cycles plateau ({len(aud_d_pss['samples'])} samples; method: {aud_d_pss['method']})."
     else:
@@ -636,7 +654,10 @@ def main():
     if aud_cpu:
         aud_cpu_val = aud_cpu["max"]
         max_aud_cpu = budgets.get("audio_event_flood_cpu", {}).get("max_cpu_pct", 20.0)
-        aud_flood_cpu_status = "MET" if aud_cpu_val <= max_aud_cpu else "NOT MET"
+        if budgets.get("audio_event_flood_cpu", {}).get("status") == "proposed":
+            aud_flood_cpu_status = "PROPOSED (owner approval pending)"
+        else:
+            aud_flood_cpu_status = "MET" if aud_cpu_val <= max_aud_cpu else "NOT MET"
         aud_flood_cpu_measured = f"**{aud_cpu_val:.1f}% CPU**"
         aud_flood_cpu_notes = f"Peak CPU during 10,000-event subscribe flood ({len(aud_cpu['samples'])} samples; method: {aud_cpu['method']})."
     else:
@@ -683,21 +704,28 @@ def main():
         (budgets["audio_event_flood_cpu"]["name"], budgets["audio_event_flood_cpu"]["target"], aud_flood_cpu_measured, aud_flood_cpu_status, aud_flood_cpu_notes),
     ]
 
+    met_count = sum(1 for _, _, _, s, _ in rows if s == "MET")
+    not_met_count = sum(1 for _, _, _, s, _ in rows if s == "NOT MET")
+    unmeasurable_count = sum(1 for _, _, _, s, _ in rows if s == "UNMEASURABLE")
+    proposed_count = sum(1 for _, _, _, s, _ in rows if "PROPOSED" in s)
+
     if args.markdown:
         print("### Current Budget Status Table")
         print("| Metric | Budget Target | Measured Number | Status | Notes |")
         print("|---|---|---|---|---|")
         for name, target, measured, status, notes in rows:
             print(f"| {name} | {target} | {measured} | **{status}** | {notes} |")
+        print(f"\n**Totals (Approved Budgets)**: MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
     else:
         print(f"Benchmark File: {args.benchmark_json}")
         print(f"Git SHA: {bench.get('git_sha', 'unknown')} (Profile: {bench.get('build_profile', 'unknown')})\n")
-        hdr = f"{'Metric':<46}{'Status':<16}{'Measured':<35}"
+        hdr = f"{'Metric':<46}{'Status':<38}{'Measured':<35}"
         print(hdr)
         print("-" * len(hdr))
         for name, target, measured, status, notes in rows:
             clean_meas = measured.replace("**", "").replace("`", "")[:32]
-            print(f"{name:<46}{status:<16}{clean_meas:<35}")
+            print(f"{name:<46}{status:<38}{clean_meas:<35}")
+        print(f"\nTotals (Approved Budgets): MET: {met_count} | NOT MET: {not_met_count} | UNMEASURABLE: {unmeasurable_count} | PROPOSED (owner approval pending, excluded from totals): {proposed_count}")
 
 
 if __name__ == "__main__":

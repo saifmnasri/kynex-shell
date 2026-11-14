@@ -28,6 +28,9 @@ use zbus::Connection;
 /// Compile-time fixed allowlist of absolute filesystem paths for the `pactl` executable.
 pub const PACTL_ALLOWLIST: &[&str] = &["/usr/bin/pactl", "/bin/pactl"];
 
+/// Compile-time fixed allowlist of absolute filesystem paths for the `setpriv` executable.
+pub const SETPRIV_ALLOWLIST: &[&str] = &["/usr/bin/setpriv", "/bin/setpriv"];
+
 /// Maximum restarts permitted within a 60-second window.
 pub const MAX_RESTARTS_PER_MINUTE: usize = 5;
 
@@ -80,6 +83,18 @@ pub fn resolve_pactl_path() -> Option<PathBuf> {
     None
 }
 
+/// Resolves the absolute path to `setpriv` from the fixed compile-time allowlist.
+#[must_use]
+pub fn resolve_setpriv_path() -> Option<PathBuf> {
+    for &candidate in SETPRIV_ALLOWLIST {
+        let p = Path::new(candidate);
+        if p.is_file() {
+            return Some(p.to_path_buf());
+        }
+    }
+    None
+}
+
 /// Trait abstracting audio hardware and session mixer interaction.
 pub trait AudioBackend: Send + Sync + std::fmt::Debug {
     /// Returns whether the backend is configured and available.
@@ -102,6 +117,8 @@ pub trait AudioBackend: Send + Sync + std::fmt::Debug {
 #[derive(Debug, Clone)]
 pub struct PactlAudioBackend {
     pactl_path: Option<PathBuf>,
+    setpriv_path: Option<PathBuf>,
+    active_sink: Arc<RwLock<Option<String>>>,
 }
 
 impl PactlAudioBackend {
@@ -110,6 +127,18 @@ impl PactlAudioBackend {
     pub fn new() -> Self {
         Self {
             pactl_path: resolve_pactl_path(),
+            setpriv_path: resolve_setpriv_path(),
+            active_sink: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    /// Creates a new backend with custom executable paths (e.g. for testing or isolated environments).
+    #[must_use]
+    pub fn new_with_paths(pactl_path: Option<PathBuf>, setpriv_path: Option<PathBuf>) -> Self {
+        Self {
+            pactl_path,
+            setpriv_path,
+            active_sink: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -130,6 +159,7 @@ impl PactlAudioBackend {
         cmd.stdin(Stdio::null());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
+        cmd.kill_on_drop(true);
 
         Ok(cmd)
     }
@@ -199,6 +229,15 @@ impl AudioBackend for PactlAudioBackend {
                 .await?;
             let sinks = parse_sinks_json(&sinks_raw)?;
 
+            let target_sink = if !server_info.default_sink_name.is_empty() {
+                server_info.default_sink_name.clone()
+            } else if let Some(first) = sinks.first() {
+                first.name.clone()
+            } else {
+                "@DEFAULT_SINK@".to_string()
+            };
+            *self.active_sink.write().await = Some(target_sink);
+
             Ok(resolve_audio_status(&server_info, &sinks))
         })
     }
@@ -207,7 +246,13 @@ impl AudioBackend for PactlAudioBackend {
         Box::pin(async move {
             let clamped = volume.clamp(0, 100);
             let vol_str = format!("{clamped}%");
-            self.run_short_call(&["set-sink-volume", "@DEFAULT_SINK@", &vol_str])
+            let sink = self
+                .active_sink
+                .read()
+                .await
+                .clone()
+                .unwrap_or_else(|| "@DEFAULT_SINK@".to_string());
+            self.run_short_call(&["set-sink-volume", &sink, &vol_str])
                 .await?;
             Ok(())
         })
@@ -216,7 +261,13 @@ impl AudioBackend for PactlAudioBackend {
     fn set_muted(&self, muted: bool) -> BoxFuture<'_, Result<(), AudioError>> {
         Box::pin(async move {
             let mute_str = if muted { "1" } else { "0" };
-            self.run_short_call(&["set-sink-mute", "@DEFAULT_SINK@", mute_str])
+            let sink = self
+                .active_sink
+                .read()
+                .await
+                .clone()
+                .unwrap_or_else(|| "@DEFAULT_SINK@".to_string());
+            self.run_short_call(&["set-sink-mute", &sink, mute_str])
                 .await?;
             Ok(())
         })
@@ -224,7 +275,31 @@ impl AudioBackend for PactlAudioBackend {
 
     fn spawn_subscribe(&self) -> BoxFuture<'_, Result<Child, AudioError>> {
         Box::pin(async move {
-            let mut cmd = self.make_command(&["subscribe"])?;
+            let pactl = self.pactl_path.as_ref().ok_or(AudioError::MissingBackend)?;
+            let pactl_str = pactl.to_string_lossy().to_string();
+
+            let mut cmd = if let Some(ref setpriv) = self.setpriv_path {
+                let mut c = Command::new(setpriv);
+                c.args(["--pdeathsig", "SIGKILL", "--", &pactl_str, "subscribe"]);
+                c
+            } else {
+                let mut c = Command::new(pactl);
+                c.arg("subscribe");
+                c
+            };
+
+            cmd.env_clear();
+            for &key in CLEAN_ENV_ALLOWLIST {
+                if let Ok(val) = std::env::var(key) {
+                    cmd.env(key, val);
+                }
+            }
+
+            cmd.stdin(Stdio::null());
+            cmd.stdout(Stdio::piped());
+            cmd.stderr(Stdio::piped());
+            cmd.kill_on_drop(true);
+
             cmd.spawn().map_err(|e| {
                 AudioError::ProcessError(format!("Failed to spawn pactl subscribe: {e}"))
             })

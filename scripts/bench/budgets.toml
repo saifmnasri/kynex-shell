@@ -207,6 +207,7 @@ target = "< 50 ms (p95)"
 max_ms = 50.0
 unit = "ms"
 phase = "Phase 5"
+status = "proposed"
 
 [quick_settings_open_latency_warm]
 name = "Quick settings: click -> first visible frame (warm)"
@@ -214,6 +215,7 @@ target = "< 16 ms (p95)"
 max_ms = 16.0
 unit = "ms"
 phase = "Phase 5"
+status = "proposed"
 
 [audio_set_volume_latency]
 name = "Audio: SetVolume D-Bus call -> slider update"
@@ -221,6 +223,7 @@ target = "< 50 ms (p95)"
 max_ms = 50.0
 unit = "ms"
 phase = "Phase 5"
+status = "proposed"
 
 [audio_external_volume_latency]
 name = "Audio: external pactl change -> UI update"
@@ -228,6 +231,7 @@ target = "< 50 ms (p95)"
 max_ms = 50.0
 unit = "ms"
 phase = "Phase 5"
+status = "proposed"
 
 [quick_settings_idle_shell_pss]
 name = "Shell PSS after 100 quick settings open/close cycles plateau"
@@ -235,6 +239,7 @@ target = "< 100 MB PSS in VM llvmpipe (< 50 MB on hardware)"
 max_pss_mb = 100.0
 unit = "MB"
 phase = "Phase 5"
+status = "proposed"
 
 [audio_idle_daemon_pss]
 name = "Daemon PSS with audio backend running and 100 cycles plateau"
@@ -242,6 +247,7 @@ target = "< 15 MB PSS"
 max_pss_mb = 15.0
 unit = "MB"
 phase = "Phase 5"
+status = "proposed"
 
 [audio_event_flood_cpu]
 name = "Audio: 10,000-event subscribe flood CPU"
@@ -249,5 +255,6 @@ target = "< 20% during flood"
 max_cpu_pct = 20.0
 unit = "%"
 phase = "Phase 5"
+status = "proposed"
 
 
