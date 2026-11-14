@@ -3,7 +3,7 @@
 Use the SAME machine/VM settings for Plasma and Kynex baselines.
 Example: scripts/bench/measure.py --label kynex-idle --procs kwin_wayland kynex-shell kynex-daemon --duration 120
          scripts/bench/measure.py --label plasma-idle --procs kwin_wayland plasmashell --duration 120
-Output: table + JSON in dev/bench/. Methodology: docs/PERFORMANCE.md
+Output: table + JSON in dev/bench/.
 """
 import argparse, json, os, time, datetime, subprocess, sys
 
