@@ -77,33 +77,103 @@ def validate_and_compute_metric(bench, key, alt_keys=()):
     valid_samples = []
     invalid_count = 0
 
-    for s in raw_samples:
-        if isinstance(s, dict):
-            start = s.get("start_ns", s.get("start"))
-            end = s.get("end_ns", s.get("end"))
-            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
-                invalid_count += 1
-            elif end < start:
-                invalid_count += 1
+    if found_key == "audio_event_flood_cpu":
+        for idx, s in enumerate(raw_samples):
+            if not isinstance(s, dict):
+                print(
+                    f"ERROR: Metric '{found_key}' sample #{idx+1} is not a structured object! Found {type(s).__name__}.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            wall_start = s.get("wall_start_ns", s.get("start_ns"))
+            wall_end = s.get("wall_end_ns", s.get("end_ns"))
+            duration_s = s.get("duration_s")
+            if duration_s is None and wall_start is not None and wall_end is not None:
+                duration_s = (wall_end - wall_start) / 1e9
+
+            if duration_s is None or duration_s < 10.0:
+                print(
+                    f"ERROR: Metric '{found_key}' sample #{idx+1} duration ({duration_s}s) is shorter than required 10.0 s minimum!",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            emitted = s.get("emitted_events")
+            processed = s.get("processed_events")
+            if emitted is None or processed is None:
+                print(
+                    f"ERROR: Metric '{found_key}' sample #{idx+1} missing 'emitted_events' or 'processed_events'!",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            if emitted <= 0 or (processed / emitted) < 0.90:
+                print(
+                    f"ERROR: Metric '{found_key}' sample #{idx+1} processed events ({processed}) is below 90% of emitted events ({emitted})!",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            cpu_pct = s.get("cpu_pct")
+            if cpu_pct is None:
+                cpu_ns = s.get("cpu_ns")
+                if cpu_ns is None:
+                    c_start = s.get("cpu_start_ns")
+                    c_end = s.get("cpu_end_ns")
+                    if c_start is not None and c_end is not None:
+                        cpu_ns = c_end - c_start
+                wall_ns = s.get("wall_ns")
+                if wall_ns is None and wall_start is not None and wall_end is not None:
+                    wall_ns = wall_end - wall_start
+                elif wall_ns is None and duration_s is not None:
+                    wall_ns = duration_s * 1e9
+                if cpu_ns is not None and wall_ns is not None and wall_ns > 0:
+                    cpu_pct = (cpu_ns / wall_ns) * 100.0
+
+            if cpu_pct is None or cpu_pct < 0:
+                print(
+                    f"ERROR: Metric '{found_key}' sample #{idx+1} missing valid CPU percentage or nanoseconds data!",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            valid_samples.append(float(cpu_pct))
+
+        if len(valid_samples) < 5:
+            print(
+                f"ERROR: Metric '{found_key}' requires at least 5 runs (found {len(valid_samples)})!",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    else:
+        for s in raw_samples:
+            if isinstance(s, dict):
+                start = s.get("start_ns", s.get("start"))
+                end = s.get("end_ns", s.get("end"))
+                if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                    invalid_count += 1
+                elif end < start:
+                    invalid_count += 1
+                else:
+                    lat_ms = (end - start) / NS_PER_MS
+                    valid_samples.append(lat_ms)
+            elif isinstance(s, (list, tuple)) and len(s) == 2:
+                start, end = s[0], s[1]
+                if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
+                    invalid_count += 1
+                elif end < start:
+                    invalid_count += 1
+                else:
+                    lat_ms = (end - start) / NS_PER_MS
+                    valid_samples.append(lat_ms)
+            elif isinstance(s, (int, float)):
+                if s < 0:
+                    invalid_count += 1
+                else:
+                    valid_samples.append(float(s))
             else:
-                lat_ms = (end - start) / NS_PER_MS
-                valid_samples.append(lat_ms)
-        elif isinstance(s, (list, tuple)) and len(s) == 2:
-            start, end = s[0], s[1]
-            if start is None or end is None or not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
                 invalid_count += 1
-            elif end < start:
-                invalid_count += 1
-            else:
-                lat_ms = (end - start) / NS_PER_MS
-                valid_samples.append(lat_ms)
-        elif isinstance(s, (int, float)):
-            if s < 0:
-                invalid_count += 1
-            else:
-                valid_samples.append(float(s))
-        else:
-            invalid_count += 1
 
     total_samples = len(valid_samples) + invalid_count
     invalid_pct = (invalid_count / total_samples * PERCENT) if total_samples > 0 else 0.0
@@ -670,18 +740,18 @@ def main():
     # 14g. Audio event flood CPU
     aud_cpu = validate_and_compute_metric(bench, "audio_event_flood_cpu")
     if aud_cpu:
-        aud_cpu_val = aud_cpu["max"]
-        max_aud_cpu = budgets.get("audio_event_flood_cpu", {}).get("max_cpu_pct", 20.0)
+        aud_cpu_val = aud_cpu["mean"]
+        max_aud_cpu = budgets.get("audio_event_flood_cpu", {}).get("max_cpu_pct", 10.0)
         if budgets.get("audio_event_flood_cpu", {}).get("status") == "proposed":
             aud_flood_cpu_status = "PROPOSED (owner approval pending)"
         else:
             aud_flood_cpu_status = "MET" if aud_cpu_val <= max_aud_cpu else "NOT MET"
-        aud_flood_cpu_measured = f"**{aud_cpu_val:.1f}% CPU**"
-        aud_flood_cpu_notes = f"Peak CPU during 10,000-event subscribe flood ({len(aud_cpu['samples'])} samples; method: {aud_cpu['method']})."
+        aud_flood_cpu_measured = f"**{aud_cpu_val:.2f}% CPU**"
+        aud_flood_cpu_notes = f"Average CPU over >=10s subscribe flood ({len(aud_cpu['samples'])} runs; method: {aud_cpu['method']})."
     else:
         aud_flood_cpu_status = "UNMEASURABLE"
         aud_flood_cpu_measured = "Unmeasured"
-        aud_flood_cpu_notes = "Peak CPU during 10,000-event subscribe flood."
+        aud_flood_cpu_notes = "Average CPU over >=10s subscribe flood."
 
     rows = [
         (budgets["session_idle_pss"]["name"], budgets["session_idle_pss"]["target"], pss_measured, pss_status, pss_notes),

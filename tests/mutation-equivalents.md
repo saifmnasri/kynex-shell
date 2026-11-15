@@ -64,8 +64,10 @@ All 14 required security, robustness, and coalescing mutants for Stage Q have de
 | `MUTANT_ARGV_ONLY` | Subprocess spawned directly with argv array without shell invocation (hostile sink metacharacters preserved verbatim, no shell injection) | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_argv_only_no_shell` | **KILLED** |
 | `MUTANT_READBACK` | SetVolume and SetMuted verify state mutation via authoritative readback | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_readback` | **KILLED** |
 | `MUTANT_DEBOUNCE_FINAL_VALUE` | Slider debouncer guarantees delivery of final settled slider value | `crates/kynex-shell-core/tests/audio_tests.rs::test_mutant_debounce_final_value` | **KILLED** |
+| `MUTANT_COALESCE_LEADING` | First event of burst delivered immediately on leading edge (DeliverLeadingAndSchedule) | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_leading` | **KILLED** |
+| `MUTANT_COALESCE_TRAILING` | Events arriving during window are coalesced and trailing edge delivered on timer run | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_trailing` | **KILLED** |
 | `MUTANT_COALESCE_WIDENING` | Adaptive coalescer widens window exponentially from 25ms to 250ms during bursts | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_widening` | **KILLED** |
 | `MUTANT_COALESCE_WINDOW_CAP` | Coalescing window strictly capped at 250ms max duration | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_window_cap` | **KILLED** |
 | `MUTANT_COALESCE_RESET` | Coalescing window resets to base 25ms after >= 1000ms quiet period | `crates/kynex-audio/tests/parser_tests.rs::test_mutant_coalesce_reset` | **KILLED** |
-| `MUTANT_COALESCE_FINAL_STATE` | Final volume state delivered after burst followed by silence | `crates/kynex-daemon/tests/audio_service_test.rs::test_mutant_coalesce_final_state` | **KILLED** |
+| `MUTANT_COALESCE_FINAL_STATE` | Final volume state delivered on EOF/burst end followed by quiet | `crates/kynex-audio/tests/parser_tests.rs::test_coalesce_final_state_delivery_logic` & `crates/kynex-daemon/tests/audio_service_test.rs::test_coalesce_flood_and_isolated_latency` | **KILLED** |
 

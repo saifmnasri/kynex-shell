@@ -250,7 +250,8 @@ export XDG_STATE_HOME="$TMP_DIR/state"
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME/applications" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
 
 export QT_QPA_PLATFORM=wayland
-export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
+export KYNEX_STYLE_DIR="${KYNEX_STYLE_DIR:-$ROOT_DIR/styles/default}"
+export KYNEX_QML_IMPORT_DIR="${KYNEX_QML_IMPORT_DIR:-$ROOT_DIR/crates/kynex-shell/qml}"
 export RUST_LOG="${RUST_LOG:-info}"
 
 # Start private session dbus-daemon directly as child with pdeathsig SIGKILL

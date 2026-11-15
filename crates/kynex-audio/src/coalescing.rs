@@ -5,8 +5,8 @@ use crate::limits::{DEFAULT_COALESCE_DEBOUNCE_MS, MAX_COALESCE_WINDOW_MS, QUIET_
 /// Action returned by [`EventCoalescer`] when processing an event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoalesceAction {
-    /// Schedule a debounce timer for the specified delay in milliseconds.
-    ScheduleDebounce(u64),
+    /// First event of a burst; deliver immediately (leading edge) and schedule a trailing debounce window for the specified delay in milliseconds.
+    DeliverLeadingAndSchedule(u64),
     /// An update is already scheduled; event is coalesced into the pending run.
     AlreadyScheduled,
 }
@@ -79,7 +79,7 @@ impl EventCoalescer {
         } else {
             self.scheduled = true;
             self.dirty = false;
-            CoalesceAction::ScheduleDebounce(self.current_window_ms)
+            CoalesceAction::DeliverLeadingAndSchedule(self.current_window_ms)
         }
     }
 
