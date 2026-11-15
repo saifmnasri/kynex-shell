@@ -174,7 +174,7 @@ setpriv --pdeathsig SIGKILL "$BIN_DIR/kynex-shell" > "$SHELL_LOG" 2>&1 &
 SHELL_PID=\$!
 echo "\$SHELL_PID kynex-shell" >> "$PID_FILE"
 
-# Load KWin window tracking script via org.kde.kwin.Scripting
+# Load KWin window tracking script via org.kde.kwin.Scripting or verify kwinrc plugin auto-load
 (
   for _ in {1..50}; do
     if busctl --user status org.kde.KWin >/dev/null 2>&1; then
@@ -182,20 +182,28 @@ echo "\$SHELL_PID kynex-shell" >> "$PID_FILE"
     fi
     sleep 0.1
   done
-  SCRIPT_PATH="$ROOT_DIR/kwin-scripts/kynex-windows/contents/code/main.js"
-  if [[ -f "\$SCRIPT_PATH" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
-    SCRIPT_ID=\$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "\$SCRIPT_PATH" "kynex-windows" 2>/dev/null | awk '{print \$2}')
-    if [[ -n "\$SCRIPT_ID" && "\$SCRIPT_ID" != "-1" ]]; then
-      busctl --user call org.kde.KWin "/Scripting/Script\$SCRIPT_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
+
+  check_and_load_script() {
+    local name="\$1"
+    local path="\$2"
+    if busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting isScriptLoaded s "\$name" 2>/dev/null | grep -q "true"; then
+      echo "run-nested: KWin script '\$name' is active (loaded by compositor via kwinrc plugins)."
+      return 0
     fi
-  fi
-  LAUNCHER_SCRIPT_PATH="$ROOT_DIR/kwin-scripts/kynex-launcher/contents/code/main.js"
-  if [[ -f "\$LAUNCHER_SCRIPT_PATH" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
-    LAUNCHER_SCRIPT_ID=\$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "\$LAUNCHER_SCRIPT_PATH" "kynex-launcher" 2>/dev/null | awk '{print \$2}')
-    if [[ -n "\$LAUNCHER_SCRIPT_ID" && "\$LAUNCHER_SCRIPT_ID" != "-1" ]]; then
-      busctl --user call org.kde.KWin "/Scripting/Script\$LAUNCHER_SCRIPT_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
+    if [[ -f "\$path" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
+      local id
+      id=\$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "\$path" "\$name" 2>/dev/null | awk '{print \$2}' || true)
+      if [[ -n "\$id" && "\$id" != "-1" ]]; then
+        busctl --user call org.kde.KWin "/Scripting/Script\$id" org.kde.kwin.Script run >/dev/null 2>&1 || true
+        echo "run-nested: Successfully loaded KWin script '\$name' (id \$id)."
+      else
+        echo "run-nested: Failed to load KWin script '\$name' (loadScript returned \$id)."
+      fi
     fi
-  fi
+  }
+
+  check_and_load_script "kynex-windows" "$ROOT_DIR/kwin-scripts/kynex-windows/contents/code/main.js"
+  check_and_load_script "kynex-launcher" "$ROOT_DIR/kwin-scripts/kynex-launcher/contents/code/main.js"
 ) &
 
 cleanup() {
@@ -248,6 +256,10 @@ export XDG_DATA_HOME="$TMP_DIR/data"
 export XDG_CACHE_HOME="$TMP_DIR/cache"
 export XDG_STATE_HOME="$TMP_DIR/state"
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME/applications" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+cp -f "$ROOT_DIR/packaging/session/kwinrc" "$XDG_CONFIG_HOME/kwinrc"
+mkdir -p "$XDG_DATA_HOME/kwin/scripts"
+ln -sfn "$ROOT_DIR/kwin-scripts/kynex-windows" "$XDG_DATA_HOME/kwin/scripts/kynex-windows"
+ln -sfn "$ROOT_DIR/kwin-scripts/kynex-launcher" "$XDG_DATA_HOME/kwin/scripts/kynex-launcher"
 
 export QT_QPA_PLATFORM=wayland
 export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"

@@ -47,6 +47,16 @@ echo "-> Collecting systemd unit states..."
   systemctl --user --failed --no-pager || true
 } > "$TMP_DIR/systemd-user-units.log" 2>&1
 
+# 3b. Global Shortcuts Subsystem (kglobalacceld)
+echo "-> Collecting kglobalacceld status and bus registration..."
+{
+  echo "=== busctl --user list | grep -i kglobalaccel ==="
+  busctl --user list 2>/dev/null | grep -i kglobalaccel || echo "kglobalaccel not active on user bus"
+  echo ""
+  echo "=== plasma-kglobalaccel.service status ==="
+  systemctl --user status plasma-kglobalaccel.service --no-pager || true
+} > "$TMP_DIR/kglobalaccel-status.log" 2>&1
+
 # 4. Logind Sessions and Seats
 echo "-> Collecting logind sessions and seats..."
 {

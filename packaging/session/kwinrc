@@ -6,6 +6,11 @@ Rows=1
 [Windows]
 BorderlessMaximizedWindows=true
 
+# KWin Scripts enabled for Kynex Shell session
+[Plugins]
+kynex-windowsEnabled=true
+kynex-launcherEnabled=true
+
 # Optional Modifier-Only Shortcut Experiment (ADR-009 / ADR-017)
 # Note: Inactive in KWin 6.6 without kglobalacceld; Meta+Space remains primary shortcut.
 [ModifierOnlyShortcuts]

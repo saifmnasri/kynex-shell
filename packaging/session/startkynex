@@ -47,28 +47,46 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
       fi
     done
 
-    if [[ -n "$SCRIPT_ROOT" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
-      WIN_SCRIPT="$SCRIPT_ROOT/kynex-windows/contents/code/main.js"
-      if [[ -f "$WIN_SCRIPT" ]]; then
-        WIN_ID="$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "$WIN_SCRIPT" "kynex-windows" 2>/dev/null | awk '{print $2}' || true)"
-        if [[ -n "$WIN_ID" && "$WIN_ID" != "-1" ]]; then
-          busctl --user call org.kde.KWin "/Scripting/Script$WIN_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
-        fi
+    check_and_load_script() {
+      local name="$1"
+      local path="$2"
+
+      # Check if already loaded by KWin (e.g. through kwinrc [Plugins] at startup)
+      if busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting isScriptLoaded s "$name" 2>/dev/null | grep -q "true"; then
+        echo "startkynex [supervisor]: KWin script '$name' is active (loaded by compositor)." >&2
+        return 0
       fi
 
-      LAUNCH_SCRIPT="$SCRIPT_ROOT/kynex-launcher/contents/code/main.js"
-      if [[ -f "$LAUNCH_SCRIPT" ]]; then
-        LAUNCH_ID="$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "$LAUNCH_SCRIPT" "kynex-launcher" 2>/dev/null | awk '{print $2}' || true)"
-        if [[ -n "$LAUNCH_ID" && "$LAUNCH_ID" != "-1" ]]; then
-          busctl --user call org.kde.KWin "/Scripting/Script$LAUNCH_ID" org.kde.kwin.Script run >/dev/null 2>&1 || true
+      if [[ -f "$path" ]]; then
+        local id
+        id="$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "$path" "$name" 2>/dev/null | awk '{print $2}' || true)"
+        if [[ -n "$id" && "$id" != "-1" ]]; then
+          busctl --user call org.kde.KWin "/Scripting/Script$id" org.kde.kwin.Script run >/dev/null 2>&1 || true
+          echo "startkynex [supervisor]: Successfully loaded and started KWin script '$name' (id $id)." >&2
+          return 0
+        else
+          echo "startkynex [supervisor]: Warning: KWin loadScript failed for '$name' (returned '$id')." >&2
+          return 1
         fi
+      else
+        echo "startkynex [supervisor]: Warning: KWin script file not found at '$path'." >&2
+        return 1
       fi
+    }
+
+    if [[ -n "$SCRIPT_ROOT" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
+      check_and_load_script "kynex-windows" "$SCRIPT_ROOT/kynex-windows/contents/code/main.js" || true
+      check_and_load_script "kynex-launcher" "$SCRIPT_ROOT/kynex-launcher/contents/code/main.js" || true
+    else
+      echo "startkynex [supervisor]: Warning: KWin D-Bus interface or scripts directory unavailable." >&2
     fi
   ) &
+  SCRIPT_LOADER_PID=$!
 
   cleanup() {
     trap - EXIT INT TERM HUP
     echo "startkynex [supervisor]: Tearing down kynex-session.target..." >&2
+    [[ -n "${SCRIPT_LOADER_PID:-}" ]] && kill -TERM "$SCRIPT_LOADER_PID" 2>/dev/null || true
     systemctl --user stop kynex-session.target >/dev/null 2>&1 || true
     systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY >/dev/null 2>&1 || true
     systemctl --user reset-failed >/dev/null 2>&1 || true
@@ -76,7 +94,11 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
   trap cleanup EXIT INT TERM HUP
 
   echo "startkynex [supervisor]: Starting kynex-session.target..." >&2
-  systemctl --user start --wait kynex-session.target || true
+  if ! systemctl --user start --wait kynex-session.target; then
+    echo "startkynex [supervisor]: FATAL: failed to start kynex-session.target" >&2
+    cleanup
+    exit 1
+  fi
 
   cleanup
   echo "startkynex [supervisor]: Session finished. Exiting supervisor." >&2
@@ -85,6 +107,20 @@ fi
 
 # Mode 1: Executed by display manager (GDM/SDDM) or TTY entrypoint
 echo "startkynex: Initializing Kynex Desktop Environment..." >&2
+
+# Fail-fast check 1: kwin_wayland compositor binary
+if ! command -v kwin_wayland >/dev/null 2>&1; then
+  echo "startkynex: FATAL: 'kwin_wayland' executable not found in PATH" >&2
+  exit 127
+fi
+
+# Fail-fast check 2: Kynex shell and daemon binaries
+for bin in kynex-daemon kynex-shell; do
+  if ! command -v "$bin" >/dev/null 2>&1 && [[ ! -x "/usr/local/bin/$bin" ]]; then
+    echo "startkynex: FATAL: required binary '$bin' not found in PATH or /usr/local/bin" >&2
+    exit 127
+  fi
+done
 
 # Set authoritative desktop identity and Qt Wayland flags
 export XDG_CURRENT_DESKTOP="Kynex"

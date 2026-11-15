@@ -19,7 +19,7 @@ PACKAGES=(
   qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts qml6-module-qtquick-window
   qml6-module-qtquick-templates qml6-module-qtqml qml6-module-qtqml-workerscript qml6-module-qttest
   # compositor + layer shell
-  kwin-wayland xwayland
+  kwin-wayland xwayland kglobalacceld
   layer-shell-qt liblayershellqtinterface-dev
   libwayland-dev wayland-protocols libxkbcommon-dev
   # system services we reuse
