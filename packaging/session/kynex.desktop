@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=KynexOS
+Comment=Kynex Desktop Environment
+Exec=/usr/local/bin/startkynex
+TryExec=/usr/local/bin/startkynex
+Type=Application
+Keywords=kynex;shell;wayland;desktop;
