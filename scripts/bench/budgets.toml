@@ -201,4 +201,67 @@ max_cpu_pct = 20.0
 unit = "%"
 phase = "Phase 5"
 
+[quick_settings_open_latency_cold]
+name = "Quick settings: click -> first visible frame (cold)"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+status = "approved"
+
+[quick_settings_open_latency_warm]
+name = "Quick settings: click -> first visible frame (warm)"
+target = "< 16 ms (p95)"
+max_ms = 16.0
+unit = "ms"
+phase = "Phase 5"
+status = "approved"
+
+[audio_set_volume_latency]
+name = "Audio: SetVolume D-Bus call -> slider update"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+status = "approved"
+
+[audio_external_volume_latency]
+name = "Audio: external pactl change -> UI update"
+target = "< 50 ms (p95)"
+max_ms = 50.0
+unit = "ms"
+phase = "Phase 5"
+status = "approved"
+
+[shell_idle_offscreen_pss]
+name = "shell idle PSS, offscreen+software, <= 48 MB"
+target = "<= 48 MB"
+max_pss_mb = 48.0
+unit = "MB"
+phase = "Phase 5"
+status = "approved"
+
+[quick_settings_idle_shell_pss]
+name = "Shell PSS after 100 quick settings open/close cycles plateau (VM nested)"
+target = "Informational (unbudgeted in VM)"
+unit = "MB"
+phase = "Phase 5"
+status = "informational"
+
+[audio_idle_daemon_pss]
+name = "Daemon PSS with audio backend running and 100 cycles plateau"
+target = "< 15 MB PSS"
+max_pss_mb = 15.0
+unit = "MB"
+phase = "Phase 5"
+status = "approved"
+
+[audio_event_flood_cpu]
+name = "Audio: 10,000-event subscribe flood CPU"
+target = "< 10% during flood"
+max_cpu_pct = 10.0
+unit = "%"
+phase = "Phase 5"
+status = "approved"
+
 

@@ -117,9 +117,14 @@ CARGO_ARGS=("--workspace")
 if [[ "$BUILD_PROFILE" == "release" ]]; then
   CARGO_ARGS+=("--release" "--locked")
 fi
+if [[ -n "${KYNEX_CARGO_FEATURES:-}" ]]; then
+  CARGO_ARGS+=("--features" "$KYNEX_CARGO_FEATURES")
+fi
 
-echo "Building Kynex workspace ($BUILD_PROFILE)..."
-cargo build "${CARGO_ARGS[@]}"
+if [[ "${KYNEX_SKIP_BUILD:-0}" != "1" ]]; then
+  echo "Building Kynex workspace ($BUILD_PROFILE)..."
+  cargo build "${CARGO_ARGS[@]}"
+fi
 
 BIN_DIR="$ROOT_DIR/target/$BUILD_PROFILE"
 WRAPPER="$TMP_DIR/session.sh"
@@ -159,6 +164,7 @@ echo "\$BUSCTL_PID busctl-monitor" >> "$PID_FILE"
 
 # Start daemon in background with pdeathsig SIGKILL
 KYNEX_UPOWER_BUS=session KYNEX_NM_BUS=session KYNEX_ALLOW_TEST_FEEDER="${KYNEX_ALLOW_TEST_FEEDER:-0}" \
+KYNEX_TEST_PACTL_PATH="${KYNEX_TEST_PACTL_PATH:-$ROOT_DIR/dev/fake-pactl}" \
   setpriv --pdeathsig SIGKILL "$BIN_DIR/kynex-daemon" > "$DAEMON_LOG" 2>&1 &
 DAEMON_PID=\$!
 echo "\$DAEMON_PID kynex-daemon" >> "$PID_FILE"

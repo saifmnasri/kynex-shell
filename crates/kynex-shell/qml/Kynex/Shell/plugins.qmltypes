@@ -197,6 +197,7 @@ Module {
         exports: ["Kynex.Shell/NotificationModel 1.0"]
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
+        Property { name: "doNotDisturb"; type: "bool"; read: "doNotDisturb"; notify: "doNotDisturbChanged"; isFinal: true }
         Method {
             name: "init"
         }
@@ -219,6 +220,70 @@ Module {
         }
         Method {
             name: "recordFirstFrame"
+        }
+        Method {
+            name: "setDoNotDisturb"
+            Parameter { name: "enabled"; type: "bool" }
+        }
+    }
+    Component {
+        file: "src/audio.rs"
+        name: "AudioModel"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Shell/AudioModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged"; isFinal: true }
+        Property { name: "volume"; type: "int"; read: "volume"; notify: "volumeChanged"; isFinal: true }
+        Property { name: "muted"; type: "bool"; read: "muted"; notify: "mutedChanged"; isFinal: true }
+        Property { name: "deviceName"; type: "QString"; read: "deviceName"; notify: "deviceNameChanged"; isFinal: true }
+        Property { name: "open"; type: "bool"; read: "open"; write: "setOpen"; notify: "openChanged" }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "toggleQuickSettings"
+        }
+        Method {
+            name: "recordQuickSettingsOpened"
+        }
+        Method {
+            name: "setVolume"
+            Parameter { name: "volume"; type: "int" }
+        }
+        Method {
+            name: "setMuted"
+            Parameter { name: "muted"; type: "bool" }
+        }
+        Method {
+            name: "computePlacementX"
+            type: "double"
+            Parameter { name: "anchorsBits"; type: "uint" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
+            Parameter { name: "anchorX"; type: "double" }
+            Parameter { name: "anchorY"; type: "double" }
+            Parameter { name: "anchorWidth"; type: "double" }
+            Parameter { name: "anchorHeight"; type: "double" }
+            Parameter { name: "popupWidth"; type: "double" }
+            Parameter { name: "popupHeight"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
+        }
+        Method {
+            name: "computePlacementY"
+            type: "double"
+            Parameter { name: "anchorsBits"; type: "uint" }
+            Parameter { name: "panelWidth"; type: "double" }
+            Parameter { name: "panelHeight"; type: "double" }
+            Parameter { name: "anchorX"; type: "double" }
+            Parameter { name: "anchorY"; type: "double" }
+            Parameter { name: "anchorWidth"; type: "double" }
+            Parameter { name: "anchorHeight"; type: "double" }
+            Parameter { name: "popupWidth"; type: "double" }
+            Parameter { name: "popupHeight"; type: "double" }
+            Parameter { name: "screenWidth"; type: "double" }
+            Parameter { name: "screenHeight"; type: "double" }
         }
     }
     Component {

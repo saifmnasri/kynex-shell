@@ -536,6 +536,7 @@ class MockNotificationModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool dnd READ dnd WRITE setDnd NOTIFY dndChanged)
+    Q_PROPERTY(bool doNotDisturb READ dnd WRITE setDnd NOTIFY dndChanged)
     Q_PROPERTY(quint32 lastDismissedId READ lastDismissedId NOTIFY trackingChanged)
     Q_PROPERTY(quint32 lastPausedId READ lastPausedId NOTIFY trackingChanged)
     Q_PROPERTY(quint32 lastResumedId READ lastResumedId NOTIFY trackingChanged)
@@ -1237,6 +1238,90 @@ private:
     QList<MockMenuItem> m_items;
 };
 
+class MockAudioModel : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool present READ present WRITE setPresent NOTIFY presentChanged)
+    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
+    Q_PROPERTY(QString deviceName READ deviceName WRITE setDeviceName NOTIFY deviceNameChanged)
+    Q_PROPERTY(bool open READ open WRITE setOpen NOTIFY openChanged)
+
+public:
+    explicit MockAudioModel(QObject *parent = nullptr)
+        : QObject(parent), m_present(true), m_volume(50), m_muted(false), m_deviceName("Default Output"), m_open(false) {}
+
+    bool open() const { return m_open; }
+    Q_INVOKABLE void setOpen(bool o) {
+        if (m_open != o) {
+            m_open = o;
+            Q_EMIT openChanged();
+        }
+    }
+    Q_INVOKABLE void toggleQuickSettings() {
+        setOpen(!m_open);
+    }
+
+    bool present() const { return m_present; }
+    Q_INVOKABLE void setPresent(bool p) {
+        if (m_present != p) {
+            m_present = p;
+            Q_EMIT presentChanged();
+        }
+    }
+
+    int volume() const { return m_volume; }
+    Q_INVOKABLE void setVolume(int v) {
+        if (m_volume != v) {
+            m_volume = v;
+            Q_EMIT volumeChanged();
+        }
+    }
+
+    bool muted() const { return m_muted; }
+    Q_INVOKABLE void setMuted(bool m) {
+        if (m_muted != m) {
+            m_muted = m;
+            Q_EMIT mutedChanged();
+        }
+    }
+
+    QString deviceName() const { return m_deviceName; }
+    Q_INVOKABLE void setDeviceName(const QString &d) {
+        if (m_deviceName != d) {
+            m_deviceName = d;
+            Q_EMIT deviceNameChanged();
+        }
+    }
+
+    Q_INVOKABLE void init() {}
+    Q_INVOKABLE void recordQuickSettingsOpened() {}
+
+    Q_INVOKABLE double computePlacementX(uint, double, double, double anchorX, double, double anchorW, double, double popupW, double, double screenW, double) {
+        if (anchorX + popupW > screenW) {
+            return std::max(0.0, anchorX + anchorW - popupW);
+        }
+        return anchorX;
+    }
+
+    Q_INVOKABLE double computePlacementY(uint, double, double panelH, double, double, double, double, double popupH, double, double screenH, double) {
+        return std::max(0.0, screenH - panelH - popupH);
+    }
+
+Q_SIGNALS:
+    void presentChanged();
+    void volumeChanged();
+    void mutedChanged();
+    void deviceNameChanged();
+    void openChanged();
+
+private:
+    bool m_present;
+    int m_volume;
+    bool m_muted;
+    QString m_deviceName;
+    bool m_open;
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
@@ -1267,6 +1352,7 @@ public slots:
         qmlRegisterType<MockClock>("Kynex.Shell", 1, 0, "Clock");
         qmlRegisterType<MockPowerModel>("Kynex.Shell", 1, 0, "PowerModel");
         qmlRegisterType<MockNetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
+        qmlRegisterType<MockAudioModel>("Kynex.Shell", 1, 0, "AudioModel");
         qmlRegisterType<MockWindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
         qmlRegisterType<MockNotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
         qmlRegisterType<MockTrayModel>("Kynex.Shell", 1, 0, "TrayModel");

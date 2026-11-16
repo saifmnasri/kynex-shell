@@ -34,6 +34,7 @@ cxx-qt = "=0.10.0"
 cxx-qt-build = "=0.10.0"
 cxx-qt-lib = { version = "=0.10.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 toml = "1.1"
 thiserror = "2.0"
 tracing = "0.1"
@@ -41,6 +42,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1", features = ["full"] }
 zbus = { version = "6", default-features = false, features = ["tokio", "proxy", "service", "tracing"] }
 
+kynex-audio = { path = "crates/kynex-audio", version = "0.1.0" }
 kynex-common = { path = "crates/kynex-common", version = "0.1.0" }
 kynex-dbusmenu = { path = "crates/kynex-dbusmenu", version = "0.1.0" }
 kynex-icons = { path = "crates/kynex-icons", version = "0.1.0" }

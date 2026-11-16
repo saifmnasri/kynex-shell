@@ -840,6 +840,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kynex-audio"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "kynex-common"
 version = "0.1.0"
 dependencies = [
@@ -852,12 +862,15 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "kynex-apps-index",
+ "kynex-audio",
+ "kynex-daemon",
  "kynex-dbusmenu",
  "kynex-ipc",
  "kynex-notifications",
  "kynex-tray",
  "rustix",
  "serde",
+ "serde_json",
  "tempfile",
  "tokio",
  "toml",
