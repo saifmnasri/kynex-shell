@@ -83,10 +83,39 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
   ) &
   SCRIPT_LOADER_PID=$!
 
+  # Check that global shortcuts daemon (org.kde.kglobalaccel) appears on session bus after startup
+  (
+    # Wait for session target to become active (or up to 5s)
+    for _ in {1..25}; do
+      if systemctl --user is-active kynex-session.target >/dev/null 2>&1; then
+        break
+      fi
+      sleep 0.2
+    done
+
+    # Verify org.kde.kglobalaccel bus presence
+    KGLOBALACCEL_ACTIVE=0
+    for _ in {1..25}; do
+      if busctl --user status org.kde.kglobalaccel >/dev/null 2>&1; then
+        KGLOBALACCEL_ACTIVE=1
+        break
+      fi
+      sleep 0.2
+    done
+
+    if [[ "$KGLOBALACCEL_ACTIVE" -eq 1 ]]; then
+      echo "startkynex [supervisor]: Global shortcuts daemon 'org.kde.kglobalaccel' is active on session bus." >&2
+    else
+      echo "startkynex [supervisor]: WARNING: 'org.kde.kglobalaccel' did not appear on session bus within 5 seconds. Global shortcuts (such as Meta+Space) may not function until kglobalacceld is started." >&2
+    fi
+  ) &
+  SHORTCUT_CHECK_PID=$!
+
   cleanup() {
     trap - EXIT INT TERM HUP
     echo "startkynex [supervisor]: Tearing down kynex-session.target..." >&2
     [[ -n "${SCRIPT_LOADER_PID:-}" ]] && kill -TERM "$SCRIPT_LOADER_PID" 2>/dev/null || true
+    [[ -n "${SHORTCUT_CHECK_PID:-}" ]] && kill -TERM "$SHORTCUT_CHECK_PID" 2>/dev/null || true
     systemctl --user stop kynex-session.target >/dev/null 2>&1 || true
     systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY >/dev/null 2>&1 || true
     systemctl --user reset-failed >/dev/null 2>&1 || true
