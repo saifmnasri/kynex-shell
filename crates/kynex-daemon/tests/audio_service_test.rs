@@ -72,6 +72,245 @@ impl Drop for TestBus {
     }
 }
 
+static HARNESS_C_BIN: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+fn get_compiled_harness_bin() -> Option<&'static PathBuf> {
+    HARNESS_C_BIN
+        .get_or_init(|| {
+            let tmp = std::env::temp_dir().join(format!("kynex_fake_pactl_{}", std::process::id()));
+            let c_src = tmp.with_extension("c");
+            let code = r#"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+static void log_argv(int argc, char **argv, const char *log_path) {
+    if (!log_path || !log_path[0]) return;
+    FILE *f = fopen(log_path, "a");
+    if (!f) return;
+    for (int i = 1; i < argc; i++) {
+        fprintf(f, "%s\n", argv[i]);
+    }
+    fprintf(f, "=== CALL_END ===\n");
+    fclose(f);
+}
+
+static void log_parent(const char *log_path) {
+    if (!log_path || !log_path[0]) return;
+    pid_t ppid = getppid();
+    char comm_path[64], comm[64] = "unknown";
+    snprintf(comm_path, sizeof(comm_path), "/proc/%d/comm", (int)ppid);
+    FILE *pf = fopen(comm_path, "r");
+    if (pf) {
+        if (fgets(comm, sizeof(comm), pf)) {
+            size_t l = strlen(comm);
+            if (l > 0 && comm[l-1] == '\n') comm[l-1] = '\0';
+        }
+        fclose(pf);
+    }
+    FILE *f = fopen(log_path, "a");
+    if (f) {
+        fprintf(f, "%d:%s\n", (int)ppid, comm);
+        fclose(f);
+    }
+}
+
+static void read_field(const char *buf, const char *key, char *out, size_t out_sz, const char *def) {
+    char search[128];
+    snprintf(search, sizeof(search), "\"%s\":", key);
+    const char *p = strstr(buf, search);
+    if (!p) {
+        snprintf(out, out_sz, "%s", def);
+        return;
+    }
+    p += strlen(search);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == '"') {
+        p++;
+        const char *end = strchr(p, '"');
+        if (end) {
+            size_t len = (size_t)(end - p);
+            if (len >= out_sz) len = out_sz - 1;
+            strncpy(out, p, len);
+            out[len] = '\0';
+            return;
+        }
+    } else {
+        const char *end = p;
+        while (*end && *end != ',' && *end != '}' && *end != ' ' && *end != '\n') end++;
+        size_t len = (size_t)(end - p);
+        if (len >= out_sz) len = out_sz - 1;
+        strncpy(out, p, len);
+        out[len] = '\0';
+        return;
+    }
+    snprintf(out, out_sz, "%s", def);
+}
+
+int main(int argc, char **argv) {
+    const char *state_file = getenv("KYNEX_FAKE_PACTL_STATE");
+    const char *argv_log = getenv("KYNEX_FAKE_PACTL_ARGV");
+    const char *parent_log = getenv("KYNEX_FAKE_PACTL_PARENT");
+
+    log_argv(argc, argv, argv_log);
+    log_parent(parent_log);
+
+    if (argc < 2) return 0;
+
+    int is_json = 0;
+    char *cmd = NULL;
+    char *cmd_arg1 = NULL;
+    char *cmd_arg2 = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--format=json") == 0 || strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "json") == 0) {
+            is_json = 1;
+        } else if (!cmd) {
+            cmd = argv[i];
+        } else if (!cmd_arg1) {
+            cmd_arg1 = argv[i];
+        } else if (!cmd_arg2) {
+            cmd_arg2 = argv[i];
+        }
+    }
+
+    if (!cmd) return 0;
+
+    char state_buf[4096] = {0};
+    if (state_file && state_file[0]) {
+        FILE *sf = fopen(state_file, "r");
+        if (sf) {
+            size_t r = fread(state_buf, 1, sizeof(state_buf) - 1, sf);
+            (void)r;
+            fclose(sf);
+        }
+    }
+
+    char hang_str[16], exit_code_str[16], mode_str[32], fifo_str[256];
+    char vol_str[16], muted_str[16], dev_name[256], sink_name[256], empty_sinks_str[16];
+
+    read_field(state_buf, "hang", hang_str, sizeof(hang_str), "false");
+    read_field(state_buf, "exit_code", exit_code_str, sizeof(exit_code_str), "0");
+    read_field(state_buf, "mode", mode_str, sizeof(mode_str), "normal");
+    read_field(state_buf, "fifo_path", fifo_str, sizeof(fifo_str), "");
+    read_field(state_buf, "volume", vol_str, sizeof(vol_str), "50");
+    read_field(state_buf, "muted", muted_str, sizeof(muted_str), "false");
+    read_field(state_buf, "device_name", dev_name, sizeof(dev_name), "Built-in Audio Analog Stereo");
+    read_field(state_buf, "sink_name", sink_name, sizeof(sink_name), "alsa_output.pci-0000_00_03.0.analog-stereo");
+    read_field(state_buf, "empty_sinks", empty_sinks_str, sizeof(empty_sinks_str), "false");
+
+    if (strcmp(hang_str, "true") == 0) {
+        sleep(10);
+        return 0;
+    }
+
+    int exit_code = atoi(exit_code_str);
+    if (exit_code != 0) {
+        fprintf(stderr, "fake pactl mock error\n");
+        return exit_code;
+    }
+
+    int vol = atoi(vol_str);
+    int muted = (strcmp(muted_str, "true") == 0);
+    int empty_sinks = (strcmp(empty_sinks_str, "true") == 0);
+
+    if (strcmp(cmd, "info") == 0) {
+        if (is_json) {
+            printf("{\"default_sink_name\": \"%s\", \"server_name\": \"PulseAudio (on PipeWire 1.6.2)\"}\n", sink_name);
+        } else {
+            printf("Server String: /run/user/1000/pulse/native\nServer Name: PulseAudio (on PipeWire 1.6.2)\nDefault Sink: %s\n", sink_name);
+        }
+        return 0;
+    }
+
+    if (strcmp(cmd, "list") == 0 && cmd_arg1 && strcmp(cmd_arg1, "sinks") == 0) {
+        if (empty_sinks) {
+            printf("[]\n");
+            return 0;
+        }
+        if (is_json) {
+            printf("[{\"name\": \"%s\", \"description\": \"%s\", \"mute\": %s, \"volume\": {\"front-left\": {\"value_percent\": \"%d%%\"}, \"front-right\": {\"value_percent\": \"%d%%\"}}}]\n",
+                   sink_name, dev_name, muted ? "true" : "false", vol, vol);
+        } else {
+            printf("Sink #0\n\tState: RUNNING\n\tName: %s\n\tDescription: %s\n\tMute: %s\n\tVolume: front-left: 65536 / %d%% / 0.00 dB,   front-right: 65536 / %d%% / 0.00 dB\n",
+                   sink_name, dev_name, muted ? "yes" : "no", vol, vol);
+        }
+        return 0;
+    }
+
+    if (strcmp(cmd, "set-sink-volume") == 0) {
+        char *val_raw = cmd_arg2 ? cmd_arg2 : cmd_arg1;
+        if (val_raw && state_file && state_file[0]) {
+            int new_vol = atoi(val_raw);
+            if (new_vol < 0) new_vol = 0;
+            if (new_vol > 100) new_vol = 100;
+            FILE *sf = fopen(state_file, "w");
+            if (sf) {
+                fprintf(sf, "{\"volume\": %d, \"muted\": %s, \"device_name\": \"%s\", \"sink_name\": \"%s\", \"hang\": false, \"exit_code\": 0, \"mode\": \"%s\", \"fifo_path\": \"%s\"}\n",
+                        new_vol, muted ? "true" : "false", dev_name, sink_name, mode_str, fifo_str);
+                fclose(sf);
+            }
+        }
+        return 0;
+    }
+
+    if (strcmp(cmd, "set-sink-mute") == 0) {
+        char *val_raw = cmd_arg2 ? cmd_arg2 : cmd_arg1;
+        if (val_raw && state_file && state_file[0]) {
+            int new_muted = (strcmp(val_raw, "1") == 0 || strcmp(val_raw, "true") == 0 || strcmp(val_raw, "yes") == 0);
+            FILE *sf = fopen(state_file, "w");
+            if (sf) {
+                fprintf(sf, "{\"volume\": %d, \"muted\": %s, \"device_name\": \"%s\", \"sink_name\": \"%s\", \"hang\": false, \"exit_code\": 0, \"mode\": \"%s\", \"fifo_path\": \"%s\"}\n",
+                        vol, new_muted ? "true" : "false", dev_name, sink_name, mode_str, fifo_str);
+                fclose(sf);
+            }
+        }
+        return 0;
+    }
+
+    if (strcmp(cmd, "subscribe") == 0) {
+        if (strcmp(mode_str, "exit_immediately") == 0) {
+            return 1;
+        }
+        if (strcmp(mode_str, "close_stream") == 0) {
+            printf("Event 'change' on sink #0\n");
+            fflush(stdout);
+            return 0;
+        }
+        if (strcmp(mode_str, "fifo") == 0 && fifo_str[0]) {
+            FILE *ff = fopen(fifo_str, "r");
+            if (ff) {
+                char line[512];
+                while (fgets(line, sizeof(line), ff)) {
+                    printf("%s", line);
+                    fflush(stdout);
+                }
+                fclose(ff);
+            }
+            return 0;
+        }
+        printf("Event 'change' on sink #0\n");
+        fflush(stdout);
+        while (1) {
+            sleep(1);
+        }
+    }
+
+    return 0;
+}
+"#;
+            let _ = std::fs::write(&c_src, code);
+            let _ = std::process::Command::new("cc")
+                .args(["-O2", c_src.to_str().unwrap(), "-o", tmp.to_str().unwrap()])
+                .output();
+            tmp
+        })
+        .into()
+}
+
 /// Helper managing a fake `pactl` script and state file.
 struct FakePactlHarness {
     _temp_dir: TempDir,
@@ -91,13 +330,36 @@ impl FakePactlHarness {
         )
     }
 
+    fn new_fast(initial_volume: u32, initial_muted: bool) -> Result<Self, Box<dyn Error>> {
+        Self::new_with_sink_name_mode(
+            initial_volume,
+            initial_muted,
+            "alsa_output.pci-0000_00_03.0.analog-stereo",
+            true,
+        )
+    }
+
     fn new_with_sink_name(
         initial_volume: u32,
         initial_muted: bool,
         sink_name: &str,
     ) -> Result<Self, Box<dyn Error>> {
+        Self::new_with_sink_name_mode(initial_volume, initial_muted, sink_name, false)
+    }
+
+    fn new_with_sink_name_mode(
+        initial_volume: u32,
+        initial_muted: bool,
+        sink_name: &str,
+        fast_mode: bool,
+    ) -> Result<Self, Box<dyn Error>> {
         let temp_dir = TempDir::new()?;
-        let script_path = temp_dir.path().join("fake_pactl.py");
+        let script_name = if fast_mode {
+            "fake_pactl"
+        } else {
+            "fake_pactl.py"
+        };
+        let script_path = temp_dir.path().join(script_name);
         let state_file = temp_dir.path().join("audio_state.json");
         let argv_file = temp_dir.path().join("argv.log");
         let parent_file = temp_dir.path().join("parent.log");
@@ -115,8 +377,23 @@ impl FakePactlHarness {
         });
         fs::write(&state_file, serde_json::to_string(&initial_state)?)?;
 
-        let script_content = format!(
-            r#"#!/usr/bin/env python3
+        let c_bin = get_compiled_harness_bin();
+        let script_content = if let (true, Some(bin)) = (fast_mode, c_bin.filter(|p| p.exists())) {
+            format!(
+                r#"#!/bin/sh
+export KYNEX_FAKE_PACTL_STATE="{state_file}"
+export KYNEX_FAKE_PACTL_ARGV="{argv_log}"
+export KYNEX_FAKE_PACTL_PARENT="{parent_log}"
+exec "{bin}" "$@"
+"#,
+                state_file = state_file.display(),
+                argv_log = argv_file.display(),
+                parent_log = parent_file.display(),
+                bin = bin.display()
+            )
+        } else {
+            format!(
+                r#"#!/usr/bin/env python3
 import sys, os, json, time
 
 STATE_FILE = "{state_file}"
@@ -236,10 +513,11 @@ if args[0] == "subscribe":
     while True:
         time.sleep(1)
 "#,
-            state_file = state_file.display(),
-            argv_log = argv_file.display(),
-            parent_log = parent_file.display()
-        );
+                state_file = state_file.display(),
+                argv_log = argv_file.display(),
+                parent_log = parent_file.display()
+            )
+        };
 
         let mut file = File::create(&script_path)?;
         file.write_all(script_content.as_bytes())?;
@@ -1545,7 +1823,7 @@ async fn test_mutant_coalesce_final_state() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_coalesce_flood_and_isolated_latency() -> Result<(), Box<dyn Error>> {
     let _serial = TEST_SERIAL_LOCK.lock().await;
-    let harness = FakePactlHarness::new(20, false)?;
+    let harness = FakePactlHarness::new_fast(20, false)?;
     harness.create_fifo()?;
     harness.set_state(20, false, false, 0, "fifo");
     set_pactl_path_override(Some(harness.path().to_path_buf()));
@@ -1621,12 +1899,8 @@ async fn test_coalesce_flood_and_isolated_latency() -> Result<(), Box<dyn Error>
         "Isolated event volume change (45) received"
     );
     assert!(
-        latency_ms >= 20.0,
-        "Isolated event debounced with 25ms base window (got {latency_ms:.2}ms)"
-    );
-    assert!(
-        latency_ms <= 150.0,
-        "Isolated event arrives within 25ms base window plus processing (got {latency_ms:.2}ms)"
+        latency_ms <= 30.0,
+        "Isolated event arrives immediately via leading-edge delivery within ~10ms (got {latency_ms:.2}ms)"
     );
 
     // Update state for flood final value
@@ -1644,7 +1918,12 @@ async fn test_coalesce_flood_and_isolated_latency() -> Result<(), Box<dyn Error>
     }
     assert!(
         flood_final_received,
-        "Final value (95) arrived after 10,000-event flood"
+        "A burst ending in a specific final value (95) ends with exactly that value"
+    );
+
+    assert!(
+        kynex_daemon::services::audio::processed_audio_events_count() >= 1000,
+        "Daemon processed events from flood"
     );
 
     fifo_task.await??;

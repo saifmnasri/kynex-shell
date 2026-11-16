@@ -274,19 +274,73 @@ fn test_bounded_line_reader_line_limit_and_overflow() {
 fn test_event_coalescer_isolated_event() {
     let mut coalescer = EventCoalescer::default();
 
-    // Isolated event at t=100ms -> schedule 25ms base debounce
+    // Isolated event at t=100ms -> delivers leading edge immediately and schedules 25ms base debounce
     assert_eq!(
         coalescer.handle_event(100),
-        CoalesceAction::ScheduleDebounce(25)
+        CoalesceAction::DeliverLeadingAndSchedule(25)
     );
     assert!(coalescer.is_scheduled());
     assert!(!coalescer.is_dirty());
     assert_eq!(coalescer.current_window_ms(), 25);
 
-    // Debounced task runs at t=125ms with no intermediate events -> idle
+    // Debounced task runs at t=125ms with no intermediate events -> idle (no trailing delivery needed)
     assert_eq!(coalescer.on_debounced_run(125), None);
     assert!(!coalescer.is_scheduled());
     assert!(!coalescer.is_dirty());
+}
+
+#[test]
+fn test_mutant_coalesce_leading() {
+    // Mutant: Leading edge delivery removed -> first event delayed by full window.
+    let mut coalescer = EventCoalescer::default();
+    let action = coalescer.handle_event(50);
+    assert_eq!(
+        action,
+        CoalesceAction::DeliverLeadingAndSchedule(25),
+        "Mutant killed: First event of burst delivered immediately (leading edge)"
+    );
+    assert!(
+        coalescer.is_scheduled(),
+        "Mutant killed: Window scheduled after leading delivery"
+    );
+    assert!(
+        !coalescer.is_dirty(),
+        "Mutant killed: First event does not mark window dirty"
+    );
+}
+
+#[test]
+fn test_mutant_coalesce_trailing() {
+    // Mutant: Trailing delivery removed -> events arriving within window are never flushed.
+    let mut coalescer = EventCoalescer::default();
+    coalescer.handle_event(0);
+    assert!(!coalescer.is_dirty());
+
+    // Subsequent events within window
+    coalescer.handle_event(10);
+    assert!(
+        coalescer.is_dirty(),
+        "Mutant killed: Events within active window mark state dirty"
+    );
+
+    // At window expiration, on_debounced_run must report that trailing update is needed
+    let next = coalescer.on_debounced_run(25);
+    assert!(
+        next.is_some(),
+        "Mutant killed: Trailing delivery scheduled at window expiration when dirty"
+    );
+    assert_eq!(next, Some(50));
+    assert!(
+        !coalescer.is_dirty(),
+        "Mutant killed: on_debounced_run clears dirty flag"
+    );
+
+    // Next window expires with no new events -> returns None (idle)
+    assert_eq!(
+        coalescer.on_debounced_run(75),
+        None,
+        "Mutant killed: Idle when no new events arrived during trailing window"
+    );
 }
 
 #[test]
@@ -295,10 +349,10 @@ fn test_mutant_coalesce_widening() {
     let mut coalescer = EventCoalescer::default();
     assert_eq!(coalescer.current_window_ms(), 25);
 
-    // Event 1 at t=0ms -> schedules initial 25ms window
+    // Event 1 at t=0ms -> schedules initial 25ms window and delivers leading edge
     assert_eq!(
         coalescer.handle_event(0),
-        CoalesceAction::ScheduleDebounce(25)
+        CoalesceAction::DeliverLeadingAndSchedule(25)
     );
     assert_eq!(coalescer.current_window_ms(), 25);
 
@@ -388,7 +442,7 @@ fn test_mutant_coalesce_reset() {
     );
     assert_eq!(
         action,
-        CoalesceAction::ScheduleDebounce(25),
+        CoalesceAction::DeliverLeadingAndSchedule(25),
         "Mutant killed: initial debounce after quiet reset is base 25ms"
     );
 }
@@ -397,10 +451,10 @@ fn test_mutant_coalesce_reset() {
 fn test_coalesce_final_state_delivery_logic() {
     let mut coalescer = EventCoalescer::default();
 
-    // Event 1 at t=0
+    // Event 1 at t=0 (leading edge)
     assert_eq!(
         coalescer.handle_event(0),
-        CoalesceAction::ScheduleDebounce(25)
+        CoalesceAction::DeliverLeadingAndSchedule(25)
     );
     assert!(coalescer.is_scheduled());
     assert!(!coalescer.is_dirty());
@@ -431,7 +485,7 @@ fn test_event_coalescer_timing_and_reset() {
     // Event at t=100ms
     assert_eq!(
         coalescer.handle_event(100),
-        CoalesceAction::ScheduleDebounce(25)
+        CoalesceAction::DeliverLeadingAndSchedule(25)
     );
     assert_eq!(coalescer.last_event_ms(), Some(100));
 
