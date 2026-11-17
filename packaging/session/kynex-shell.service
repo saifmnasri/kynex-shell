@@ -1,0 +1,34 @@
+[Unit]
+Description=KynexOS Desktop Shell
+Documentation=https://github.com/saifmnasri/kynex-shell
+PartOf=graphical-session.target
+After=graphical-session.target
+Wants=kynex-daemon.service
+After=kynex-daemon.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kynex-shell
+Restart=on-failure
+RestartSec=1s
+
+# Environment configuration
+Environment=QT_QPA_PLATFORM=wayland
+Environment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+Environment=KYNEX_STYLE_DIR=/usr/share/kynex/styles/default
+Environment=KYNEX_QML_IMPORT_DIR=/usr/share/kynex/qml
+
+# Sandboxing and Security Hardening (Effective for unprivileged systemd user units)
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+KeyringMode=private
+
+[Install]
+WantedBy=kynex-session.target

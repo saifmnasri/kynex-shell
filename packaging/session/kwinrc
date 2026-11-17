@@ -1,0 +1,17 @@
+# Minimal KWin defaults for Kynex Shell session
+[Desktops]
+Number=1
+Rows=1
+
+[Windows]
+BorderlessMaximizedWindows=true
+
+# KWin Scripts enabled for Kynex Shell session
+[Plugins]
+kynex-windowsEnabled=true
+kynex-launcherEnabled=true
+
+# Optional Modifier-Only Shortcut Experiment (ADR-009 / ADR-017)
+# Note: Inactive in KWin 6.6 without kglobalacceld; Meta+Space remains primary shortcut.
+[ModifierOnlyShortcuts]
+Meta=org.kynexos.Daemon,/org/kynexos/Daemon/Shell,org.kynexos.Daemon.ShellFeed1,LauncherShortcut

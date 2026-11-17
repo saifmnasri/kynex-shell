@@ -1,0 +1,8 @@
+[Unit]
+Description=Kynex Desktop Session
+Documentation=https://github.com/saifmnasri/kynex-shell
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target
+Wants=kynex-daemon.service kynex-shell.service plasma-kglobalaccel.service
+After=kynex-daemon.service kynex-shell.service plasma-kglobalaccel.service
