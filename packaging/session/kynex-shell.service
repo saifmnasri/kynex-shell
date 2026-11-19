@@ -5,12 +5,16 @@ PartOf=graphical-session.target
 After=graphical-session.target
 Wants=kynex-daemon.service
 After=kynex-daemon.service
+StartLimitIntervalSec=30s
+StartLimitBurst=5
 
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/kynex-shell
 Restart=on-failure
 RestartSec=1s
+RestartSteps=4
+RestartMaxDelaySec=16s
 
 # Environment configuration
 Environment=QT_QPA_PLATFORM=wayland
@@ -21,7 +25,7 @@ Environment=KYNEX_QML_IMPORT_DIR=/usr/share/kynex/qml
 # Sandboxing and Security Hardening (Effective for unprivileged systemd user units)
 NoNewPrivileges=yes
 RestrictAddressFamilies=AF_UNIX
-SystemCallFilter=@system-service
+SystemCallFilter=~@mount @swap @reboot @module @raw-io @cpu-emulation @obsolete
 SystemCallArchitectures=native
 RestrictRealtime=yes
 RestrictNamespaces=yes

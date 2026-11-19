@@ -83,3 +83,4 @@ while [[ -n "$cur" && "$cur" != "${DESTDIR:-/}" && "$cur" != "${DESTDIR}" && "$c
 done
 
 echo "Uninstallation complete."
+echo "NOTE: Run 'sudo dconf update' to refresh the dconf profile database."

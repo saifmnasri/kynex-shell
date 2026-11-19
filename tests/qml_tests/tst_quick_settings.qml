@@ -248,5 +248,40 @@ Item {
             rtlQs.destroy();
             LayoutHelper.setRtl(false);
         }
+
+        function test_undefined_models_null_safe() {
+            let comp = Qt.createComponent("../../styles/default/QuickSettings.qml");
+            let uninitAudio = Qt.createQmlObject("import Kynex.Shell; AudioModel {}", root);
+            let uninitNotif = Qt.createQmlObject("import Kynex.Shell; NotificationModel {}", root);
+            let uninitNet = Qt.createQmlObject("import Kynex.Shell; NetworkModel {}", root);
+            let uninitPower = Qt.createQmlObject("import Kynex.Shell; PowerModel {}", root);
+
+            let uninitQs = comp.createObject(root, {
+                "audioModel": uninitAudio,
+                "notificationModel": uninitNotif,
+                "networkModel": uninitNet,
+                "powerModel": uninitPower,
+                "isOpen": true
+            });
+            verify(uninitQs !== null, "QuickSettings should instantiate with uninitialized models");
+            tryVerify(function() { return uninitQs.visible; });
+
+            // Also test with completely null models
+            let nullQs = comp.createObject(root, {
+                "audioModel": null,
+                "notificationModel": null,
+                "networkModel": null,
+                "powerModel": null,
+                "isOpen": true
+            });
+            verify(nullQs !== null, "QuickSettings should instantiate with null models");
+
+            uninitQs.destroy();
+            nullQs.destroy();
+            uninitAudio.destroy();
+            uninitNotif.destroy();
+            uninitNet.destroy();
+            uninitPower.destroy();
+        }
     }
 }

@@ -49,9 +49,9 @@ LayerSurface {
     readonly property alias networkText: networkText
     readonly property alias statusFocusScope: statusFocusScope
     readonly property alias volumeStatusIcon: volumeStatusIcon
-    readonly property string networkTooltipText: networkModel.connected
+    readonly property string networkTooltipText: (networkModel && networkModel.connected)
         ? (networkModel.wifi
-            ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
+            ? ("Wi-Fi: " + (networkModel.ssid && networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + (networkModel.strength || 0) + "%)")
             : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
         : "Network Disconnected"
 
@@ -627,7 +627,7 @@ LayerSurface {
                     Text {
                         id: networkText
                         visible: networkModel.connected
-                        text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
+                        text: networkModel.wifi ? ((networkModel.ssid && networkModel.ssid.length > 0) ? networkModel.ssid : ((networkModel.strength || 0) + "%")) : (networkModel.ethernet ? "Ethernet" : "Connected")
                         textFormat: Text.PlainText
                         color: networkModel.weak ? Style.colors.warning : Style.colors.text
                         font.family: Style.typography.family

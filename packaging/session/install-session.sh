@@ -32,13 +32,13 @@ for arg in "$@"; do
   esac
 done
 
-# Prerequisite check: kglobalacceld system package
-if ! dpkg-query -W -f='${Status}' kglobalacceld 2>/dev/null | grep -q "ok installed"; then
+# Prerequisite check: pulseaudio-utils (pactl)
+if ! command -v pactl >/dev/null 2>&1 && ! dpkg-query -W -f='${Status}' pulseaudio-utils 2>/dev/null | grep -q "ok installed"; then
   if [[ "$FORCE" -eq 1 ]]; then
-    echo "Warning: Required package 'kglobalacceld' is not installed, continuing due to --force" >&2
+    echo "Warning: Required command 'pactl' (pulseaudio-utils) is not installed, continuing due to --force" >&2
   else
-    echo "ERROR: Required package 'kglobalacceld' is not installed." >&2
-    echo "Please install it first: sudo apt install kglobalacceld" >&2
+    echo "ERROR: Required package 'pulseaudio-utils' (providing pactl) is not installed." >&2
+    echo "Please install it first: sudo apt install pulseaudio-utils" >&2
     echo "Or pass --force to bypass this prerequisite check." >&2
     exit 1
   fi
@@ -134,6 +134,10 @@ copy_file "$SCRIPT_DIR/kynex-shell.service" "${DESTDIR}/usr/lib/systemd/user/kyn
 copy_file "$SCRIPT_DIR/kynex-portals.conf" "${DESTDIR}/usr/share/xdg-desktop-portal/kynex-portals.conf" 0644
 copy_file "$SCRIPT_DIR/kwinrc" "${DESTDIR}/etc/xdg/kwinrc" 0644
 
+# 6b. Dconf Profile and Defaults
+copy_file "$SCRIPT_DIR/dconf/kynex" "${DESTDIR}/etc/dconf/profile/kynex" 0644
+copy_file "$SCRIPT_DIR/dconf/00-kynex" "${DESTDIR}/etc/dconf/db/kynex.d/00-kynex" 0644
+
 # 7. Style Pack Assets & Bundled Fonts
 copy_tree "$ROOT_DIR/styles/default" "${DESTDIR}/usr/share/kynex/styles/default"
 copy_tree "$ROOT_DIR/assets/fonts" "${DESTDIR}/usr/share/kynex/fonts"
@@ -156,3 +160,4 @@ else
 fi
 
 echo "Installation complete."
+echo "NOTE: Run 'sudo dconf update' to compile the Kynex dconf profile database."

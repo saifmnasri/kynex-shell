@@ -248,8 +248,12 @@ if [[ "$PROBE_FAILURES" -ne 0 ]]; then
 fi
 echo "All 21 individual directive probes evaluated cleanly."
 
-echo "=== 2. Auditing Packaged Unit: systemd/kynex-daemon.service ==="
-PACKAGED_UNIT="$ROOT_DIR/systemd/kynex-daemon.service"
+echo "=== 2. Auditing Packaged Units: systemd/kynex-daemon.service & packaging/session/kynex-shell.service ==="
+PACKAGED_UNITS=(
+  "$ROOT_DIR/systemd/kynex-daemon.service"
+  "$ROOT_DIR/packaging/session/kynex-daemon.service"
+  "$ROOT_DIR/packaging/session/kynex-shell.service"
+)
 
 INEFFECTIVE_DIRECTIVES=(
   "ProtectSystem"
@@ -265,20 +269,39 @@ INEFFECTIVE_DIRECTIVES=(
 )
 
 FOUND_INEFFECTIVE=0
-for ineff in "${INEFFECTIVE_DIRECTIVES[@]}"; do
-  if grep -E "^[[:space:]]*${ineff}=" "$PACKAGED_UNIT"; then
-    echo "ERROR: Packaged unit contains ineffective directive: $ineff" >&2
-    FOUND_INEFFECTIVE=1
-  fi
+for unit in "${PACKAGED_UNITS[@]}"; do
+  for ineff in "${INEFFECTIVE_DIRECTIVES[@]}"; do
+    if grep -E "^[[:space:]]*${ineff}=" "$unit"; then
+      echo "ERROR: Packaged unit $unit contains ineffective directive: $ineff" >&2
+      FOUND_INEFFECTIVE=1
+    fi
+  done
 done
 
 if [[ "$FOUND_INEFFECTIVE" -ne 0 ]]; then
-  echo "FAIL: Packaged unit contains ineffective directives. Remove them from $PACKAGED_UNIT." >&2
+  echo "FAIL: Packaged unit contains ineffective directives." >&2
   exit 1
 fi
-echo "Packaged unit contains ONLY empirically effective directives."
+echo "Packaged units contain ONLY empirically effective directives."
+
+# Verify shell-specific hardening and backoff directives
+SHELL_UNIT="$ROOT_DIR/packaging/session/kynex-shell.service"
+if ! grep -q 'SystemCallFilter=~@mount @swap @reboot @module @raw-io @cpu-emulation @obsolete' "$SHELL_UNIT"; then
+  echo "ERROR: kynex-shell.service must use deny-list SystemCallFilter" >&2
+  exit 1
+fi
+if ! grep -q 'RestartSteps=4' "$SHELL_UNIT" || ! grep -q 'RestartMaxDelaySec=16s' "$SHELL_UNIT"; then
+  echo "ERROR: kynex-shell.service missing RestartSteps / RestartMaxDelaySec backoff directives" >&2
+  exit 1
+fi
+if ! grep -q 'StartLimitIntervalSec=30s' "$SHELL_UNIT" || ! grep -q 'StartLimitBurst=5' "$SHELL_UNIT"; then
+  echo "ERROR: kynex-shell.service missing StartLimitIntervalSec / StartLimitBurst rate limit directives" >&2
+  exit 1
+fi
+echo "Shell unit specific hardening and crash-loop backoff directives verified."
 
 echo "=== 3. Deploying and Testing Packaged Unit ==="
+PACKAGED_UNIT="$ROOT_DIR/packaging/session/kynex-daemon.service"
 DAEMON_BIN="${ROOT_DIR}/target/debug/kynex-daemon"
 if [[ ! -x "$DAEMON_BIN" ]]; then
   echo "Building kynex-daemon..."

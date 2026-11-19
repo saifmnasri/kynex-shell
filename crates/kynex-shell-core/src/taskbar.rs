@@ -10,6 +10,7 @@ use crate::matching::{match_window_to_app, strip_desktop_suffix, AppCandidate};
 
 /// Representation of an application item on the shell taskbar.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct TaskbarEntry {
     /// Desktop entry ID (e.g. `org.gnome.Terminal.desktop`).
     pub app_id: String,
@@ -25,6 +26,8 @@ pub struct TaskbarEntry {
     pub is_running: bool,
     /// Whether the active/focused window belongs to this application.
     pub is_active: bool,
+    /// Whether all open windows of this application are minimized.
+    pub is_minimized: bool,
     /// Number of open windows belonging to this application.
     pub window_count: usize,
     /// List of window IDs belonging to this application.
@@ -138,10 +141,11 @@ impl TaskbarCore {
             let matching_windows = app_windows.remove(pin_id.as_str()).unwrap_or_default();
             let is_running = !matching_windows.is_empty();
             let is_active = matching_windows.iter().any(|w| w.active);
+            let is_minimized = is_running && matching_windows.iter().all(|w| w.minimized);
             let window_ids = matching_windows.iter().map(|w| w.id.clone()).collect();
             let window_count = matching_windows.len();
 
-            let (name, icon_name) = self.resolve_metadata(pin_id);
+            let (name, icon_name) = self.resolve_metadata(pin_id, &matching_windows);
             let letter_badge = compute_letter_badge(&name, pin_id);
 
             computed.push(TaskbarEntry {
@@ -152,6 +156,7 @@ impl TaskbarCore {
                 is_pinned: true,
                 is_running,
                 is_active,
+                is_minimized,
                 window_count,
                 window_ids,
             });
@@ -161,10 +166,12 @@ impl TaskbarCore {
         for app_id in unpinned_running_order {
             if let Some(matching_windows) = app_windows.remove(app_id.as_str()) {
                 let is_active = matching_windows.iter().any(|w| w.active);
+                let is_minimized =
+                    !matching_windows.is_empty() && matching_windows.iter().all(|w| w.minimized);
                 let window_ids = matching_windows.iter().map(|w| w.id.clone()).collect();
                 let window_count = matching_windows.len();
 
-                let (name, icon_name) = self.resolve_metadata(&app_id);
+                let (name, icon_name) = self.resolve_metadata(&app_id, &matching_windows);
                 let letter_badge = compute_letter_badge(&name, &app_id);
 
                 computed.push(TaskbarEntry {
@@ -175,6 +182,7 @@ impl TaskbarCore {
                     is_pinned: false,
                     is_running: true,
                     is_active,
+                    is_minimized,
                     window_count,
                     window_ids,
                 });
@@ -199,7 +207,9 @@ impl TaskbarCore {
 
         if entry.window_count == 1 {
             let win_id = entry.window_ids[0].clone();
-            if entry.is_active {
+            if entry.is_minimized {
+                TaskbarAction::Activate { window_id: win_id }
+            } else if entry.is_active {
                 TaskbarAction::Minimize { window_id: win_id }
             } else {
                 TaskbarAction::Activate { window_id: win_id }
@@ -248,12 +258,23 @@ impl TaskbarCore {
         }
     }
 
-    fn resolve_metadata(&self, app_id: &str) -> (String, String) {
+    fn resolve_metadata(&self, app_id: &str, matching_windows: &[&WindowItem]) -> (String, String) {
         let name = if let Some(n) = self.candidate_names.get(app_id) {
             sanitize_display_text(n, MAX_NAME_LEN)
         } else {
-            let fallback = strip_desktop_suffix(app_id);
-            sanitize_display_text(fallback, MAX_NAME_LEN)
+            let window_title = matching_windows
+                .iter()
+                .find(|w| w.active)
+                .or_else(|| matching_windows.first())
+                .map(|w| w.title.as_str())
+                .filter(|t| !t.trim().is_empty());
+
+            if let Some(t) = window_title {
+                sanitize_display_text(t, MAX_NAME_LEN)
+            } else {
+                let fallback = strip_desktop_suffix(app_id);
+                sanitize_display_text(fallback, MAX_NAME_LEN)
+            }
         };
 
         let icon_name = self.candidates.iter().find(|c| c.id == app_id).map_or_else(

@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -17,10 +17,30 @@ use tracing::{debug, info, warn};
 use zbus::fdo::DBusProxy;
 use zbus::message::Header;
 use zbus::object_server::SignalEmitter;
+use zbus::zvariant::Variant;
 use zbus::{interface, Connection};
+
+/// D-Bus proxy for `org.freedesktop.systemd1.Manager` to start transient units.
+#[zbus::proxy(
+    default_service = "org.freedesktop.systemd1",
+    default_path = "/org/freedesktop/systemd1",
+    interface = "org.freedesktop.systemd1.Manager"
+)]
+pub trait Systemd1Manager {
+    /// Starts a transient unit through systemd.
+    fn start_transient_unit(
+        &self,
+        name: &str,
+        mode: &str,
+        properties: &[(&str, Variant<'_>)],
+        aux: &[(&str, &[(&str, Variant<'_>)])],
+    ) -> zbus::Result<zbus::OwnedObjectPath>;
+}
 
 /// Default maximum allowed launches per second daemon-wide.
 pub const LAUNCH_RATE_LIMIT_PER_SEC: u32 = 5;
+
+static LAUNCH_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 /// Rate limiting bucket for launch rate throttling.
 #[derive(Debug)]
@@ -223,6 +243,7 @@ impl AppsServer {
     }
 
     /// Spawns the application binary associated with desktop entry `id`.
+    #[allow(clippy::too_many_lines)]
     async fn launch(
         &self,
         id: String,
@@ -276,13 +297,106 @@ impl AppsServer {
         // Log ONLY the id, NEVER arguments
         info!("Apps1: launching application ID '{id}'");
 
-        let env_allowlist = build_clean_environment();
-        spawn_detached(
-            &argv,
-            &env_allowlist,
-            Arc::clone(&self.shared.tracked_children),
-        )
-        .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
+        let sanitized_id: String = id
+            .strip_suffix(".desktop")
+            .unwrap_or(&id)
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let counter = LAUNCH_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let now_nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
+        let rand_suffix = format!("{now_nanos:x}_{counter:x}_{}", std::process::id());
+        let unit_name = format!("app-kynex-{sanitized_id}-{rand_suffix}.service");
+
+        let systemd_conn = if let Ok(dbus) = DBusProxy::new(conn).await {
+            let bus_name: Result<zbus::names::BusName<'_>, _> =
+                "org.freedesktop.systemd1".try_into();
+            if let Ok(name) = bus_name {
+                if dbus.name_has_owner(name.as_ref()).await.unwrap_or(false) {
+                    Some(conn.clone())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let systemd_conn = match systemd_conn {
+            Some(c) => c,
+            None => {
+                if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+                    let user_bus_path = format!("{runtime_dir}/bus");
+                    if std::path::Path::new(&user_bus_path).exists() {
+                        let addr = format!("unix:path={user_bus_path}");
+                        let builder = zbus::connection::Builder::address(addr.as_str());
+                        builder.build().await.unwrap_or_else(|_| conn.clone())
+                    } else {
+                        conn.clone()
+                    }
+                } else {
+                    conn.clone()
+                }
+            }
+        };
+
+        let systemd_proxy = Systemd1ManagerProxy::new(&systemd_conn).await;
+        let launched_via_systemd = match systemd_proxy {
+            Ok(ref proxy) => {
+                // Systemd evaluates '$' for variable substitution in ExecStart;
+                // escape '$' as '$$' so argv metacharacters are passed literally.
+                let systemd_argv: Vec<String> =
+                    argv.iter().map(|arg| arg.replace('$', "$$")).collect();
+                let exec_tuple: Vec<(String, Vec<String>, bool)> =
+                    vec![(argv[0].clone(), systemd_argv, false)];
+                let exec_var = Variant::from(exec_tuple);
+                let desc = format!("Application {id}");
+                let props = [
+                    ("Description", Variant::from(desc.as_str())),
+                    ("Slice", Variant::from("app.slice")),
+                    ("Type", Variant::from("exec")),
+                    ("CollectMode", Variant::from("inactive-or-failed")),
+                    ("ExecStart", exec_var),
+                ];
+                match proxy
+                    .start_transient_unit(&unit_name, "replace", &props, &[])
+                    .await
+                {
+                    Ok(job) => {
+                        debug!("Apps1: started transient unit '{unit_name}' (job: {job})");
+                        true
+                    }
+                    Err(e) => {
+                        warn!("Apps1: StartTransientUnit failed ({e}); falling back to detached spawn");
+                        false
+                    }
+                }
+            }
+            Err(e) => {
+                debug!("Apps1: systemd manager proxy unavailable ({e}); falling back to detached spawn");
+                false
+            }
+        };
+
+        if !launched_via_systemd {
+            let env_allowlist = build_clean_environment();
+            spawn_detached(
+                &argv,
+                &env_allowlist,
+                Arc::clone(&self.shared.tracked_children),
+            )
+            .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
+        }
 
         Ok(())
     }

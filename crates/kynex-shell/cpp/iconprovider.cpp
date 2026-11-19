@@ -210,7 +210,8 @@ void KynexIconResponse::run()
 
     bool found = kynex_resolve_icon(nameUtf8.constData(), static_cast<uint32_t>(size), static_cast<uint32_t>(scale), pathBuf, sizeof(pathBuf));
     if (!found || pathBuf[0] == '\0') {
-        m_error = QStringLiteral("Icon not found");
+        // Missing icons: do not set m_error so Qt Quick does not print
+        // "QML Image: Icon not found" warning to stderr. Fallback badge in QML will show cleanly.
         Q_EMIT finished();
         return;
     }
@@ -220,7 +221,7 @@ void KynexIconResponse::run()
     m_image = kynex_decode_icon(resolvedPath, targetSize, scale);
 
     if (m_image.isNull()) {
-        m_error = QStringLiteral("Failed to decode icon image");
+        // Do not set m_error to avoid stderr log spam. Fallback badge in QML will show cleanly.
         Q_EMIT finished();
         return;
     }

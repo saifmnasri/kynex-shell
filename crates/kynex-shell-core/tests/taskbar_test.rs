@@ -38,7 +38,7 @@ fn test_taskbar_pinned_and_running_ordering() {
         "Files".to_string(),
     );
 
-    core.set_candidates(candidates, names);
+    core.set_candidates(candidates.clone(), names.clone());
     core.set_pinned_ids(vec![
         "firefox.desktop".to_string(),
         "org.gnome.Terminal.desktop".to_string(),
@@ -383,4 +383,223 @@ fn test_launcher_ctrl_p_pin_toggle() {
     let pinned = launcher.toggle_pin_selected();
     assert_eq!(pinned, Some(("other.app.desktop".to_string(), true)));
     assert!(launcher.items()[1].is_pinned);
+}
+
+#[test]
+fn test_taskbar_minimized_state_and_restoration_click() {
+    let mut core = TaskbarCore::new();
+    let candidates = vec![AppCandidate::new(
+        "org.gnome.Calculator.desktop",
+        Some("org.gnome.Calculator"),
+        "org.gnome.Calculator",
+    )];
+    let mut names = HashMap::new();
+    names.insert(
+        "org.gnome.Calculator.desktop".to_string(),
+        "Calculator".to_string(),
+    );
+    core.set_candidates(candidates.clone(), names.clone());
+
+    // Single window, active and NOT minimized
+    let win = WindowItem {
+        id: "calc-1".to_string(),
+        title: "Calculator".to_string(),
+        app_id: "org.gnome.Calculator".to_string(),
+        minimized: false,
+        active: true,
+    };
+    core.set_windows(vec![win.clone()]);
+    assert_eq!(core.entries().len(), 1);
+    assert!(!core.entries()[0].is_minimized);
+    assert!(core.entries()[0].is_active);
+
+    // Clicking active window should MINIMIZE it
+    let action = core.handle_click(0);
+    assert_eq!(
+        action,
+        TaskbarAction::Minimize {
+            window_id: "calc-1".to_string()
+        }
+    );
+
+    // Window minimized, NOT active
+    let win_min = WindowItem {
+        id: "calc-1".to_string(),
+        title: "Calculator".to_string(),
+        app_id: "org.gnome.Calculator".to_string(),
+        minimized: true,
+        active: false,
+    };
+    core.set_windows(vec![win_min]);
+    assert!(core.entries()[0].is_minimized);
+    assert!(!core.entries()[0].is_active);
+
+    // Clicking minimized window must ACTIVATE (restore) it
+    let action = core.handle_click(0);
+    assert_eq!(
+        action,
+        TaskbarAction::Activate {
+            window_id: "calc-1".to_string()
+        }
+    );
+
+    // Inactive window that is NOT minimized: is_minimized must be false!
+    let win_bg = WindowItem {
+        id: "calc-1".to_string(),
+        title: "Calculator".to_string(),
+        app_id: "org.gnome.Calculator".to_string(),
+        minimized: false,
+        active: false,
+    };
+    core.set_windows(vec![win_bg]);
+    assert!(!core.entries()[0].is_minimized);
+    assert!(!core.entries()[0].is_active);
+
+    // Clicking background non-minimized window activates it
+    let action = core.handle_click(0);
+    assert_eq!(
+        action,
+        TaskbarAction::Activate {
+            window_id: "calc-1".to_string()
+        }
+    );
+}
+
+#[test]
+fn test_taskbar_unindexed_app_title_and_badge_fallback() {
+    let mut core = TaskbarCore::new();
+    // No candidates or names registered (unindexed)
+
+    let win = WindowItem {
+        id: "{d58df79b-1e65-4cf1-8cf1-df43af2ae21b}".to_string(),
+        title: "Ubuntu".to_string(),
+        app_id: "apport-gtk".to_string(),
+        minimized: false,
+        active: true,
+    };
+    core.set_windows(vec![win]);
+
+    assert_eq!(core.entries().len(), 1);
+    let entry = &core.entries()[0];
+    assert_eq!(entry.app_id, "apport-gtk");
+    assert_eq!(
+        entry.name, "Ubuntu",
+        "Unindexed window should use window title as name"
+    );
+    assert_eq!(
+        entry.letter_badge, "U",
+        "Letter badge must derive from display name 'Ubuntu'"
+    );
+    assert!(!entry.is_minimized);
+    assert!(entry.is_active);
+    assert_eq!(entry.window_count, 1);
+    assert_eq!(
+        entry.window_ids,
+        vec!["{d58df79b-1e65-4cf1-8cf1-df43af2ae21b}"]
+    );
+}
+
+#[test]
+fn test_taskbar_captured_live_session_payloads_and_restarts() {
+    let mut core = TaskbarCore::new();
+    let candidates = vec![
+        AppCandidate::new(
+            "org.gnome.Calculator.desktop",
+            Some("org.gnome.Calculator"),
+            "org.gnome.Calculator",
+        ),
+        AppCandidate::new("firefox.desktop", None::<String>, "firefox"),
+    ];
+    let mut names = HashMap::new();
+    names.insert(
+        "org.gnome.Calculator.desktop".to_string(),
+        "Calculator".to_string(),
+    );
+    names.insert("firefox.desktop".to_string(), "Firefox".to_string());
+    core.set_candidates(candidates.clone(), names.clone());
+    core.set_pinned_ids(vec!["firefox.desktop".to_string()]);
+
+    // Sequence 1: Initial state (Firefox pinned, 0 open windows)
+    assert_eq!(core.entries().len(), 1);
+    assert_eq!(core.entries()[0].app_id, "firefox.desktop");
+    assert!(!core.entries()[0].is_running);
+
+    // Sequence 2: Added apport-gtk from live-session-1
+    let apport = WindowItem {
+        id: "{d58df79b-1e65-4cf1-8cf1-df43af2ae21b}".to_string(),
+        title: "Ubuntu".to_string(),
+        app_id: "apport-gtk".to_string(),
+        minimized: false,
+        active: true,
+    };
+    core.set_windows(vec![apport.clone()]);
+    assert_eq!(core.entries().len(), 2);
+    assert_eq!(core.entries()[1].app_id, "apport-gtk");
+    assert_eq!(core.entries()[1].name, "Ubuntu");
+    assert_eq!(core.entries()[1].letter_badge, "U");
+
+    // Sequence 3: Added Calculator from live-session-1 (becomes active, apport inactive)
+    let calc = WindowItem {
+        id: "{00de40a7-b66c-4c26-936f-8e694c56c4a5}".to_string(),
+        title: "Calculator".to_string(),
+        app_id: "org.gnome.Calculator".to_string(),
+        minimized: false,
+        active: true,
+    };
+    let mut apport_inactive = apport.clone();
+    apport_inactive.active = false;
+    core.set_windows(vec![apport_inactive, calc.clone()]);
+
+    assert_eq!(core.entries().len(), 3);
+    assert_eq!(core.entries()[2].app_id, "org.gnome.Calculator.desktop");
+    assert!(core.entries()[2].is_active);
+    assert!(!core.entries()[2].is_minimized);
+
+    // Sequence 4: Calculator minimized (Changed signal in live-session-1)
+    let mut calc_min = calc.clone();
+    calc_min.minimized = true;
+    calc_min.active = false;
+    core.set_windows(vec![calc_min]);
+    // apport was closed, only calc is open and minimized
+    assert_eq!(core.entries().len(), 2); // 1 pinned + 1 running
+    assert!(core.entries()[1].is_minimized);
+    assert!(!core.entries()[1].is_active);
+
+    // Clicking minimized calculator restores and activates it
+    let act = core.handle_click(1);
+    assert_eq!(
+        act,
+        TaskbarAction::Activate {
+            window_id: "{00de40a7-b66c-4c26-936f-8e694c56c4a5}".to_string()
+        }
+    );
+
+    // Sequence 5: Daemon restart simulation (windows cleared then restored)
+    core.set_windows(vec![]);
+    assert_eq!(core.entries().len(), 1); // Only pinned remains
+    assert!(!core.entries()[0].is_running);
+
+    // Daemon recovers and repopulates windows list
+    core.set_windows(vec![calc]);
+    assert_eq!(core.entries().len(), 2);
+    assert!(core.entries()[1].is_running);
+
+    // Sequence 6: Shell restart simulation while windows exist
+    let mut fresh_shell_core = TaskbarCore::new();
+    fresh_shell_core.set_candidates(candidates.clone(), names.clone());
+    fresh_shell_core.set_pinned_ids(vec!["firefox.desktop".to_string()]);
+    fresh_shell_core.set_windows(vec![WindowItem {
+        id: "{00de40a7-b66c-4c26-936f-8e694c56c4a5}".to_string(),
+        title: "Calculator".to_string(),
+        app_id: "org.gnome.Calculator".to_string(),
+        minimized: false,
+        active: true,
+    }]);
+    assert_eq!(fresh_shell_core.entries().len(), 2);
+    assert_eq!(
+        fresh_shell_core.entries()[1].app_id,
+        "org.gnome.Calculator.desktop"
+    );
+    assert!(fresh_shell_core.entries()[1].is_running);
+    assert!(fresh_shell_core.entries()[1].is_active);
 }

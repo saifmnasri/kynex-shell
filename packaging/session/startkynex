@@ -9,6 +9,7 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
 
   # Import runtime Wayland display and display variables into systemd user manager and D-Bus
   systemctl --user import-environment \
+    DCONF_PROFILE \
     WAYLAND_DISPLAY \
     DISPLAY \
     XDG_CURRENT_DESKTOP \
@@ -18,6 +19,7 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
     QT_WAYLAND_DISABLE_WINDOWDECORATION || true
 
   dbus-update-activation-environment --systemd \
+    DCONF_PROFILE \
     WAYLAND_DISPLAY \
     DISPLAY \
     XDG_CURRENT_DESKTOP \
@@ -104,9 +106,9 @@ if [[ "${1:-}" == "--session-supervisor" ]]; then
     done
 
     if [[ "$KGLOBALACCEL_ACTIVE" -eq 1 ]]; then
-      echo "startkynex [supervisor]: Global shortcuts daemon 'org.kde.kglobalaccel' is active on session bus." >&2
+      echo "startkynex [supervisor]: Global shortcuts service 'org.kde.kglobalaccel' is active on session bus." >&2
     else
-      echo "startkynex [supervisor]: WARNING: 'org.kde.kglobalaccel' did not appear on session bus within 5 seconds. Global shortcuts (such as Meta+Space) may not function until kglobalacceld is started." >&2
+      echo "startkynex [supervisor]: WARNING: 'org.kde.kglobalaccel' is not owned on session bus within 5 seconds. Global shortcuts (such as Meta+Space) may not function." >&2
     fi
   ) &
   SHORTCUT_CHECK_PID=$!
@@ -152,6 +154,7 @@ for bin in kynex-daemon kynex-shell; do
 done
 
 # Set authoritative desktop identity and Qt Wayland flags
+export DCONF_PROFILE="kynex"
 export XDG_CURRENT_DESKTOP="Kynex"
 export XDG_SESSION_DESKTOP="Kynex"
 export XDG_SESSION_TYPE="wayland"
@@ -160,6 +163,7 @@ export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
 
 # Synchronize base environment with D-Bus activation and systemd user manager
 dbus-update-activation-environment --systemd \
+  DCONF_PROFILE \
   XDG_CURRENT_DESKTOP \
   XDG_SESSION_DESKTOP \
   XDG_SESSION_TYPE \

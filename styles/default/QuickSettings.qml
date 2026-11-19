@@ -187,11 +187,11 @@ LayerSurface {
 
                         Text {
                             id: volumeIcon
-                            text: (root.audioModel && root.audioModel.muted) ? "🔇" : ((root.audioModel && root.audioModel.volume === 0) ? "🔈" : "🔊")
+                            text: (root.audioModel && Boolean(root.audioModel.muted)) ? "🔇" : ((root.audioModel && root.audioModel.volume === 0) ? "🔈" : "🔊")
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
-                            color: (root.audioModel && root.audioModel.present) ? Style.colors.text : Style.colors.textMuted
+                            color: (root.audioModel && Boolean(root.audioModel.present)) ? Style.colors.text : Style.colors.textMuted
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -201,7 +201,7 @@ LayerSurface {
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
                             font.bold: true
-                            color: (root.audioModel && root.audioModel.present) ? Style.colors.text : Style.colors.textMuted
+                            color: (root.audioModel && Boolean(root.audioModel.present)) ? Style.colors.text : Style.colors.textMuted
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -213,7 +213,7 @@ LayerSurface {
 
                         Text {
                             id: volumePercentText
-                            text: (root.audioModel && root.audioModel.present) ? (root.audioModel.volume + "%") : "Unavailable"
+                            text: (root.audioModel && Boolean(root.audioModel.present)) ? ((root.audioModel.volume || 0) + "%") : "Unavailable"
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
@@ -226,8 +226,8 @@ LayerSurface {
                     KynexSlider {
                         id: volumeSlider
                         width: parent.width
-                        enabled: root.audioModel ? root.audioModel.present : false
-                        value: (root.audioModel && root.audioModel.present) ? (root.audioModel.volume / Number("100")) : 0
+                        enabled: Boolean(root.audioModel && root.audioModel.present)
+                        value: (root.audioModel && Boolean(root.audioModel.present)) ? ((root.audioModel.volume || 0) / Number("100")) : 0
                         Accessible.name: "Master Volume Slider"
 
                         onMoved: function(val) {
@@ -248,8 +248,8 @@ LayerSurface {
                         KynexSwitch {
                             id: muteSwitch
                             text: "Mute"
-                            enabled: root.audioModel ? root.audioModel.present : false
-                            checked: (root.audioModel && root.audioModel.present) ? root.audioModel.muted : false
+                            enabled: Boolean(root.audioModel && root.audioModel.present)
+                            checked: Boolean(root.audioModel && root.audioModel.present && root.audioModel.muted)
                             Accessible.name: "Audio Mute Switch"
 
                             onToggled: function(c) {
@@ -269,8 +269,8 @@ LayerSurface {
 
                         Text {
                             id: deviceNameLabel
-                            visible: root.audioModel && root.audioModel.present && root.audioModel.deviceName.length > 0
-                            text: root.audioModel ? root.audioModel.deviceName : ""
+                            visible: Boolean(root.audioModel && root.audioModel.present && root.audioModel.deviceName && root.audioModel.deviceName.length > 0)
+                            text: (root.audioModel && root.audioModel.deviceName) ? root.audioModel.deviceName : ""
                             textFormat: Text.PlainText
                             elide: Text.ElideRight
                             width: parent.width - muteSwitch.width - Style.spacing.medium
@@ -298,7 +298,7 @@ LayerSurface {
                     KynexSwitch {
                         id: dndSwitch
                         text: "Do Not Disturb"
-                        checked: root.notificationModel ? root.notificationModel.doNotDisturb : false
+                        checked: Boolean(root.notificationModel && root.notificationModel.doNotDisturb)
                         Accessible.name: "Do Not Disturb Switch"
 
                         onToggled: function(c) {
@@ -332,11 +332,11 @@ LayerSurface {
                         spacing: Style.spacing.small
 
                         Text {
-                            text: (root.networkModel && root.networkModel.connected) ? ((root.networkModel && root.networkModel.wifi) ? "📶" : ((root.networkModel && root.networkModel.ethernet) ? "🌐" : "🔗")) : "🚫"
+                            text: (root.networkModel && Boolean(root.networkModel.connected)) ? ((root.networkModel && Boolean(root.networkModel.wifi)) ? "📶" : ((root.networkModel && Boolean(root.networkModel.ethernet)) ? "🌐" : "🔗")) : "🚫"
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
-                            color: (root.networkModel && root.networkModel.connected) ? ((root.networkModel && root.networkModel.weak) ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
+                            color: (root.networkModel && Boolean(root.networkModel.connected)) ? ((root.networkModel && Boolean(root.networkModel.weak)) ? Style.colors.warning : Style.colors.success) : Style.colors.textMuted
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -350,7 +350,9 @@ LayerSurface {
                                     return "Disconnected";
                                 }
                                 if (root.networkModel.wifi) {
-                                    return root.networkModel.ssid.length > 0 ? (root.networkModel.ssid + " (" + root.networkModel.strength + "%)") : (root.networkModel.strength + "%");
+                                    let ssid = root.networkModel.ssid || "";
+                                    let strength = root.networkModel.strength || 0;
+                                    return ssid.length > 0 ? (ssid + " (" + strength + "%)") : (strength + "%");
                                 }
                                 if (root.networkModel.ethernet) {
                                     return "Ethernet Connected";
@@ -360,7 +362,7 @@ LayerSurface {
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
-                            color: (root.networkModel && root.networkModel.weak) ? Style.colors.warning : Style.colors.text
+                            color: (root.networkModel && Boolean(root.networkModel.weak)) ? Style.colors.warning : Style.colors.text
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -372,11 +374,11 @@ LayerSurface {
                         spacing: Style.spacing.small
 
                         Text {
-                            text: (root.powerModel && root.powerModel.charging) ? "⚡" : "🔋"
+                            text: (root.powerModel && Boolean(root.powerModel.charging)) ? "⚡" : "🔋"
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
-                            color: (root.powerModel && root.powerModel.charging) ? Style.colors.success : ((root.powerModel && root.powerModel.low) ? Style.colors.warning : Style.colors.textMuted)
+                            color: (root.powerModel && Boolean(root.powerModel.charging)) ? Style.colors.success : ((root.powerModel && Boolean(root.powerModel.low)) ? Style.colors.warning : Style.colors.textMuted)
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -386,13 +388,13 @@ LayerSurface {
                                 if (!root.powerModel || !root.powerModel.present) {
                                     return "No Battery Detected";
                                 }
-                                let pct = Math.round(root.powerModel.percentage);
-                                return (root.powerModel.charging ? "Charging: " : "Battery: ") + pct + "%";
+                                let pct = Math.round(root.powerModel.percentage || 0);
+                                return (Boolean(root.powerModel.charging) ? "Charging: " : "Battery: ") + pct + "%";
                             }
                             textFormat: Text.PlainText
                             font.family: Style.typography.family
                             font.pixelSize: Style.typography.basePx
-                            color: (root.powerModel && root.powerModel.low) ? Style.colors.warning : Style.colors.text
+                            color: (root.powerModel && Boolean(root.powerModel.low)) ? Style.colors.warning : Style.colors.text
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

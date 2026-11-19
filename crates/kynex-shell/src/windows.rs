@@ -23,7 +23,6 @@ use kynex_shell_core::taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 use zbus::fdo::DBusProxy;
-use zbus::names::WellKnownName;
 
 /// Role ID for primary identifier (`app_id`).
 pub const ROLE_ID: i32 = 257;
@@ -150,6 +149,48 @@ pub struct WindowListModelRust {
     count: i32,
 }
 
+impl WindowListModelRust {
+    /// Returns role data for a given entry index.
+    #[must_use]
+    pub fn data(&self, row_idx: usize, role: i32) -> QVariant {
+        let entries = &self.entries;
+        if row_idx >= entries.len() {
+            return QVariant::default();
+        }
+
+        let item = &entries[row_idx];
+        match role {
+            ROLE_ID | ROLE_APP_ID => QVariant::from(&QString::from(&item.app_id)),
+            ROLE_TITLE => QVariant::from(&QString::from(&item.name)),
+            ROLE_MINIMIZED => QVariant::from(&item.is_minimized),
+            ROLE_ACTIVE => QVariant::from(&item.is_active),
+            ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
+            ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
+            ROLE_IS_PINNED => QVariant::from(&item.is_pinned),
+            ROLE_IS_RUNNING => QVariant::from(&item.is_running),
+            ROLE_WINDOW_COUNT => QVariant::from(&(i32::try_from(item.window_count).unwrap_or(0))),
+            _ => QVariant::default(),
+        }
+    }
+}
+
+/// Returns role names mapping for QML.
+#[must_use]
+pub fn create_window_role_names() -> QHash<QHashPair_i32_QByteArray> {
+    let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
+    roles.insert(ROLE_ID, QByteArray::from("id"));
+    roles.insert(ROLE_TITLE, QByteArray::from("title"));
+    roles.insert(ROLE_APP_ID, QByteArray::from("appId"));
+    roles.insert(ROLE_MINIMIZED, QByteArray::from("minimized"));
+    roles.insert(ROLE_ACTIVE, QByteArray::from("active"));
+    roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
+    roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
+    roles.insert(ROLE_IS_PINNED, QByteArray::from("isPinned"));
+    roles.insert(ROLE_IS_RUNNING, QByteArray::from("isRunning"));
+    roles.insert(ROLE_WINDOW_COUNT, QByteArray::from("windowCount"));
+    roles
+}
+
 impl qobject::WindowListModel {
     /// Initializes background listeners connecting to `kynex-daemon`.
     pub fn init(self: Pin<&mut Self>) {
@@ -173,41 +214,13 @@ impl qobject::WindowListModel {
             return QVariant::default();
         };
 
-        let entries = &self.rust().entries;
-        if row_idx >= entries.len() {
-            return QVariant::default();
-        }
-
-        let item = &entries[row_idx];
-        match role {
-            ROLE_ID | ROLE_APP_ID => QVariant::from(&QString::from(&item.app_id)),
-            ROLE_TITLE => QVariant::from(&QString::from(&item.name)),
-            ROLE_MINIMIZED => QVariant::from(&(!item.is_active && item.is_running)),
-            ROLE_ACTIVE => QVariant::from(&item.is_active),
-            ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
-            ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
-            ROLE_IS_PINNED => QVariant::from(&item.is_pinned),
-            ROLE_IS_RUNNING => QVariant::from(&item.is_running),
-            ROLE_WINDOW_COUNT => QVariant::from(&(i32::try_from(item.window_count).unwrap_or(0))),
-            _ => QVariant::default(),
-        }
+        self.rust().data(row_idx, role)
     }
 
     /// Returns role names mapping for QML.
     #[must_use]
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        roles.insert(ROLE_ID, QByteArray::from("id"));
-        roles.insert(ROLE_TITLE, QByteArray::from("title"));
-        roles.insert(ROLE_APP_ID, QByteArray::from("appId"));
-        roles.insert(ROLE_MINIMIZED, QByteArray::from("minimized"));
-        roles.insert(ROLE_ACTIVE, QByteArray::from("active"));
-        roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
-        roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
-        roles.insert(ROLE_IS_PINNED, QByteArray::from("isPinned"));
-        roles.insert(ROLE_IS_RUNNING, QByteArray::from("isRunning"));
-        roles.insert(ROLE_WINDOW_COUNT, QByteArray::from("windowCount"));
-        roles
+        create_window_role_names()
     }
 
     /// Dispatches click interaction on taskbar item at `index`.
@@ -389,27 +402,20 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
 
     sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
 
-    // Check initial daemon presence
-    let wk_name: Result<WellKnownName<'_>, _> = DAEMON_DESTINATION.try_into();
-    let has_daemon = match wk_name {
-        Ok(ref name) => dbus_proxy
-            .get_name_owner(zbus::names::BusName::WellKnown(name.as_ref()))
-            .await
-            .is_ok(),
-        Err(_) => false,
-    };
-
-    if has_daemon {
-        if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
-            if let Ok(list) = proxy.list().await {
-                *local_windows.lock().await = list.clone();
-                let mut lock = taskbar_core.lock().await;
-                lock.set_windows(list);
-                dispatch_taskbar(&qt_thread, lock.clone());
-            }
+    // Initial sync of windows from daemon if available
+    let mut initial_windows_synced = false;
+    if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
+        if let Ok(list) = proxy.list().await {
+            *local_windows.lock().await = list.clone();
+            let mut lock = taskbar_core.lock().await;
+            lock.set_windows(list);
+            dispatch_taskbar(&qt_thread, lock.clone());
+            initial_windows_synced = true;
         }
-    } else {
-        info!("kynex-daemon not found on bus; setting empty windows");
+    }
+
+    if !initial_windows_synced {
+        info!("kynex-daemon Windows1 not yet available on bus; initializing empty taskbar");
         let lock = taskbar_core.lock().await;
         dispatch_taskbar(&qt_thread, lock.clone());
     }
@@ -629,5 +635,114 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kynex_shell_core::taskbar::TaskbarEntry;
+
+    #[test]
+    fn test_role_constants_and_names() {
+        let roles = create_window_role_names();
+
+        assert_eq!(
+            roles.get(&ROLE_ID).map(|b| b.to_string()),
+            Some("id".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_TITLE).map(|b| b.to_string()),
+            Some("title".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_APP_ID).map(|b| b.to_string()),
+            Some("appId".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_MINIMIZED).map(|b| b.to_string()),
+            Some("minimized".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_ACTIVE).map(|b| b.to_string()),
+            Some("active".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_ICON_NAME).map(|b| b.to_string()),
+            Some("iconName".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_LETTER_BADGE).map(|b| b.to_string()),
+            Some("letterBadge".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_IS_PINNED).map(|b| b.to_string()),
+            Some("isPinned".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_IS_RUNNING).map(|b| b.to_string()),
+            Some("isRunning".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_WINDOW_COUNT).map(|b| b.to_string()),
+            Some("windowCount".to_string())
+        );
+    }
+
+    #[test]
+    fn test_window_list_model_data_and_minimized_role() {
+        let entries = vec![
+            TaskbarEntry {
+                app_id: "org.gnome.Calculator.desktop".to_string(),
+                name: "Calculator".to_string(),
+                icon_name: "org.gnome.Calculator".to_string(),
+                letter_badge: "C".to_string(),
+                is_pinned: false,
+                is_running: true,
+                is_active: false,
+                is_minimized: true,
+                window_count: 1,
+                window_ids: vec!["win-1".to_string()],
+            },
+            TaskbarEntry {
+                app_id: "firefox.desktop".to_string(),
+                name: "Firefox".to_string(),
+                icon_name: "firefox".to_string(),
+                letter_badge: "F".to_string(),
+                is_pinned: true,
+                is_running: true,
+                is_active: false,
+                is_minimized: false, // in background, but NOT minimized!
+                window_count: 1,
+                window_ids: vec!["win-2".to_string()],
+            },
+        ];
+        let model = WindowListModelRust {
+            entries,
+            count: 2,
+            ..Default::default()
+        };
+
+        // Entry 0: minimized = true
+        let v_min_0 = model.data(0, ROLE_MINIMIZED);
+        assert_eq!(v_min_0.value::<bool>(), Some(true));
+        let v_title_0 = model.data(0, ROLE_TITLE);
+        assert_eq!(
+            v_title_0.value::<QString>().map(|s| s.to_string()),
+            Some("Calculator".to_string())
+        );
+
+        // Entry 1: background, minimized = false
+        let v_min_1 = model.data(1, ROLE_MINIMIZED);
+        assert_eq!(v_min_1.value::<bool>(), Some(false));
+        let v_title_1 = model.data(1, ROLE_TITLE);
+        assert_eq!(
+            v_title_1.value::<QString>().map(|s| s.to_string()),
+            Some("Firefox".to_string())
+        );
+
+        // Out-of-bounds row
+        let v_oob = model.data(99, ROLE_MINIMIZED);
+        assert_eq!(v_oob.value::<bool>(), None);
     }
 }
