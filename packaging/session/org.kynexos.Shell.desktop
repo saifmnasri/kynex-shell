@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Kynex Shell
+Comment=Kynex Desktop Environment Shell Interface
+Exec=/usr/local/bin/kynex-shell
+Icon=kynex
+Terminal=false
+Type=Application
+NoDisplay=true
+Categories=Core;System;

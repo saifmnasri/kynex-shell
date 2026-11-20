@@ -665,6 +665,7 @@ async fn run_menu_listener(qt_thread: cxx_qt::CxxQtThread<qobject::TrayMenuModel
             None
         };
 
+        #[cfg(feature = "bench")]
         if std::env::var("KYNEX_BENCH_OPEN_MENU").unwrap_or_default() == "1" {
             let proxy_sub = proxy.clone();
             let thread_sub = qt_thread.clone();

@@ -145,6 +145,12 @@ LayerSurface {
             border.color: Style.colors.surfaceRaised
             border.width: 1
 
+            onImplicitHeightChanged: {
+                if (root.isOpen) {
+                    root.updatePlacement();
+                }
+            }
+
             Column {
                 id: cardColumn
                 anchors.left: parent.left

@@ -38,7 +38,7 @@ if ((HAS_RUST)); then
     skip "cargo-deny / cargo-audit" "--fast"
   else
     have cargo-deny  && step "cargo-deny (licenses, bans, advisories)" cargo deny check || skip "cargo-deny" "not installed"
-    have cargo-audit && step "cargo-audit (RustSec)" cargo audit || skip "cargo-audit" "not installed"
+    have cargo-audit && step "cargo-audit (RustSec)" cargo audit --no-fetch || skip "cargo-audit" "not installed"
   fi
 else
   skip "rust steps" "no Cargo.toml yet"
@@ -116,6 +116,7 @@ check_qml_wait_calls() {
 }
 
 step "qml wait check" check_qml_wait_calls
+step "test hooks gating check" ./scripts/check-test-hooks-gating.py
 
 mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
 have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true

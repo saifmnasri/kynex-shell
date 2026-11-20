@@ -138,7 +138,12 @@ impl AppsSharedState {
             ));
         }
 
-        if std::env::var("KYNEX_TEST_BYPASS_RATE_LIMIT").as_deref() != Ok("1") {
+        #[cfg(feature = "test-hooks")]
+        let check_rate_limit = std::env::var("KYNEX_TEST_BYPASS_RATE_LIMIT").as_deref() != Ok("1");
+        #[cfg(not(feature = "test-hooks"))]
+        let check_rate_limit = true;
+
+        if check_rate_limit {
             let now = Instant::now();
             let mut limiter = self.launch_limiter.lock().await;
             if !limiter.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
@@ -261,12 +266,18 @@ impl AppsServer {
 
         let entry = {
             let index = self.shared.index.read().await;
-            index.get(&id).cloned().ok_or_else(|| {
-                zbus::fdo::Error::InvalidArgs(format!("Application ID '{id}' not found"))
-            })?
+            if let Some(e) = index.get(&id).cloned() {
+                e
+            } else {
+                info!("Apps1: application launch failed for ID '{id}': entry not found");
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Application ID '{id}' not found"
+                )));
+            }
         };
 
         if entry.terminal {
+            info!("Apps1: application launch failed for ID '{id}': terminal apps unsupported");
             return Err(zbus::fdo::Error::Failed(
                 "Terminal applications are unsupported yet".into(),
             ));
@@ -285,10 +296,18 @@ impl AppsServer {
             urls: &[],
         };
 
-        let argv = parse_exec(&entry.exec_raw, &ctx)
-            .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to parse Exec: {e}")))?;
+        let argv = match parse_exec(&entry.exec_raw, &ctx) {
+            Ok(v) => v,
+            Err(e) => {
+                info!("Apps1: application launch failed for ID '{id}': parse error");
+                return Err(zbus::fdo::Error::Failed(format!(
+                    "Failed to parse Exec: {e}"
+                )));
+            }
+        };
 
         if argv.is_empty() {
+            info!("Apps1: application launch failed for ID '{id}': empty argv");
             return Err(zbus::fdo::Error::Failed(
                 "Empty executable argument vector".into(),
             ));
@@ -390,14 +409,19 @@ impl AppsServer {
 
         if !launched_via_systemd {
             let env_allowlist = build_clean_environment();
-            spawn_detached(
+            if let Err(e) = spawn_detached(
                 &argv,
                 &env_allowlist,
                 Arc::clone(&self.shared.tracked_children),
-            )
-            .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
+            ) {
+                info!("Apps1: application launch failed for ID '{id}': spawn error");
+                return Err(zbus::fdo::Error::Failed(format!(
+                    "Failed to spawn process: {e}"
+                )));
+            }
         }
 
+        info!("Apps1: application launch succeeded for ID '{id}'");
         Ok(())
     }
 }

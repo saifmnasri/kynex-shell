@@ -45,7 +45,12 @@ fn find_qml_import_dir() -> PathBuf {
 }
 
 fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
     info!("Starting Kynex Shell (Phase 1)");
 
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -75,6 +80,9 @@ fn main() {
     let shell_qml_path = canonical_style_dir.join(&manifest.entry.shell);
 
     let mut app = QGuiApplication::new();
+
+    // Set desktop file name for portal registration and taskbar identity
+    shim::set_desktop_file_name("org.kynexos.Shell");
 
     // Load bundled application fonts
     shim::load_bundled_fonts();
@@ -115,6 +123,7 @@ fn main() {
         info!("Loading style shell from {qurl_str}");
         engine.as_mut().load(&QUrl::from(&qurl_str));
 
+        #[cfg(feature = "bench")]
         if let Ok(count_str) = std::env::var("KYNEX_BENCH_LOAD_ICONS") {
             if let Ok(count) = count_str.parse::<usize>() {
                 let loaded = load_bench_icons(count);
@@ -128,6 +137,7 @@ fn main() {
     }
 }
 
+#[cfg(feature = "bench")]
 fn load_bench_icons(target: usize) -> usize {
     let mut loaded = 0;
     let roots = kynex_icons::IconRoots::from_env();

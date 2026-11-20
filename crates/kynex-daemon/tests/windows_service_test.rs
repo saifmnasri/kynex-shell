@@ -877,3 +877,49 @@ async fn test_kwin_script_action_executor_lifecycle() -> Result<(), Box<dyn Erro
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_proxy_receive_added_signal() -> Result<(), Box<dyn Error>> {
+    use futures_util::StreamExt;
+    let bus = TestBus::new().await?;
+    let address = bus.address();
+
+    // Client connects FIRST before daemon is running
+    let client_conn = connect_to_bus(address).await?;
+    let client_proxy = Windows1Proxy::new(&client_conn).await?;
+    let mut added_stream = client_proxy.receive_added().await?;
+
+    // Now daemon starts up
+    let shared = Arc::new(WindowsSharedState::new(Arc::new(AllowAllSenderPolicy)));
+    let server = WindowsServer::new(Arc::clone(&shared));
+    let feed_server = WindowsFeedServer::new(Arc::clone(&shared));
+
+    let server_conn = zbus::connection::Builder::address(address)
+        .name(DAEMON_DESTINATION)
+        .serve_at(WINDOWS_PATH, server.clone())
+        .serve_at(WINDOWS_PATH, feed_server.clone())
+        .build()
+        .await?;
+
+    let emitter = SignalEmitter::new(&server_conn, WINDOWS_PATH)?;
+    feed_server.set_emitter(emitter).await;
+
+    let feed_proxy = WindowsFeed1Proxy::new(&client_conn).await?;
+    feed_proxy
+        .upsert(
+            "{00de40a7-b66c-4c26-936f-8e694c56c4a5}",
+            "Calculator",
+            "org.gnome.Calculator",
+            false,
+            true,
+        )
+        .await?;
+
+    let sig = tokio::time::timeout(Duration::from_millis(500), added_stream.next()).await?;
+    let item = sig.ok_or_else(|| zbus::Error::Failure("missing signal".into()))?;
+    let args = item.args()?;
+    assert_eq!(args.id, "{00de40a7-b66c-4c26-936f-8e694c56c4a5}");
+    assert_eq!(args.title, "Calculator");
+    assert_eq!(args.app_id, "org.gnome.Calculator");
+    Ok(())
+}

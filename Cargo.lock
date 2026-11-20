@@ -908,6 +908,7 @@ version = "0.1.0"
 dependencies = [
  "kynex-common",
  "serde",
+ "serde_json",
  "zbus",
 ]
 
@@ -936,6 +937,9 @@ dependencies = [
  "kynex-style",
  "kynex-tray",
  "pkg-config",
+ "rustix",
+ "serde",
+ "serde_json",
  "tempfile",
  "tokio",
  "tracing",
@@ -950,6 +954,8 @@ dependencies = [
  "kynex-common",
  "kynex-ipc",
  "proptest",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 

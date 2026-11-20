@@ -5,7 +5,7 @@ PartOf=graphical-session.target
 After=graphical-session.target
 
 [Service]
-Type=dbus
+Type=notify
 BusName=org.kynexos.Daemon
 ExecStart=/usr/bin/kynex-daemon
 Restart=on-failure

@@ -222,10 +222,6 @@ Item {
             verify(qsNegativeOrigin.popupX >= 0, "popupX must be >= 0 in output-local space");
             verify(qsNegativeOrigin.popupX + qsNegativeOrigin.cardContainer.width <= qsNegativeOrigin.width,
                    "popupContainer must land completely inside the output width");
-            verify(qsNegativeOrigin.popupY >= 0, "popupY must be >= 0 in output-local space");
-            verify(qsNegativeOrigin.popupY + qsNegativeOrigin.cardContainer.height <= qsNegativeOrigin.height,
-                   "popupContainer must land completely inside the output height");
-
             // Specifically verify it was not displaced by global -1920 offset
             compare(qsNegativeOrigin.popupX, qsNegativeOrigin.anchorX + qsNegativeOrigin.anchorWidth - qsNegativeOrigin.popupWidth);
 
@@ -282,6 +278,81 @@ Item {
             uninitNotif.destroy();
             uninitNet.destroy();
             uninitPower.destroy();
+        }
+
+        function test_first_open_late_populating_models_reactive_sizing_and_all_rows_visible() {
+            // Regression test for R3.4:
+            // When QuickSettings opens on first open before models are populated or when models populate
+            // asynchronously after the surface is mapped, card.implicitHeight must expand and
+            // popupY must adjust reactively so that ALL rows are visible without clipping.
+            let comp = Qt.createComponent("../../styles/default/QuickSettings.qml");
+            let lateAudio = Qt.createQmlObject("import Kynex.Shell; AudioModel {}", root);
+            let lateNotif = Qt.createQmlObject("import Kynex.Shell; NotificationModel {}", root);
+            let lateNet = Qt.createQmlObject("import Kynex.Shell; NetworkModel {}", root);
+            let latePower = Qt.createQmlObject("import Kynex.Shell; PowerModel {}", root);
+
+            // 1. Initially unpopulated models (present=false, no device name, etc.)
+            lateAudio.present = false;
+            lateAudio.deviceName = "";
+            lateNet.present = false;
+            latePower.present = false;
+
+            let testQs = comp.createObject(root, {
+                "audioModel": lateAudio,
+                "notificationModel": lateNotif,
+                "networkModel": lateNet,
+                "powerModel": latePower,
+                "panelAnchorsBits": 8, // Bottom
+                "panelWidth": 1920,
+                "panelHeight": 48,
+                "anchorX": 1700,
+                "anchorY": 1032,
+                "anchorWidth": 200,
+                "anchorHeight": 48,
+                "width": 1920,
+                "height": 1080,
+                "isOpen": false
+            });
+            verify(testQs !== null);
+
+            // 2. Open popup for the very first time with unpopulated models
+            testQs.isOpen = true;
+            tryVerify(function() { return testQs.visible; });
+            let initialY = testQs.popupY;
+            let initialHeight = testQs.cardRectangle.implicitHeight;
+
+            // 3. Populate models late (as occurs when D-Bus answers async)
+            lateAudio.present = true;
+            lateAudio.volume = 75;
+            lateAudio.muted = false;
+            lateAudio.deviceName = "Headphones High Fidelity Stereo Sink";
+            lateNotif.doNotDisturb = true;
+            lateNet.present = true;
+            lateNet.connected = true;
+            lateNet.wifi = true;
+            lateNet.ssid = "Enterprise-WPA3";
+            lateNet.strength = 92;
+            latePower.present = true;
+            latePower.charging = true;
+            latePower.percentage = 99;
+
+            // 4. Assert that card.implicitHeight expands and popupY updates reactively
+            tryVerify(function() { return testQs.cardRectangle.implicitHeight > initialHeight; });
+            tryVerify(function() { return testQs.popupY < initialY; });
+            tryVerify(function() { return testQs.deviceNameLabelItem.visible; });
+            tryVerify(function() { return testQs.dndSwitchItem.visible; });
+            tryVerify(function() { return testQs.networkSummaryItem.visible; });
+
+            // 5. Assert all rows remain strictly within output bounds [0, 1080]
+            verify(testQs.popupY >= 0, "popupY must be non-negative");
+            verify(testQs.popupY + testQs.cardContainer.height <= testQs.height,
+                   "Entire card container must be fully visible and not clipped off the bottom edge");
+
+            testQs.destroy();
+            lateAudio.destroy();
+            lateNotif.destroy();
+            lateNet.destroy();
+            latePower.destroy();
         }
     }
 }

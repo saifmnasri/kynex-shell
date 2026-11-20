@@ -434,11 +434,11 @@ fn test_taskbar_minimized_state_and_restoration_click() {
     assert!(core.entries()[0].is_minimized);
     assert!(!core.entries()[0].is_active);
 
-    // Clicking minimized window must ACTIVATE (restore) it
+    // Clicking minimized window must RESTORE it
     let action = core.handle_click(0);
     assert_eq!(
         action,
-        TaskbarAction::Activate {
+        TaskbarAction::Restore {
             window_id: "calc-1".to_string()
         }
     );
@@ -569,7 +569,7 @@ fn test_taskbar_captured_live_session_payloads_and_restarts() {
     let act = core.handle_click(1);
     assert_eq!(
         act,
-        TaskbarAction::Activate {
+        TaskbarAction::Restore {
             window_id: "{00de40a7-b66c-4c26-936f-8e694c56c4a5}".to_string()
         }
     );

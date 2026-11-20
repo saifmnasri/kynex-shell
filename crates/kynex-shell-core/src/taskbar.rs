@@ -47,6 +47,11 @@ pub enum TaskbarAction {
         /// Compositor window ID.
         window_id: String,
     },
+    /// Restore the window from minimized state via `Windows1.Restore`.
+    Restore {
+        /// Compositor window ID.
+        window_id: String,
+    },
     /// Minimize the window via `Windows1.Minimize`.
     Minimize {
         /// Compositor window ID.
@@ -208,29 +213,35 @@ impl TaskbarCore {
         if entry.window_count == 1 {
             let win_id = entry.window_ids[0].clone();
             if entry.is_minimized {
-                TaskbarAction::Activate { window_id: win_id }
+                TaskbarAction::Restore { window_id: win_id }
             } else if entry.is_active {
                 TaskbarAction::Minimize { window_id: win_id }
             } else {
                 TaskbarAction::Activate { window_id: win_id }
             }
         } else {
-            // Multiple windows: cycle through them.
-            let active_idx = entry
-                .window_ids
-                .iter()
-                .position(|id| self.windows.iter().any(|w| &w.id == id && w.active));
-
-            match active_idx {
-                Some(curr) => {
-                    let next_idx = (curr + 1) % entry.window_ids.len();
-                    TaskbarAction::Activate {
-                        window_id: entry.window_ids[next_idx].clone(),
-                    }
-                }
-                None => TaskbarAction::Activate {
+            // Multiple windows: if all are minimized, restore the first one
+            if entry.is_minimized {
+                TaskbarAction::Restore {
                     window_id: entry.window_ids[0].clone(),
-                },
+                }
+            } else {
+                let active_idx = entry
+                    .window_ids
+                    .iter()
+                    .position(|id| self.windows.iter().any(|w| &w.id == id && w.active));
+
+                match active_idx {
+                    Some(curr) => {
+                        let next_idx = (curr + 1) % entry.window_ids.len();
+                        TaskbarAction::Activate {
+                            window_id: entry.window_ids[next_idx].clone(),
+                        }
+                    }
+                    None => TaskbarAction::Activate {
+                        window_id: entry.window_ids[0].clone(),
+                    },
+                }
             }
         }
     }

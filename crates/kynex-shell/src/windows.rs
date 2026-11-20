@@ -21,7 +21,7 @@ use kynex_ipc::DAEMON_DESTINATION;
 use kynex_shell_core::matching::AppCandidate;
 use kynex_shell_core::taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 use zbus::fdo::DBusProxy;
 
 /// Role ID for primary identifier (`app_id`).
@@ -242,6 +242,11 @@ impl qobject::WindowListModel {
                             let _ = proxy.activate(&window_id).await;
                         }
                     }
+                    TaskbarAction::Restore { window_id } => {
+                        if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                            let _ = proxy.restore(&window_id).await;
+                        }
+                    }
                     TaskbarAction::Minimize { window_id } => {
                         if let Ok(proxy) = Windows1Proxy::new(&conn).await {
                             let _ = proxy.minimize(&window_id).await;
@@ -328,6 +333,11 @@ impl qobject::WindowListModel {
 fn dispatch_taskbar(qt_thread: &cxx_qt::CxxQtThread<qobject::WindowListModel>, core: TaskbarCore) {
     let entries = core.entries().to_vec();
     let count = i32::try_from(entries.len()).unwrap_or(0);
+    let running_count = entries.iter().filter(|e| e.is_running).count();
+    let pinned_count = entries.iter().filter(|e| e.is_pinned).count();
+    info!(
+        "taskbar: {running_count} running windows, {pinned_count} pinned entries (total {count})"
+    );
     let _ = qt_thread.queue(move |mut qobj| {
         qobj.as_mut().begin_reset_model();
         qobj.as_mut().rust_mut().core = core;
@@ -341,7 +351,7 @@ fn dispatch_taskbar(qt_thread: &cxx_qt::CxxQtThread<qobject::WindowListModel>, c
 /// Background listener task maintaining taskbar state from daemon services.
 #[allow(clippy::too_many_lines)]
 pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::WindowListModel>) {
-    let session_conn = match zbus::connection::Builder::session().build().await {
+    let session_conn = match crate::shared_session_conn().await {
         Ok(c) => c,
         Err(err) => {
             warn!("Taskbar listener failed to connect to session bus: {err}");
@@ -349,6 +359,9 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
             return;
         }
     };
+
+    let debug_hub = crate::debug::get_debug_hub();
+    let _ = crate::debug::register_shell_debug_service(&session_conn).await;
 
     let dbus_proxy = match DBusProxy::new(&session_conn).await {
         Ok(p) => p,
@@ -402,40 +415,88 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
 
     sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
 
-    // Initial sync of windows from daemon if available
+    #[cfg(feature = "test-hooks")]
+    let skip_initial_list = std::env::var("KYNEX_TEST_MUTANT_DISABLE_LIST").is_ok();
+    #[cfg(not(feature = "test-hooks"))]
+    let skip_initial_list = false;
+
+    // Initial sync of windows from daemon if available with bounded retry backoff
     let mut initial_windows_synced = false;
-    if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
-        if let Ok(list) = proxy.list().await {
-            *local_windows.lock().await = list.clone();
-            let mut lock = taskbar_core.lock().await;
-            lock.set_windows(list);
-            dispatch_taskbar(&qt_thread, lock.clone());
-            initial_windows_synced = true;
+    let max_retries = 10;
+    let mut retry_delay = std::time::Duration::from_millis(50);
+    if !skip_initial_list {
+        for attempt in 1..=max_retries {
+            if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
+                if let Ok(list) = proxy.list().await {
+                    info!(
+                        "windows: initial List() returned {} (attempt {attempt})",
+                        list.len()
+                    );
+                    *local_windows.lock().await = list.clone();
+                    let mut lock = taskbar_core.lock().await;
+                    lock.set_windows(list.clone());
+                    debug_hub.update_taskbar(lock.clone(), list).await;
+                    debug_hub.set_daemon_connected(true);
+                    debug_hub.update_model_readiness(|m| m.windows = true).await;
+                    debug_hub
+                        .set_last_resync_time(chrono::Utc::now().to_rfc3339())
+                        .await;
+                    dispatch_taskbar(&qt_thread, lock.clone());
+                    initial_windows_synced = true;
+                    break;
+                }
+            }
+            if attempt < max_retries {
+                info!("windows: kynex-daemon Windows1 not yet available on bus (attempt {attempt}/{max_retries}), retrying in {retry_delay:?}...");
+                tokio::time::sleep(retry_delay).await;
+                retry_delay = (retry_delay * 2).min(std::time::Duration::from_millis(500));
+            }
         }
     }
 
     if !initial_windows_synced {
-        info!("kynex-daemon Windows1 not yet available on bus; initializing empty taskbar");
+        info!("windows: initial List() timed out or daemon unavailable after {max_retries} attempts; initializing empty taskbar");
         let lock = taskbar_core.lock().await;
         dispatch_taskbar(&qt_thread, lock.clone());
     }
 
+    #[cfg(feature = "test-hooks")]
+    let skip_subscriptions = std::env::var("KYNEX_TEST_MUTANT_DISABLE_SUBSCRIPTION").is_ok();
+    #[cfg(not(feature = "test-hooks"))]
+    let skip_subscriptions = false;
+
     // Set up signal streams
-    let mut added_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_added().await.ok(),
-        Err(_) => None,
+    let mut added_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_added().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut changed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_changed().await.ok(),
-        Err(_) => None,
+    let mut changed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_changed().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut removed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_removed().await.ok(),
-        Err(_) => None,
+    let mut removed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_removed().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut active_changed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_active_changed().await.ok(),
-        Err(_) => None,
+    let mut active_changed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_active_changed().await.ok(),
+            Err(_) => None,
+        }
     };
     let mut pins_changed_stream = match Pins1Proxy::builder(&session_conn).build().await {
         Ok(proxy) => proxy.receive_changed().await.ok(),
@@ -456,7 +517,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 dirty = false;
                 let windows = local_windows.lock().await.clone();
                 let mut lock = taskbar_core.lock().await;
-                lock.set_windows(windows);
+                lock.set_windows(windows.clone());
+                debug_hub.update_taskbar(lock.clone(), windows).await;
                 dispatch_taskbar(&qt_thread, lock.clone());
             }
 
@@ -471,6 +533,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                     if let Ok(pins) = proxy.get().await {
                         let mut lock = taskbar_core.lock().await;
                         lock.set_pinned_ids(pins);
+                        let wins = local_windows.lock().await.clone();
+                        debug_hub.update_taskbar(lock.clone(), wins).await;
                         dispatch_taskbar(&qt_thread, lock.clone());
                     }
                 }
@@ -485,6 +549,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 info!("Apps changed signal received on taskbar");
                 sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
                 let lock = taskbar_core.lock().await;
+                let wins = local_windows.lock().await.clone();
+                debug_hub.update_taskbar(lock.clone(), wins).await;
                 dispatch_taskbar(&qt_thread, lock.clone());
             }
 
@@ -496,6 +562,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Added id={}", args.id);
+                    trace!("windows: Added details: id={}, title='{}', app_id='{}', min={}, act={}", args.id, args.title, args.app_id, args.minimized, args.active);
                     let mut lock = local_windows.lock().await;
                     let item = WindowItem {
                         id: args.id.to_string(),
@@ -526,6 +594,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Changed id={}, minimized={}, active={}", args.id, args.minimized, args.active);
+                    trace!("windows: Changed details: id={}, title='{}', app_id='{}'", args.id, args.title, args.app_id);
                     let mut lock = local_windows.lock().await;
                     let mut need_update = false;
                     for w in lock.iter() {
@@ -564,6 +634,7 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Removed id={}", args.id);
                     let mut lock = local_windows.lock().await;
                     lock.retain(|w| w.id != args.id);
                     dirty = true;
@@ -578,6 +649,7 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal ActiveChanged id={}", args.id);
                     let mut lock = local_windows.lock().await;
                     let mut changed = false;
                     for w in lock.iter_mut() {
@@ -604,18 +676,24 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                     let new_owner = args.new_owner();
                     if new_owner.as_ref().is_none_or(|o| o.as_str().is_empty()) {
                         info!("kynex-daemon left the bus; clearing taskbar windows");
+                        debug_hub.set_daemon_connected(false);
                         *local_windows.lock().await = Vec::new();
                         let mut lock = taskbar_core.lock().await;
                         lock.set_windows(Vec::new());
+                        debug_hub.update_taskbar(lock.clone(), Vec::new()).await;
                         dispatch_taskbar(&qt_thread, lock.clone());
                     } else {
-                        info!("kynex-daemon appeared on the bus; resyncing taskbar");
+                        info!("kynex-daemon appeared on the bus (new_owner={:?}); resyncing taskbar", new_owner.as_ref().map(zbus::names::UniqueName::as_str));
+                        debug_hub.set_daemon_connected(true);
                         sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
                         if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
                             if let Ok(list) = proxy.list().await {
+                                info!("windows: initial List() on daemon connect returned {}", list.len());
                                 *local_windows.lock().await = list.clone();
                                 let mut lock = taskbar_core.lock().await;
-                                lock.set_windows(list);
+                                lock.set_windows(list.clone());
+                                debug_hub.update_taskbar(lock.clone(), list).await;
+                                debug_hub.set_last_resync_time(chrono::Utc::now().to_rfc3339()).await;
                                 dispatch_taskbar(&qt_thread, lock.clone());
                             }
                             added_stream = proxy.receive_added().await.ok();

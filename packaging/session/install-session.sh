@@ -112,8 +112,10 @@ echo "DESTDIR: ${DESTDIR:-<root>}"
 echo "Dry run: $DRY_RUN"
 echo "Force:   $FORCE"
 
-# 1. Desktop Session Entry
+# 1. Desktop Session Entry & Application Entries
 copy_file "$SCRIPT_DIR/kynex.desktop" "${DESTDIR}/usr/share/wayland-sessions/kynex.desktop" 0644
+copy_file "$SCRIPT_DIR/org.kynexos.Shell.desktop" "${DESTDIR}/usr/share/applications/org.kynexos.Shell.desktop" 0644
+copy_file "$SCRIPT_DIR/org.kynexos.Daemon.desktop" "${DESTDIR}/usr/share/applications/org.kynexos.Daemon.desktop" 0644
 
 # 2. Session Startup Script
 copy_file "$SCRIPT_DIR/startkynex" "${DESTDIR}/usr/local/bin/startkynex" 0755

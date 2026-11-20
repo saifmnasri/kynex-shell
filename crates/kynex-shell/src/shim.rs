@@ -36,6 +36,9 @@ pub mod ffi {
         #[must_use]
         fn kynex_test_decode_icon(path: &str, width: i32, height: i32, scale: i32) -> bool;
 
+        /// Sets the desktop file name for portal registration and taskbar identity.
+        fn kynex_set_desktop_file_name(name: &str);
+
         /// Tests opening the real `TrayMenuModel` from QML with 15 production arguments.
         #[must_use]
         fn kynex_test_real_tray_menu_model_open(qml_path: &str) -> bool;
@@ -138,6 +141,11 @@ pub fn is_svg_safe(data: &[u8]) -> bool {
 #[must_use]
 pub fn test_decode_icon(path: &str, width: i32, height: i32, scale: i32) -> bool {
     ffi::kynex_test_decode_icon(path, width, height, scale)
+}
+
+/// Sets the desktop file name for portal registration and taskbar identity.
+pub fn set_desktop_file_name(name: &str) {
+    ffi::kynex_set_desktop_file_name(name);
 }
 
 /// Resolves an icon name to an absolute file path using `kynex_icons::lookup_icon`.

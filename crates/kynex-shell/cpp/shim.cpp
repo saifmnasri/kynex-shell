@@ -160,6 +160,12 @@ uint64_t kynex_steady_clock_ns()
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }
 
+void kynex_set_desktop_file_name(rust::Str name)
+{
+    QString qname = QString::fromUtf8(name.data(), static_cast<qsizetype>(name.size()));
+    QGuiApplication::setDesktopFileName(qname);
+}
+
 bool kynex_test_real_tray_menu_model_open(rust::Str qml_path)
 {
     static int argc = 1;

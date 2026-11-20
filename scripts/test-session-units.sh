@@ -52,7 +52,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "=== 1. Building binaries if needed ==="
-cargo build -p kynex-daemon -p kynex-shell
+cargo build -p kynex-daemon --features test-hooks -p kynex-shell
 BIN_DAEMON="$ROOT_DIR/target/debug/kynex-daemon"
 BIN_SHELL="$ROOT_DIR/target/debug/kynex-shell"
 
@@ -62,7 +62,7 @@ extract_props() {
   local props=()
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
-    if [[ "$line" =~ ^(StartLimitIntervalSec|StartLimitBurst|RestartSteps|RestartMaxDelaySec|RestartSec|NoNewPrivileges|RestrictAddressFamilies|SystemCallFilter|SystemCallArchitectures|RestrictRealtime|RestrictNamespaces|RestrictSUIDSGID|MemoryDenyWriteExecute|LockPersonality|KeyringMode|UMask)= ]]; then
+    if [[ "$line" =~ ^(Type|StartLimitIntervalSec|StartLimitBurst|RestartSteps|RestartMaxDelaySec|RestartSec|NoNewPrivileges|RestrictAddressFamilies|SystemCallFilter|SystemCallArchitectures|RestrictRealtime|RestrictNamespaces|RestrictSUIDSGID|MemoryDenyWriteExecute|LockPersonality|KeyringMode|UMask)= ]]; then
       props+=("-p" "$line")
     fi
   done < "$file"

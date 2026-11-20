@@ -19,9 +19,11 @@ use kynex_daemon::services::tray::{
     run_tray_dbus_name_watcher, try_acquire_watcher_names, FdoStatusNotifierWatcherServer,
     StatusNotifierWatcherServer, TrayServer, TraySharedState,
 };
+#[cfg(feature = "test-hooks")]
+use kynex_daemon::services::windows::AllowAllSenderPolicy;
 use kynex_daemon::services::windows::{
-    run_kwin_watcher, AllowAllSenderPolicy, KWinSenderPolicy, SenderPolicy, WindowsFeedServer,
-    WindowsServer, WindowsSharedState,
+    run_kwin_watcher, KWinSenderPolicy, SenderPolicy, WindowsFeedServer, WindowsServer,
+    WindowsSharedState,
 };
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
@@ -52,6 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let power_server = PowerServer::new();
     let network_server = NetworkServer::new();
 
+    #[cfg(feature = "test-hooks")]
     let sender_policy: Arc<dyn SenderPolicy> =
         if std::env::var("KYNEX_ALLOW_TEST_FEEDER").unwrap_or_default() == "1" {
             warn!("KYNEX_ALLOW_TEST_FEEDER=1: using permissive AllowAllSenderPolicy");
@@ -59,6 +62,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else {
             Arc::new(KWinSenderPolicy::new())
         };
+    #[cfg(not(feature = "test-hooks"))]
+    let sender_policy: Arc<dyn SenderPolicy> = Arc::new(KWinSenderPolicy::new());
     let windows_shared = Arc::new(WindowsSharedState::new(Arc::clone(&sender_policy)));
     let windows_server = WindowsServer::new(Arc::clone(&windows_shared));
     let windows_feed_server = WindowsFeedServer::new(Arc::clone(&windows_shared));
@@ -251,8 +256,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     // Determine UPower connection:
-    // If KYNEX_UPOWER_BUS == "session", use session bus (for dev/nested demo/tests).
+    // In test-hooks mode, if KYNEX_UPOWER_BUS == "session", use session bus.
     // Otherwise, connect to system bus.
+    #[cfg(feature = "test-hooks")]
     let upower_conn = if std::env::var("KYNEX_UPOWER_BUS").as_deref() == Ok("session") {
         info!("KYNEX_UPOWER_BUS=session: using session bus for UPower");
         Some(session_conn.clone())
@@ -265,6 +271,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     };
+    #[cfg(not(feature = "test-hooks"))]
+    let upower_conn = match zbus::connection::Builder::system().build().await {
+        Ok(conn) => Some(conn),
+        Err(err) => {
+            warn!("Failed to connect to system bus for UPower: {err}. Battery status will be unavailable (present=false).");
+            None
+        }
+    };
 
     // Spawn power monitoring background task if UPower bus connection is available
     if let Some(uconn) = upower_conn {
@@ -275,8 +289,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Determine NetworkManager connection:
-    // If KYNEX_NM_BUS == "session", use session bus (for dev/nested demo/tests).
+    // In test-hooks mode, if KYNEX_NM_BUS == "session", use session bus.
     // Otherwise, connect to system bus.
+    #[cfg(feature = "test-hooks")]
     let nm_conn = if std::env::var("KYNEX_NM_BUS").as_deref() == Ok("session") {
         info!("KYNEX_NM_BUS=session: using session bus for NetworkManager");
         Some(session_conn.clone())
@@ -289,6 +304,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     };
+    #[cfg(not(feature = "test-hooks"))]
+    let nm_conn = match zbus::connection::Builder::system().build().await {
+        Ok(conn) => Some(conn),
+        Err(err) => {
+            warn!("Failed to connect to system bus for NetworkManager: {err}. Network status will be unavailable (present=false).");
+            None
+        }
+    };
 
     // Spawn network monitoring background task if NetworkManager bus connection is available
     if let Some(nconn) = nm_conn {
@@ -296,6 +319,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tokio::spawn(async move {
             run_network_service(nconn, n_server, network_emitter, None, None).await;
         });
+    }
+
+    if let Err(err) = kynex_daemon::systemd::notify_ready() {
+        warn!("Failed to notify systemd readiness: {err}");
     }
 
     let mut sigterm = match signal(SignalKind::terminate()) {
