@@ -35,7 +35,7 @@ QT_QPA_FONTDIR="$(pwd)/assets/fonts"
 export QT_QPA_FONTDIR
 mkdir -p /tmp/fc-cache
 
-VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100" "launcher-results" "launcher-no-results" "launcher-empty" "launcher-rtl" "menu-normal" "menu-checkable" "menu-submenu" "menu-disabled" "menu-rtl" "quick-settings-normal" "quick-settings-muted" "quick-settings-dnd" "quick-settings-no-audio" "quick-settings-rtl")
+VARIANTS=("dark-100" "dark-200" "light-100" "light-200" "rtl-100" "launcher-results" "launcher-no-results" "launcher-empty" "launcher-rtl" "menu-normal" "menu-checkable" "menu-submenu" "menu-disabled" "menu-rtl" "quick-settings-normal" "quick-settings-muted" "quick-settings-dnd" "quick-settings-no-audio" "quick-settings-rtl" "panel-0" "panel-1" "panel-2" "panel-8" "panel-minimized" "panel-light" "panel-rtl" "panel-1920" "panel-2520" "panel-3840")
 TEMP_DIR=$(mktemp -d /tmp/kynex-visual-XXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
@@ -51,7 +51,7 @@ echo "=== Visual Regression Test (Tolerance: RMS <= ${RMS_TOLERANCE}) ==="
 
 for variant in "${VARIANTS[@]}"; do
     scale=1
-    if [[ "$variant" == *"-200" ]]; then
+    if [[ "$variant" == *"-200" || "$variant" == "panel-2520" || "$variant" == "panel-3840" ]]; then
         scale=2
     fi
 

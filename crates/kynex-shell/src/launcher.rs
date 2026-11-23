@@ -115,6 +115,11 @@ pub mod qobject {
         #[cxx_name = "launchSelected"]
         fn launch_selected(self: Pin<&mut Self>);
 
+        /// Launches a new instance of the currently selected application.
+        #[qinvokable]
+        #[cxx_name = "launchSelectedNewInstance"]
+        fn launch_selected_new_instance(self: Pin<&mut Self>);
+
         /// Closes the launcher overlay and clears query.
         #[qinvokable]
         fn close(self: Pin<&mut Self>);
@@ -275,6 +280,33 @@ impl qobject::LauncherModel {
     pub fn launch_selected(self: Pin<&mut Self>) {
         let selected = self.rust().core.selected_index();
         self.launch(selected);
+    }
+
+    /// Launches a new instance of the application at row `index`.
+    pub fn launch_new_instance(self: Pin<&mut Self>, index: i32) {
+        if let Some(app_id) = self.rust().core.launch(index) {
+            tokio::spawn(async move {
+                match zbus::connection::Builder::session().build().await {
+                    Ok(conn) => match Apps1Proxy::new(&conn).await {
+                        Ok(proxy) => {
+                            if let Err(err) = proxy.launch_new_instance(&app_id).await {
+                                error!("Failed to launch new instance {app_id}: {err}");
+                            }
+                        }
+                        Err(err) => error!("Failed to create Apps1Proxy: {err}"),
+                    },
+                    Err(err) => error!("Failed to connect to session bus: {err}"),
+                }
+            });
+        }
+
+        self.close();
+    }
+
+    /// Launches a new instance of the currently selected application.
+    pub fn launch_selected_new_instance(self: Pin<&mut Self>) {
+        let selected = self.rust().core.selected_index();
+        self.launch_new_instance(selected);
     }
 
     /// Closes the launcher overlay and clears query.

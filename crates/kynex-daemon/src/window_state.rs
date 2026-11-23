@@ -107,6 +107,8 @@ pub fn sanitize_app_id(raw_app_id: &str) -> String {
 #[derive(Debug, Default, Clone)]
 pub struct WindowState {
     windows: Vec<WindowItem>,
+    activation_counter: u64,
+    activation_map: std::collections::HashMap<String, u64>,
 }
 
 impl WindowState {
@@ -115,11 +117,14 @@ impl WindowState {
     pub fn new() -> Self {
         Self {
             windows: Vec::new(),
+            activation_counter: 0,
+            activation_map: std::collections::HashMap::new(),
         }
     }
 
     /// Resets all tracked windows, returning whether any windows were present.
     pub fn reset(&mut self) -> bool {
+        self.activation_map.clear();
         if self.windows.is_empty() {
             false
         } else {
@@ -138,6 +143,12 @@ impl WindowState {
     #[must_use]
     pub fn count(&self) -> usize {
         self.windows.len()
+    }
+
+    /// Returns the monotonic activation generation counter for a window ID.
+    #[must_use]
+    pub fn activation_generation(&self, id: &str) -> u64 {
+        self.activation_map.get(id).copied().unwrap_or(0)
     }
 
     /// Returns the currently active window ID, or `None` if no window has active focus.
@@ -166,6 +177,9 @@ impl WindowState {
 
         // If this window is becoming active, deactivate all other windows
         if active {
+            self.activation_counter += 1;
+            self.activation_map
+                .insert(id.clone(), self.activation_counter);
             for win in &mut self.windows {
                 if win.id != id {
                     win.active = false;
@@ -207,6 +221,7 @@ impl WindowState {
     /// Removes a window by ID. Returns the removed `WindowItem` if found.
     pub fn remove(&mut self, raw_id: &str) -> Option<WindowItem> {
         let id = sanitize_id(raw_id)?;
+        self.activation_map.remove(&id);
         if let Some(pos) = self.windows.iter().position(|w| w.id == id) {
             Some(self.windows.remove(pos))
         } else {
@@ -220,6 +235,12 @@ impl WindowState {
     pub fn set_active(&mut self, raw_id: &str) -> bool {
         let prev_active = self.active_id().map(ToString::to_string);
         let target_id = sanitize_id(raw_id);
+
+        if let Some(ref target) = target_id {
+            self.activation_counter += 1;
+            self.activation_map
+                .insert(target.clone(), self.activation_counter);
+        }
 
         for win in &mut self.windows {
             win.active = target_id.as_deref() == Some(&win.id);

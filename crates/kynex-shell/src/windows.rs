@@ -203,7 +203,7 @@ impl qobject::WindowListModel {
     /// Returns row count for the model.
     #[must_use]
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
-        self.rust().count
+        i32::try_from(self.rust().entries.len()).unwrap_or(0)
     }
 
     /// Returns role data for a given index.
@@ -339,11 +339,20 @@ fn dispatch_taskbar(qt_thread: &cxx_qt::CxxQtThread<qobject::WindowListModel>, c
         "taskbar: {running_count} running windows, {pinned_count} pinned entries (total {count})"
     );
     let _ = qt_thread.queue(move |mut qobj| {
+        #[cfg(feature = "test-hooks")]
+        if std::env::var("KYNEX_TEST_MUTANT_NO_NOTIFY").is_ok() {
+            // MUTANT-NO-NOTIFY: Mutate internal count without emitting reset or count_changed signal
+            qobj.as_mut().rust_mut().core = core;
+            qobj.as_mut().rust_mut().entries = entries;
+            qobj.as_mut().rust_mut().count = count;
+            return;
+        }
+
         qobj.as_mut().begin_reset_model();
         qobj.as_mut().rust_mut().core = core;
         qobj.as_mut().rust_mut().entries = entries;
-        qobj.as_mut().rust_mut().count = count;
         qobj.as_mut().end_reset_model();
+        // Emits countChanged() notify signal reactively updating QML bindings
         qobj.as_mut().set_count(count);
     });
 }

@@ -122,6 +122,7 @@ fn main() {
         let qurl_str = format!("file://{}", shell_qml_path.to_string_lossy());
         info!("Loading style shell from {qurl_str}");
         engine.as_mut().load(&QUrl::from(&qurl_str));
+        shim::register_engine_panel(engine.as_mut());
 
         #[cfg(feature = "bench")]
         if let Ok(count_str) = std::env::var("KYNEX_BENCH_LOAD_ICONS") {

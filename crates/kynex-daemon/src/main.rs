@@ -76,6 +76,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let current_desktop =
         std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_else(|_| "Kynex".to_string());
     let apps_shared = Arc::new(AppsSharedState::new(app_dirs, current_desktop));
+    apps_shared
+        .set_windows_state(Arc::clone(&windows_shared))
+        .await;
     let apps_server = AppsServer::new(Arc::clone(&apps_shared));
 
     let pins_server = PinsServer::new_default();
@@ -122,6 +125,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(kynex_ipc::audio::AUDIO_PATH, audio_server.clone())
         .build()
         .await?;
+
+    kynex_daemon::introspection::setup_clean_introspection(&session_conn).await?;
 
     info!("kynex-daemon active and serving '{DAEMON_PATH}'");
 

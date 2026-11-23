@@ -85,6 +85,8 @@ pub struct AppsSharedState {
     tracked_children: Arc<AtomicUsize>,
     /// Active desktop environment.
     pub current_desktop: String,
+    /// Reference to windows state for running window activation.
+    windows_state: RwLock<Option<Arc<crate::services::windows::WindowsSharedState>>>,
 }
 
 impl AppsSharedState {
@@ -100,7 +102,16 @@ impl AppsSharedState {
             launch_limiter: Mutex::new(RateLimitBucket::new(Instant::now())),
             tracked_children: Arc::new(AtomicUsize::new(0)),
             current_desktop: desktop,
+            windows_state: RwLock::new(None),
         }
+    }
+
+    /// Associates the windows shared state with the application service.
+    pub async fn set_windows_state(
+        &self,
+        state: Arc<crate::services::windows::WindowsSharedState>,
+    ) {
+        *self.windows_state.write().await = Some(state);
     }
 
     /// Reloads the application index from disk.
@@ -183,99 +194,15 @@ impl AppsServer {
             categories: entry.categories.clone(),
         }
     }
-}
 
-#[interface(name = "org.kynexos.Daemon.Apps1")]
-impl AppsServer {
-    /// Signal emitted when applications index changes.
-    #[zbus(signal)]
-    pub async fn changed(emitter: &SignalEmitter<'_>) -> zbus::Result<()>;
-
-    /// Returns the full list of available applications.
-    async fn get_apps(&self) -> zbus::fdo::Result<Vec<AppItem>> {
-        let locale = std::env::var("LC_MESSAGES")
-            .or_else(|_| std::env::var("LANG"))
-            .ok();
-        let index = self.shared.index.read().await;
-        let items = index
-            .entries()
-            .iter()
-            .map(|e| Self::entry_to_item(e, locale.as_deref()))
-            .collect();
-        Ok(items)
-    }
-
-    /// Returns application mapping entries (`id`, `startup_wm_class`, `icon_name`).
-    async fn get_app_mapping(&self) -> zbus::fdo::Result<Vec<AppMappingItem>> {
-        let index = self.shared.index.read().await;
-        let mappings = index
-            .entries()
-            .iter()
-            .map(|e| AppMappingItem {
-                id: e.id.clone(),
-                startup_wm_class: e.startup_wm_class.clone().unwrap_or_default(),
-                icon_name: e.icon.clone(),
-            })
-            .collect();
-        Ok(mappings)
-    }
-
-    /// Searches and ranks applications matching `query` up to `limit` entries.
-    async fn search(&self, query: String, limit: u32) -> zbus::fdo::Result<Vec<AppItem>> {
-        if query.chars().count() > 128 {
-            return Err(zbus::fdo::Error::InvalidArgs(
-                "Query length exceeds 128 characters".into(),
-            ));
-        }
-
-        let cap = if limit == 0 {
-            20
-        } else {
-            (limit as usize).min(50)
-        };
-        let locale = std::env::var("LC_MESSAGES")
-            .or_else(|_| std::env::var("LANG"))
-            .ok();
-
-        let index = self.shared.index.read().await;
-        let matches = index.search(&query, cap, locale.as_deref());
-        let items = matches
-            .into_iter()
-            .map(|e| Self::entry_to_item(e, locale.as_deref()))
-            .collect();
-
-        Ok(items)
-    }
-
-    /// Spawns the application binary associated with desktop entry `id`.
+    /// Helper to spawn application process via systemd or direct fallback.
     #[allow(clippy::too_many_lines)]
-    async fn launch(
+    async fn spawn_application(
         &self,
-        id: String,
-        #[zbus(header)] hdr: Header<'_>,
-        #[zbus(connection)] conn: &Connection,
+        entry: &DesktopEntry,
+        id: &str,
+        conn: &Connection,
     ) -> zbus::fdo::Result<()> {
-        let sender = hdr
-            .sender()
-            .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
-
-        let dbus = DBusProxy::new(conn).await?;
-        let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;
-
-        self.shared.check_caller(sender.as_str(), uid).await?;
-
-        let entry = {
-            let index = self.shared.index.read().await;
-            if let Some(e) = index.get(&id).cloned() {
-                e
-            } else {
-                info!("Apps1: application launch failed for ID '{id}': entry not found");
-                return Err(zbus::fdo::Error::InvalidArgs(format!(
-                    "Application ID '{id}' not found"
-                )));
-            }
-        };
-
         if entry.terminal {
             info!("Apps1: application launch failed for ID '{id}': terminal apps unsupported");
             return Err(zbus::fdo::Error::Failed(
@@ -318,7 +245,7 @@ impl AppsServer {
 
         let sanitized_id: String = id
             .strip_suffix(".desktop")
-            .unwrap_or(&id)
+            .unwrap_or(id)
             .chars()
             .map(|c| {
                 if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
@@ -423,6 +350,174 @@ impl AppsServer {
 
         info!("Apps1: application launch succeeded for ID '{id}'");
         Ok(())
+    }
+}
+
+#[interface(name = "org.kynexos.Daemon.Apps1")]
+impl AppsServer {
+    /// Signal emitted when applications index changes.
+    #[zbus(signal)]
+    pub async fn changed(emitter: &SignalEmitter<'_>) -> zbus::Result<()>;
+
+    /// Returns the full list of available applications.
+    async fn get_apps(&self) -> zbus::fdo::Result<Vec<AppItem>> {
+        let locale = std::env::var("LC_MESSAGES")
+            .or_else(|_| std::env::var("LANG"))
+            .ok();
+        let index = self.shared.index.read().await;
+        let items = index
+            .entries()
+            .iter()
+            .map(|e| Self::entry_to_item(e, locale.as_deref()))
+            .collect();
+        Ok(items)
+    }
+
+    /// Returns application mapping entries (`id`, `startup_wm_class`, `icon_name`).
+    async fn get_app_mapping(&self) -> zbus::fdo::Result<Vec<AppMappingItem>> {
+        let index = self.shared.index.read().await;
+        let mappings = index
+            .entries()
+            .iter()
+            .map(|e| AppMappingItem {
+                id: e.id.clone(),
+                startup_wm_class: e.startup_wm_class.clone().unwrap_or_default(),
+                icon_name: e.icon.clone(),
+            })
+            .collect();
+        Ok(mappings)
+    }
+
+    /// Searches and ranks applications matching `query` up to `limit` entries.
+    async fn search(&self, query: String, limit: u32) -> zbus::fdo::Result<Vec<AppItem>> {
+        if query.chars().count() > 128 {
+            return Err(zbus::fdo::Error::InvalidArgs(
+                "Query length exceeds 128 characters".into(),
+            ));
+        }
+
+        let cap = if limit == 0 {
+            20
+        } else {
+            (limit as usize).min(50)
+        };
+        let locale = std::env::var("LC_MESSAGES")
+            .or_else(|_| std::env::var("LANG"))
+            .ok();
+
+        let index = self.shared.index.read().await;
+        let matches = index.search(&query, cap, locale.as_deref());
+        let items = matches
+            .into_iter()
+            .map(|e| Self::entry_to_item(e, locale.as_deref()))
+            .collect();
+
+        Ok(items)
+    }
+
+    /// Spawns the application binary associated with desktop entry `id`,
+    /// or activates/restores an existing window if one matches.
+    async fn launch(
+        &self,
+        id: String,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<()> {
+        let sender = hdr
+            .sender()
+            .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
+
+        let dbus = DBusProxy::new(conn).await?;
+        let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;
+
+        self.shared.check_caller(sender.as_str(), uid).await?;
+
+        let entry = {
+            let index = self.shared.index.read().await;
+            if let Some(e) = index.get(&id).cloned() {
+                e
+            } else {
+                info!("Apps1: application launch failed for ID '{id}': entry not found");
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Application ID '{id}' not found"
+                )));
+            }
+        };
+
+        // Check if an existing window matches this desktop entry
+        if let Some(ref win_shared) = *self.shared.windows_state.read().await {
+            let candidate = kynex_shell_core::matching::AppCandidate::new(
+                &entry.id,
+                entry.startup_wm_class.as_deref(),
+                &entry.icon,
+            );
+            let state = win_shared.state.read().await;
+            let matching_windows: Vec<kynex_ipc::windows::WindowItem> = state
+                .list()
+                .iter()
+                .filter(|w| {
+                    kynex_shell_core::matching::match_window_to_app(
+                        &w.app_id,
+                        std::slice::from_ref(&candidate),
+                    )
+                    .is_some()
+                })
+                .cloned()
+                .collect();
+
+            if !matching_windows.is_empty() {
+                let best_window = matching_windows
+                    .iter()
+                    .find(|w| w.active)
+                    .or_else(|| {
+                        matching_windows
+                            .iter()
+                            .max_by_key(|w| state.activation_generation(&w.id))
+                    })
+                    .unwrap_or(&matching_windows[0]);
+
+                let win_id = best_window.id.clone();
+                drop(state);
+
+                info!("Apps1: activating existing window '{win_id}' for application ID '{id}'");
+                let _ = win_shared.activate_window(&win_id).await;
+                return Ok(());
+            }
+        }
+
+        self.spawn_application(&entry, &id, conn).await
+    }
+
+    /// Spawns a new application instance unconditionally.
+    async fn launch_new_instance(
+        &self,
+        id: String,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<()> {
+        let sender = hdr
+            .sender()
+            .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
+
+        let dbus = DBusProxy::new(conn).await?;
+        let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;
+
+        self.shared.check_caller(sender.as_str(), uid).await?;
+
+        let entry = {
+            let index = self.shared.index.read().await;
+            if let Some(e) = index.get(&id).cloned() {
+                e
+            } else {
+                info!("Apps1: application launch failed for ID '{id}': entry not found");
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Application ID '{id}' not found"
+                )));
+            }
+        };
+
+        info!("Apps1: launching new instance for application ID '{id}'");
+        self.spawn_application(&entry, &id, conn).await
     }
 }
 

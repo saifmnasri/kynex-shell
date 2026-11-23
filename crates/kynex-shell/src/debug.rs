@@ -164,18 +164,9 @@ impl ShellDebugServer {
     pub fn new(hub: Arc<ShellDebugHub>) -> Self {
         Self { hub }
     }
-}
 
-#[zbus::interface(name = "org.kynexos.Shell.Debug1")]
-impl ShellDebugServer {
-    /// Dumps the current shell state as a sanitized JSON payload.
-    ///
-    /// Restricts access to the same UID.
-    async fn dump_state(
-        &self,
-        #[zbus(header)] hdr: Header<'_>,
-        #[zbus(connection)] conn: &Connection,
-    ) -> zbus::fdo::Result<String> {
+    /// Helper to enforce same-UID caller check for Debug1 methods.
+    async fn check_caller(&self, hdr: &Header<'_>, conn: &Connection) -> zbus::fdo::Result<()> {
         let sender = hdr
             .sender()
             .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
@@ -189,11 +180,57 @@ impl ShellDebugServer {
                 "Caller UID does not match".into(),
             ));
         }
+        Ok(())
+    }
+}
+
+#[zbus::interface(name = "org.kynexos.Shell.Debug1")]
+impl ShellDebugServer {
+    /// Dumps the current shell state as a sanitized JSON payload.
+    ///
+    /// Restricts access to the same UID.
+    async fn dump_state(
+        &self,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<String> {
+        self.check_caller(&hdr, conn).await?;
 
         let state = self.hub.snapshot().await;
         state
             .to_json()
             .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))
+    }
+
+    /// Dumps the current QML scene as sanitized JSON (strictly NO titles).
+    ///
+    /// Restricts access to the same UID.
+    async fn dump_scene(
+        &self,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<String> {
+        self.check_caller(&hdr, conn).await?;
+        Ok(crate::shim::dump_active_scene())
+    }
+
+    /// Grabs a PNG of the panel window to `$XDG_RUNTIME_DIR/kynex/panel-<timestamp>.png`
+    /// with mode 0600 and returns the path.
+    ///
+    /// Restricts access to the same UID.
+    async fn grab_panel(
+        &self,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<String> {
+        self.check_caller(&hdr, conn).await?;
+        let path = crate::shim::grab_active_panel();
+        if path.is_empty() {
+            return Err(zbus::fdo::Error::Failed(
+                "Failed to grab panel image".into(),
+            ));
+        }
+        Ok(path)
     }
 
     /// Returns whether primary models are ready.

@@ -76,7 +76,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
 
     let test_bus_name = "org.kynexos.Daemon.IntrospectValidationTest";
 
-    let _conn = zbus::connection::Builder::session()
+    let conn = zbus::connection::Builder::session()
         .name(test_bus_name)
         .serve_at(DAEMON_PATH, core_server)
         .serve_at(POWER_PATH, power_server)
@@ -97,7 +97,33 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         .await
         .unwrap();
 
-    let leaf_paths = [
+    kynex_daemon::introspection::setup_clean_introspection(&conn)
+        .await
+        .unwrap();
+
+    // 0. Verify `busctl --user tree` produces exit code 0 and completely EMPTY stderr
+    let tree_output = tokio::process::Command::new("busctl")
+        .args(["--user", "tree", test_bus_name])
+        .output()
+        .await
+        .expect("Failed to run busctl tree");
+    let tree_stderr = String::from_utf8_lossy(&tree_output.stderr);
+    assert!(
+        tree_output.status.success(),
+        "busctl tree failed with status {}: {tree_stderr}",
+        tree_output.status
+    );
+    assert!(
+        tree_stderr.trim().is_empty(),
+        "busctl tree emitted unexpected stderr:\n{tree_stderr}"
+    );
+
+    let all_paths = [
+        "/",
+        "/org",
+        "/org/freedesktop",
+        "/org/kynexos",
+        "/org/kynexos/Daemon",
         WINDOWS_PATH,
         APPS_PATH,
         SHELL_PATH,
@@ -109,7 +135,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         FDO_NOTIFICATIONS_PATH,
     ];
 
-    for path in leaf_paths {
+    for path in all_paths {
         // 1. Verify `busctl introspect` runs with zero warnings and empty stderr
         let output = tokio::process::Command::new("busctl")
             .args(["--user", "introspect", test_bus_name, path])
@@ -193,4 +219,17 @@ if violations:
             String::from_utf8_lossy(&py_output.stdout)
         );
     }
+
+    // 3. Verify busctl --user tree exits 0 with completely empty stderr
+    let tree_output = tokio::process::Command::new("busctl")
+        .args(["--user", "tree", test_bus_name])
+        .output()
+        .await
+        .expect("Failed to run busctl --user tree");
+    assert!(tree_output.status.success());
+    let tree_stderr = String::from_utf8_lossy(&tree_output.stderr);
+    assert!(
+        tree_stderr.trim().is_empty(),
+        "busctl tree emitted warnings on stderr: {tree_stderr}"
+    );
 }

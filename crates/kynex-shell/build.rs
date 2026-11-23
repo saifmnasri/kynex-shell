@@ -25,6 +25,8 @@ fn main() {
             "cpp/style.h",
             "cpp/shim.cpp",
             "cpp/shim.h",
+            "cpp/qml_harness.cpp",
+            "cpp/qml_harness.h",
         ])
         .include_dir("cpp")
         .include_dir("/usr/include/LayerShellQt")
@@ -32,6 +34,8 @@ fn main() {
         .qt_module("Gui")
         .qt_module("Core")
         .qt_module("Svg")
+        .qt_module("Test")
+        .qt_module("DBus")
         .build();
 
     println!("cargo:rustc-link-lib=LayerShellQtInterface");

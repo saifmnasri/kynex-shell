@@ -12,8 +12,24 @@ pub mod ffi {
         type QQmlApplicationEngine = cxx_qt_lib::QQmlApplicationEngine;
 
         include!("cpp/shim.h");
+        include!("cpp/qml_harness.h");
         /// Registers `LayerSurface` in `Kynex.Shell` and `Style` in `Kynex.Style`.
         fn kynex_register_core_types();
+
+        /// Runs taskbar QML replay harness for a geometry and DESTDIR.
+        #[must_use]
+        fn kynex_run_taskbar_qml_harness(destdir: &str, width: i32, height: i32, dpr: f64) -> i32;
+
+        /// Dumps active panel scene as sanitized JSON.
+        #[must_use]
+        fn kynex_dump_active_scene() -> String;
+
+        /// Grabs active panel to PNG.
+        #[must_use]
+        fn kynex_grab_active_panel() -> String;
+
+        /// Registers the root panel window from QQmlApplicationEngine.
+        fn kynex_register_engine_panel(engine: Pin<&mut QQmlApplicationEngine>);
 
         /// Loads bundled fonts into QFontDatabase.
         fn kynex_load_bundled_fonts();
@@ -191,4 +207,27 @@ pub unsafe extern "C" fn kynex_resolve_icon(
 #[must_use]
 pub fn test_real_tray_menu_model_open(qml_path: &str) -> bool {
     ffi::kynex_test_real_tray_menu_model_open(qml_path)
+}
+
+/// Runs the taskbar QML replay test harness.
+#[must_use]
+pub fn run_taskbar_qml_harness(destdir: &str, width: i32, height: i32, dpr: f64) -> i32 {
+    ffi::kynex_run_taskbar_qml_harness(destdir, width, height, dpr)
+}
+
+/// Dumps the active scene tree as sanitized JSON.
+#[must_use]
+pub fn dump_active_scene() -> String {
+    ffi::kynex_dump_active_scene()
+}
+
+/// Grabs the active panel window as a PNG image.
+#[must_use]
+pub fn grab_active_panel() -> String {
+    ffi::kynex_grab_active_panel()
+}
+
+/// Registers the root panel window from `QQmlApplicationEngine` for D-Bus introspection.
+pub fn register_engine_panel(engine: Pin<&mut cxx_qt_lib::QQmlApplicationEngine>) {
+    ffi::kynex_register_engine_panel(engine);
 }

@@ -16,6 +16,7 @@ kynex-audio = { workspace = true }
 kynex-dbusmenu = { workspace = true }
 kynex-ipc = { workspace = true }
 kynex-notifications = { path = "../kynex-notifications", version = "0.1.0" }
+kynex-shell-core = { workspace = true }
 kynex-tray = { path = "../kynex-tray", version = "0.1.0" }
 rustix = { version = "1", default-features = false, features = ["process"] }
 serde = { workspace = true }

@@ -619,3 +619,173 @@ async fn test_daemon_wide_launch_rate_limiter() {
         "Exactly 5 launches must be rate-limited with LimitsExceeded"
     );
 }
+
+#[derive(Debug, Clone)]
+struct MockActionExecutor {
+    executed: Arc<tokio::sync::Mutex<Vec<(String, kynex_daemon::services::windows::WindowAction)>>>,
+}
+
+impl kynex_daemon::services::windows::KWinActionExecutor for MockActionExecutor {
+    fn execute_action(
+        &self,
+        id: &str,
+        action: kynex_daemon::services::windows::WindowAction,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send + '_>> {
+        let id = id.to_string();
+        let executed = Arc::clone(&self.executed);
+        Box::pin(async move {
+            executed.lock().await.push((id, action));
+            Ok(())
+        })
+    }
+}
+
+#[tokio::test]
+async fn test_apps_service_single_instance_activation() {
+    let bus = TestBus::new().await.expect("Spawn test dbus");
+    let tmp = tempdir().unwrap();
+    let app_dir = tmp.path().join("applications");
+    fs::create_dir_all(&app_dir).unwrap();
+
+    // Create a fake desktop entry
+    let desktop_content = r#"[Desktop Entry]
+Type=Application
+Name=Calculator
+StartupWMClass=org.gnome.Calculator
+Exec=/bin/true
+Icon=calc
+"#;
+    fs::write(app_dir.join("calc.desktop"), desktop_content).unwrap();
+
+    // Setup windows shared state with mock executor
+    let policy: Arc<dyn kynex_daemon::services::windows::SenderPolicy> =
+        Arc::new(kynex_daemon::services::windows::AllowAllSenderPolicy);
+    let win_shared = Arc::new(kynex_daemon::services::windows::WindowsSharedState::new(
+        policy,
+    ));
+    let executed_actions = Arc::new(tokio::sync::Mutex::new(Vec::new()));
+    win_shared
+        .set_action_executor(Arc::new(MockActionExecutor {
+            executed: Arc::clone(&executed_actions),
+        }))
+        .await;
+
+    // Insert existing matching window
+    win_shared.state.write().await.upsert(
+        "1001",
+        "Calculator Window",
+        "org.gnome.Calculator",
+        true,  // minimized
+        false, // not active
+    );
+
+    // Setup apps shared state
+    let apps_shared = Arc::new(AppsSharedState::new(vec![app_dir.clone()], "Kynex"));
+    apps_shared.reload().await;
+    apps_shared.set_windows_state(Arc::clone(&win_shared)).await;
+
+    let server = AppsServer::new(Arc::clone(&apps_shared));
+
+    let _srv_conn = zbus::connection::Builder::address(bus.address())
+        .name(DAEMON_DESTINATION)
+        .serve_at(APPS_PATH, server)
+        .build()
+        .await
+        .expect("Server conn");
+
+    let client_conn = zbus::connection::Builder::address(bus.address())
+        .build()
+        .await
+        .expect("Client conn");
+    let proxy = Apps1Proxy::builder(&client_conn)
+        .destination(DAEMON_DESTINATION)
+        .path(APPS_PATH)
+        .build()
+        .await
+        .expect("Proxy build");
+
+    // 1. Launch should activate existing window without spawning new process
+    let initial_children = apps_shared.tracked_children_count();
+    proxy
+        .launch("calc.desktop")
+        .await
+        .expect("Launch existing app");
+
+    // Verify window action was executed
+    {
+        let actions = executed_actions.lock().await;
+        assert_eq!(
+            actions.len(),
+            1,
+            "Must execute exactly 1 window action for existing app"
+        );
+        assert_eq!(
+            actions[0],
+            (
+                "1001".to_string(),
+                kynex_daemon::services::windows::WindowAction::Activate
+            )
+        );
+    }
+    assert_eq!(
+        apps_shared.tracked_children_count(),
+        initial_children,
+        "No child process should be spawned when window is activated"
+    );
+
+    // 2. LaunchNewInstance should spawn a new process unconditionally
+    proxy
+        .launch_new_instance("calc.desktop")
+        .await
+        .expect("Launch new instance");
+
+    // Window action list should still be 1 (no new activation)
+    {
+        let actions = executed_actions.lock().await;
+        assert_eq!(
+            actions.len(),
+            1,
+            "LaunchNewInstance must not call window activation"
+        );
+    }
+
+    // 3. Launching non-existent desktop entry should fail with InvalidArgs
+    let err = proxy
+        .launch("nonexistent.desktop")
+        .await
+        .expect_err("Nonexistent app must fail");
+    match err {
+        zbus::Error::FDO(fdo) => match *fdo {
+            zbus::fdo::Error::InvalidArgs(_) => {}
+            other => panic!("Expected InvalidArgs, got: {other:?}"),
+        },
+        other => panic!("Expected FDO error, got: {other:?}"),
+    }
+
+    // 4. Multiple matching windows: activates the most recently active one
+    win_shared.state.write().await.upsert(
+        "1002",
+        "Calculator Window 2",
+        "org.gnome.Calculator",
+        false,
+        true, // currently active
+    );
+
+    proxy
+        .launch("calc.desktop")
+        .await
+        .expect("Launch app with multiple windows");
+
+    {
+        let actions = executed_actions.lock().await;
+        assert_eq!(actions.len(), 2);
+        assert_eq!(
+            actions[1],
+            (
+                "1002".to_string(),
+                kynex_daemon::services::windows::WindowAction::Activate
+            ),
+            "Must activate most recently active window"
+        );
+    }
+}
