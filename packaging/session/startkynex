@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+# Startup and supervision script for KynexOS desktop session on KWin 6 (Wayland)
+# Part of Kynex Shell. Public-safe, no hardcoded private paths.
+set -euo pipefail
+
+# Mode 2: Executed by kwin_wayland as the session supervisor inside the compositor
+if [[ "${1:-}" == "--session-supervisor" ]]; then
+  echo "startkynex [supervisor]: Synchronizing compositor environment..." >&2
+
+  # Import runtime Wayland display and display variables into systemd user manager and D-Bus
+  systemctl --user import-environment \
+    DCONF_PROFILE \
+    WAYLAND_DISPLAY \
+    DISPLAY \
+    XDG_CURRENT_DESKTOP \
+    XDG_SESSION_DESKTOP \
+    XDG_SESSION_TYPE \
+    QT_QPA_PLATFORM \
+    QT_WAYLAND_DISABLE_WINDOWDECORATION || true
+
+  dbus-update-activation-environment --systemd \
+    DCONF_PROFILE \
+    WAYLAND_DISPLAY \
+    DISPLAY \
+    XDG_CURRENT_DESKTOP \
+    XDG_SESSION_DESKTOP \
+    XDG_SESSION_TYPE \
+    QT_QPA_PLATFORM \
+    QT_WAYLAND_DISABLE_WINDOWDECORATION || true
+
+  # Load KWin tracking and shortcut scripts via D-Bus org.kde.kwin.Scripting if available
+  (
+    for _ in {1..50}; do
+      if busctl --user status org.kde.KWin >/dev/null 2>&1; then
+        break
+      fi
+      sleep 0.1
+    done
+
+    # Resolve installed or local script directories
+    SCRIPT_ROOT=""
+    for candidate in \
+      "/usr/share/kwin/scripts" \
+      "/usr/local/share/kwin/scripts" \
+      "${XDG_DATA_HOME:-$HOME/.local/share}/kwin/scripts"; do
+      if [[ -d "$candidate" ]]; then
+        SCRIPT_ROOT="$candidate"
+        break
+      fi
+    done
+
+    check_and_load_script() {
+      local name="$1"
+      local path="$2"
+
+      # Check if already loaded by KWin (e.g. through kwinrc [Plugins] at startup)
+      if busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting isScriptLoaded s "$name" 2>/dev/null | grep -q "true"; then
+        echo "startkynex [supervisor]: KWin script '$name' is active (loaded by compositor)." >&2
+        return 0
+      fi
+
+      if [[ -f "$path" ]]; then
+        local id
+        id="$(busctl --user call org.kde.KWin /Scripting org.kde.kwin.Scripting loadScript ss "$path" "$name" 2>/dev/null | awk '{print $2}' || true)"
+        if [[ -n "$id" && "$id" != "-1" ]]; then
+          busctl --user call org.kde.KWin "/Scripting/Script$id" org.kde.kwin.Script run >/dev/null 2>&1 || true
+          echo "startkynex [supervisor]: Successfully loaded and started KWin script '$name' (id $id)." >&2
+          return 0
+        else
+          echo "startkynex [supervisor]: Warning: KWin loadScript failed for '$name' (returned '$id')." >&2
+          return 1
+        fi
+      else
+        echo "startkynex [supervisor]: Warning: KWin script file not found at '$path'." >&2
+        return 1
+      fi
+    }
+
+    if [[ -n "$SCRIPT_ROOT" ]] && busctl --user status org.kde.KWin >/dev/null 2>&1; then
+      check_and_load_script "kynex-windows" "$SCRIPT_ROOT/kynex-windows/contents/code/main.js" || true
+      check_and_load_script "kynex-launcher" "$SCRIPT_ROOT/kynex-launcher/contents/code/main.js" || true
+    else
+      echo "startkynex [supervisor]: Warning: KWin D-Bus interface or scripts directory unavailable." >&2
+    fi
+  ) &
+  SCRIPT_LOADER_PID=$!
+
+  # Check that global shortcuts daemon (org.kde.kglobalaccel) appears on session bus after startup
+  (
+    # Wait for session target to become active (or up to 5s)
+    for _ in {1..25}; do
+      if systemctl --user is-active kynex-session.target >/dev/null 2>&1; then
+        break
+      fi
+      sleep 0.2
+    done
+
+    # Verify org.kde.kglobalaccel bus presence
+    KGLOBALACCEL_ACTIVE=0
+    for _ in {1..25}; do
+      if busctl --user status org.kde.kglobalaccel >/dev/null 2>&1; then
+        KGLOBALACCEL_ACTIVE=1
+        break
+      fi
+      sleep 0.2
+    done
+
+    if [[ "$KGLOBALACCEL_ACTIVE" -eq 1 ]]; then
+      echo "startkynex [supervisor]: Global shortcuts service 'org.kde.kglobalaccel' is active on session bus." >&2
+    else
+      echo "startkynex [supervisor]: WARNING: 'org.kde.kglobalaccel' is not owned on session bus within 5 seconds. Global shortcuts (such as Meta+Space) may not function." >&2
+    fi
+  ) &
+  SHORTCUT_CHECK_PID=$!
+
+  cleanup() {
+    trap - EXIT INT TERM HUP
+    echo "startkynex [supervisor]: Tearing down kynex-session.target..." >&2
+    [[ -n "${SCRIPT_LOADER_PID:-}" ]] && kill -TERM "$SCRIPT_LOADER_PID" 2>/dev/null || true
+    [[ -n "${SHORTCUT_CHECK_PID:-}" ]] && kill -TERM "$SHORTCUT_CHECK_PID" 2>/dev/null || true
+    systemctl --user stop kynex-session.target >/dev/null 2>&1 || true
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY >/dev/null 2>&1 || true
+    systemctl --user reset-failed >/dev/null 2>&1 || true
+  }
+  trap cleanup EXIT INT TERM HUP
+
+  echo "startkynex [supervisor]: Starting kynex-session.target..." >&2
+  if ! systemctl --user start --wait kynex-session.target; then
+    echo "startkynex [supervisor]: FATAL: failed to start kynex-session.target" >&2
+    cleanup
+    exit 1
+  fi
+
+  cleanup
+  echo "startkynex [supervisor]: Session finished. Exiting supervisor." >&2
+  exit 0
+fi
+
+# Mode 1: Executed by display manager (GDM/SDDM) or TTY entrypoint
+echo "startkynex: Initializing Kynex Desktop Environment..." >&2
+
+# Fail-fast check 1: kwin_wayland compositor binary
+if ! command -v kwin_wayland >/dev/null 2>&1; then
+  echo "startkynex: FATAL: 'kwin_wayland' executable not found in PATH" >&2
+  exit 127
+fi
+
+# Fail-fast check 2: Kynex shell and daemon binaries
+for bin in kynex-daemon kynex-shell; do
+  if ! command -v "$bin" >/dev/null 2>&1 && [[ ! -x "/usr/local/bin/$bin" ]]; then
+    echo "startkynex: FATAL: required binary '$bin' not found in PATH or /usr/local/bin" >&2
+    exit 127
+  fi
+done
+
+# Set authoritative desktop identity and Qt Wayland flags
+export DCONF_PROFILE="kynex"
+export XDG_CURRENT_DESKTOP="Kynex"
+export XDG_SESSION_DESKTOP="Kynex"
+export XDG_SESSION_TYPE="wayland"
+export QT_QPA_PLATFORM="wayland"
+export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+
+# Synchronize base environment with D-Bus activation and systemd user manager
+dbus-update-activation-environment --systemd \
+  DCONF_PROFILE \
+  XDG_CURRENT_DESKTOP \
+  XDG_SESSION_DESKTOP \
+  XDG_SESSION_TYPE \
+  QT_QPA_PLATFORM \
+  QT_WAYLAND_DISABLE_WINDOWDECORATION || true
+
+# Resolve self path for supervisor callback
+SELF="$(command -v "$0" || echo "$0")"
+
+# Launch KWin 6 as Wayland compositor.
+# Flags:
+#   --no-lockscreen: Screen locking UI is deferred to Phase 8; no fake overlay locks (D-011).
+#   --exit-with-session: Automatically exits KWin when startkynex supervisor terminates.
+echo "startkynex: Launching kwin_wayland with supervisor $SELF..." >&2
+exec kwin_wayland --no-lockscreen --exit-with-session "$SELF --session-supervisor"

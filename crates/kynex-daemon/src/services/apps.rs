@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -17,10 +17,30 @@ use tracing::{debug, info, warn};
 use zbus::fdo::DBusProxy;
 use zbus::message::Header;
 use zbus::object_server::SignalEmitter;
+use zbus::zvariant::Variant;
 use zbus::{interface, Connection};
+
+/// D-Bus proxy for `org.freedesktop.systemd1.Manager` to start transient units.
+#[zbus::proxy(
+    default_service = "org.freedesktop.systemd1",
+    default_path = "/org/freedesktop/systemd1",
+    interface = "org.freedesktop.systemd1.Manager"
+)]
+pub trait Systemd1Manager {
+    /// Starts a transient unit through systemd.
+    fn start_transient_unit(
+        &self,
+        name: &str,
+        mode: &str,
+        properties: &[(&str, Variant<'_>)],
+        aux: &[(&str, &[(&str, Variant<'_>)])],
+    ) -> zbus::Result<zbus::OwnedObjectPath>;
+}
 
 /// Default maximum allowed launches per second daemon-wide.
 pub const LAUNCH_RATE_LIMIT_PER_SEC: u32 = 5;
+
+static LAUNCH_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 /// Rate limiting bucket for launch rate throttling.
 #[derive(Debug)]
@@ -65,6 +85,8 @@ pub struct AppsSharedState {
     tracked_children: Arc<AtomicUsize>,
     /// Active desktop environment.
     pub current_desktop: String,
+    /// Reference to windows state for running window activation.
+    windows_state: RwLock<Option<Arc<crate::services::windows::WindowsSharedState>>>,
 }
 
 impl AppsSharedState {
@@ -80,7 +102,16 @@ impl AppsSharedState {
             launch_limiter: Mutex::new(RateLimitBucket::new(Instant::now())),
             tracked_children: Arc::new(AtomicUsize::new(0)),
             current_desktop: desktop,
+            windows_state: RwLock::new(None),
         }
+    }
+
+    /// Associates the windows shared state with the application service.
+    pub async fn set_windows_state(
+        &self,
+        state: Arc<crate::services::windows::WindowsSharedState>,
+    ) {
+        *self.windows_state.write().await = Some(state);
     }
 
     /// Reloads the application index from disk.
@@ -118,7 +149,12 @@ impl AppsSharedState {
             ));
         }
 
-        if std::env::var("KYNEX_TEST_BYPASS_RATE_LIMIT").as_deref() != Ok("1") {
+        #[cfg(feature = "test-hooks")]
+        let check_rate_limit = std::env::var("KYNEX_TEST_BYPASS_RATE_LIMIT").as_deref() != Ok("1");
+        #[cfg(not(feature = "test-hooks"))]
+        let check_rate_limit = true;
+
+        if check_rate_limit {
             let now = Instant::now();
             let mut limiter = self.launch_limiter.lock().await;
             if !limiter.check_and_inc(now, LAUNCH_RATE_LIMIT_PER_SEC) {
@@ -157,6 +193,163 @@ impl AppsServer {
             icon_name: entry.icon.clone(),
             categories: entry.categories.clone(),
         }
+    }
+
+    /// Helper to spawn application process via systemd or direct fallback.
+    #[allow(clippy::too_many_lines)]
+    async fn spawn_application(
+        &self,
+        entry: &DesktopEntry,
+        id: &str,
+        conn: &Connection,
+    ) -> zbus::fdo::Result<()> {
+        if entry.terminal {
+            info!("Apps1: application launch failed for ID '{id}': terminal apps unsupported");
+            return Err(zbus::fdo::Error::Failed(
+                "Terminal applications are unsupported yet".into(),
+            ));
+        }
+
+        let locale = std::env::var("LC_MESSAGES")
+            .or_else(|_| std::env::var("LANG"))
+            .ok();
+        let app_name = entry.name.resolve(locale.as_deref());
+
+        let ctx = ExecContext {
+            name: app_name,
+            icon: &entry.icon,
+            file_path: &entry.path,
+            files: &[],
+            urls: &[],
+        };
+
+        let argv = match parse_exec(&entry.exec_raw, &ctx) {
+            Ok(v) => v,
+            Err(e) => {
+                info!("Apps1: application launch failed for ID '{id}': parse error");
+                return Err(zbus::fdo::Error::Failed(format!(
+                    "Failed to parse Exec: {e}"
+                )));
+            }
+        };
+
+        if argv.is_empty() {
+            info!("Apps1: application launch failed for ID '{id}': empty argv");
+            return Err(zbus::fdo::Error::Failed(
+                "Empty executable argument vector".into(),
+            ));
+        }
+
+        // Log ONLY the id, NEVER arguments
+        info!("Apps1: launching application ID '{id}'");
+
+        let sanitized_id: String = id
+            .strip_suffix(".desktop")
+            .unwrap_or(id)
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let counter = LAUNCH_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let now_nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
+        let rand_suffix = format!("{now_nanos:x}_{counter:x}_{}", std::process::id());
+        let unit_name = format!("app-kynex-{sanitized_id}-{rand_suffix}.service");
+
+        let systemd_conn = if let Ok(dbus) = DBusProxy::new(conn).await {
+            let bus_name: Result<zbus::names::BusName<'_>, _> =
+                "org.freedesktop.systemd1".try_into();
+            if let Ok(name) = bus_name {
+                if dbus.name_has_owner(name.as_ref()).await.unwrap_or(false) {
+                    Some(conn.clone())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let systemd_conn = match systemd_conn {
+            Some(c) => c,
+            None => {
+                if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+                    let user_bus_path = format!("{runtime_dir}/bus");
+                    if std::path::Path::new(&user_bus_path).exists() {
+                        let addr = format!("unix:path={user_bus_path}");
+                        let builder = zbus::connection::Builder::address(addr.as_str());
+                        builder.build().await.unwrap_or_else(|_| conn.clone())
+                    } else {
+                        conn.clone()
+                    }
+                } else {
+                    conn.clone()
+                }
+            }
+        };
+
+        let systemd_proxy = Systemd1ManagerProxy::new(&systemd_conn).await;
+        let launched_via_systemd = match systemd_proxy {
+            Ok(ref proxy) => {
+                // Systemd evaluates '$' for variable substitution in ExecStart;
+                // escape '$' as '$$' so argv metacharacters are passed literally.
+                let systemd_argv: Vec<String> =
+                    argv.iter().map(|arg| arg.replace('$', "$$")).collect();
+                let exec_tuple: Vec<(String, Vec<String>, bool)> =
+                    vec![(argv[0].clone(), systemd_argv, false)];
+                let exec_var = Variant::from(exec_tuple);
+                let desc = format!("Application {id}");
+                let props = [
+                    ("Description", Variant::from(desc.as_str())),
+                    ("Slice", Variant::from("app.slice")),
+                    ("Type", Variant::from("exec")),
+                    ("CollectMode", Variant::from("inactive-or-failed")),
+                    ("ExecStart", exec_var),
+                ];
+                match proxy
+                    .start_transient_unit(&unit_name, "replace", &props, &[])
+                    .await
+                {
+                    Ok(job) => {
+                        debug!("Apps1: started transient unit '{unit_name}' (job: {job})");
+                        true
+                    }
+                    Err(e) => {
+                        warn!("Apps1: StartTransientUnit failed ({e}); falling back to detached spawn");
+                        false
+                    }
+                }
+            }
+            Err(e) => {
+                debug!("Apps1: systemd manager proxy unavailable ({e}); falling back to detached spawn");
+                false
+            }
+        };
+
+        if !launched_via_systemd {
+            let env_allowlist = build_clean_environment();
+            if let Err(e) = spawn_detached(
+                &argv,
+                &env_allowlist,
+                Arc::clone(&self.shared.tracked_children),
+            ) {
+                info!("Apps1: application launch failed for ID '{id}': spawn error");
+                return Err(zbus::fdo::Error::Failed(format!(
+                    "Failed to spawn process: {e}"
+                )));
+            }
+        }
+
+        info!("Apps1: application launch succeeded for ID '{id}'");
+        Ok(())
     }
 }
 
@@ -222,7 +415,8 @@ impl AppsServer {
         Ok(items)
     }
 
-    /// Spawns the application binary associated with desktop entry `id`.
+    /// Spawns the application binary associated with desktop entry `id`,
+    /// or activates/restores an existing window if one matches.
     async fn launch(
         &self,
         id: String,
@@ -240,51 +434,90 @@ impl AppsServer {
 
         let entry = {
             let index = self.shared.index.read().await;
-            index.get(&id).cloned().ok_or_else(|| {
-                zbus::fdo::Error::InvalidArgs(format!("Application ID '{id}' not found"))
-            })?
+            if let Some(e) = index.get(&id).cloned() {
+                e
+            } else {
+                info!("Apps1: application launch failed for ID '{id}': entry not found");
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Application ID '{id}' not found"
+                )));
+            }
         };
 
-        if entry.terminal {
-            return Err(zbus::fdo::Error::Failed(
-                "Terminal applications are unsupported yet".into(),
-            ));
+        // Check if an existing window matches this desktop entry
+        if let Some(ref win_shared) = *self.shared.windows_state.read().await {
+            let candidate = kynex_shell_core::matching::AppCandidate::new(
+                &entry.id,
+                entry.startup_wm_class.as_deref(),
+                &entry.icon,
+            );
+            let state = win_shared.state.read().await;
+            let matching_windows: Vec<kynex_ipc::windows::WindowItem> = state
+                .list()
+                .iter()
+                .filter(|w| {
+                    kynex_shell_core::matching::match_window_to_app(
+                        &w.app_id,
+                        std::slice::from_ref(&candidate),
+                    )
+                    .is_some()
+                })
+                .cloned()
+                .collect();
+
+            if !matching_windows.is_empty() {
+                let best_window = matching_windows
+                    .iter()
+                    .find(|w| w.active)
+                    .or_else(|| {
+                        matching_windows
+                            .iter()
+                            .max_by_key(|w| state.activation_generation(&w.id))
+                    })
+                    .unwrap_or(&matching_windows[0]);
+
+                let win_id = best_window.id.clone();
+                drop(state);
+
+                info!("Apps1: activating existing window '{win_id}' for application ID '{id}'");
+                let _ = win_shared.activate_window(&win_id).await;
+                return Ok(());
+            }
         }
 
-        let locale = std::env::var("LC_MESSAGES")
-            .or_else(|_| std::env::var("LANG"))
-            .ok();
-        let app_name = entry.name.resolve(locale.as_deref());
+        self.spawn_application(&entry, &id, conn).await
+    }
 
-        let ctx = ExecContext {
-            name: app_name,
-            icon: &entry.icon,
-            file_path: &entry.path,
-            files: &[],
-            urls: &[],
+    /// Spawns a new application instance unconditionally.
+    async fn launch_new_instance(
+        &self,
+        id: String,
+        #[zbus(header)] hdr: Header<'_>,
+        #[zbus(connection)] conn: &Connection,
+    ) -> zbus::fdo::Result<()> {
+        let sender = hdr
+            .sender()
+            .ok_or_else(|| zbus::fdo::Error::AccessDenied("Missing message sender".into()))?;
+
+        let dbus = DBusProxy::new(conn).await?;
+        let uid = dbus.get_connection_unix_user(sender.clone().into()).await?;
+
+        self.shared.check_caller(sender.as_str(), uid).await?;
+
+        let entry = {
+            let index = self.shared.index.read().await;
+            if let Some(e) = index.get(&id).cloned() {
+                e
+            } else {
+                info!("Apps1: application launch failed for ID '{id}': entry not found");
+                return Err(zbus::fdo::Error::InvalidArgs(format!(
+                    "Application ID '{id}' not found"
+                )));
+            }
         };
 
-        let argv = parse_exec(&entry.exec_raw, &ctx)
-            .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to parse Exec: {e}")))?;
-
-        if argv.is_empty() {
-            return Err(zbus::fdo::Error::Failed(
-                "Empty executable argument vector".into(),
-            ));
-        }
-
-        // Log ONLY the id, NEVER arguments
-        info!("Apps1: launching application ID '{id}'");
-
-        let env_allowlist = build_clean_environment();
-        spawn_detached(
-            &argv,
-            &env_allowlist,
-            Arc::clone(&self.shared.tracked_children),
-        )
-        .map_err(|e| zbus::fdo::Error::Failed(format!("Failed to spawn process: {e}")))?;
-
-        Ok(())
+        info!("Apps1: launching new instance for application ID '{id}'");
+        self.spawn_application(&entry, &id, conn).await
     }
 }
 

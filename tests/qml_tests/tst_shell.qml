@@ -44,6 +44,20 @@ Item {
             verify(shell.visible, "Shell should be visible");
             compare(shell.windowListModel.count, 0);
             compare(shell.taskbarList.visible, false, "Taskbar should be hidden when window count is 0");
+            compare(shell.panelContent.LayoutMirroring.enabled, false, "In LTR LayoutMirroring must be false");
+            compare(shell.panelContent.LayoutMirroring.childrenInherit, true, "LayoutMirroring childrenInherit must be true");
+        }
+
+        function test_shell_rtl_layout_mirroring() {
+            LayoutHelper.setRtl(true);
+            let comp = Qt.createComponent("../../styles/default/Shell.qml");
+            compare(comp.status, Component.Ready, "Shell.qml should load in RTL");
+            let rtlShell = comp.createObject(null, { width: 1920, height: 48 });
+            verify(rtlShell !== null, "RTL Shell panel should be instantiated");
+            compare(rtlShell.panelContent.LayoutMirroring.enabled, true, "In RTL LayoutMirroring must be true");
+            compare(rtlShell.panelContent.LayoutMirroring.childrenInherit, true, "LayoutMirroring childrenInherit must be true in RTL");
+            rtlShell.destroy();
+            LayoutHelper.setRtl(false);
         }
 
         function test_taskbar_window_count_badge_and_delegates() {

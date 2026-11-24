@@ -4,6 +4,7 @@
 
 pub mod audio;
 pub mod coordinates;
+pub mod debug;
 pub mod launcher;
 pub mod matching;
 pub mod menu;
@@ -16,6 +17,10 @@ pub use coordinates::{
 };
 
 pub use audio::{compute_quick_settings_placement, AudioState, DebounceAction, SliderDebouncer};
+pub use debug::{
+    ModelReadinessState, NotificationDebugState, ShellDebugState, TaskbarDebugState,
+    TaskbarEntryDebugState, WindowDebugState,
+};
 
 pub use launcher::{
     compute_letter_badge, sanitize_app_item, sanitize_display_text, sanitize_query, AppDisplayItem,

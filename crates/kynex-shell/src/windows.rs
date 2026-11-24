@@ -21,9 +21,8 @@ use kynex_ipc::DAEMON_DESTINATION;
 use kynex_shell_core::matching::AppCandidate;
 use kynex_shell_core::taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 use zbus::fdo::DBusProxy;
-use zbus::names::WellKnownName;
 
 /// Role ID for primary identifier (`app_id`).
 pub const ROLE_ID: i32 = 257;
@@ -150,6 +149,48 @@ pub struct WindowListModelRust {
     count: i32,
 }
 
+impl WindowListModelRust {
+    /// Returns role data for a given entry index.
+    #[must_use]
+    pub fn data(&self, row_idx: usize, role: i32) -> QVariant {
+        let entries = &self.entries;
+        if row_idx >= entries.len() {
+            return QVariant::default();
+        }
+
+        let item = &entries[row_idx];
+        match role {
+            ROLE_ID | ROLE_APP_ID => QVariant::from(&QString::from(&item.app_id)),
+            ROLE_TITLE => QVariant::from(&QString::from(&item.name)),
+            ROLE_MINIMIZED => QVariant::from(&item.is_minimized),
+            ROLE_ACTIVE => QVariant::from(&item.is_active),
+            ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
+            ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
+            ROLE_IS_PINNED => QVariant::from(&item.is_pinned),
+            ROLE_IS_RUNNING => QVariant::from(&item.is_running),
+            ROLE_WINDOW_COUNT => QVariant::from(&(i32::try_from(item.window_count).unwrap_or(0))),
+            _ => QVariant::default(),
+        }
+    }
+}
+
+/// Returns role names mapping for QML.
+#[must_use]
+pub fn create_window_role_names() -> QHash<QHashPair_i32_QByteArray> {
+    let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
+    roles.insert(ROLE_ID, QByteArray::from("id"));
+    roles.insert(ROLE_TITLE, QByteArray::from("title"));
+    roles.insert(ROLE_APP_ID, QByteArray::from("appId"));
+    roles.insert(ROLE_MINIMIZED, QByteArray::from("minimized"));
+    roles.insert(ROLE_ACTIVE, QByteArray::from("active"));
+    roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
+    roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
+    roles.insert(ROLE_IS_PINNED, QByteArray::from("isPinned"));
+    roles.insert(ROLE_IS_RUNNING, QByteArray::from("isRunning"));
+    roles.insert(ROLE_WINDOW_COUNT, QByteArray::from("windowCount"));
+    roles
+}
+
 impl qobject::WindowListModel {
     /// Initializes background listeners connecting to `kynex-daemon`.
     pub fn init(self: Pin<&mut Self>) {
@@ -162,7 +203,7 @@ impl qobject::WindowListModel {
     /// Returns row count for the model.
     #[must_use]
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
-        self.rust().count
+        i32::try_from(self.rust().entries.len()).unwrap_or(0)
     }
 
     /// Returns role data for a given index.
@@ -173,41 +214,13 @@ impl qobject::WindowListModel {
             return QVariant::default();
         };
 
-        let entries = &self.rust().entries;
-        if row_idx >= entries.len() {
-            return QVariant::default();
-        }
-
-        let item = &entries[row_idx];
-        match role {
-            ROLE_ID | ROLE_APP_ID => QVariant::from(&QString::from(&item.app_id)),
-            ROLE_TITLE => QVariant::from(&QString::from(&item.name)),
-            ROLE_MINIMIZED => QVariant::from(&(!item.is_active && item.is_running)),
-            ROLE_ACTIVE => QVariant::from(&item.is_active),
-            ROLE_ICON_NAME => QVariant::from(&QString::from(&item.icon_name)),
-            ROLE_LETTER_BADGE => QVariant::from(&QString::from(&item.letter_badge)),
-            ROLE_IS_PINNED => QVariant::from(&item.is_pinned),
-            ROLE_IS_RUNNING => QVariant::from(&item.is_running),
-            ROLE_WINDOW_COUNT => QVariant::from(&(i32::try_from(item.window_count).unwrap_or(0))),
-            _ => QVariant::default(),
-        }
+        self.rust().data(row_idx, role)
     }
 
     /// Returns role names mapping for QML.
     #[must_use]
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        roles.insert(ROLE_ID, QByteArray::from("id"));
-        roles.insert(ROLE_TITLE, QByteArray::from("title"));
-        roles.insert(ROLE_APP_ID, QByteArray::from("appId"));
-        roles.insert(ROLE_MINIMIZED, QByteArray::from("minimized"));
-        roles.insert(ROLE_ACTIVE, QByteArray::from("active"));
-        roles.insert(ROLE_ICON_NAME, QByteArray::from("iconName"));
-        roles.insert(ROLE_LETTER_BADGE, QByteArray::from("letterBadge"));
-        roles.insert(ROLE_IS_PINNED, QByteArray::from("isPinned"));
-        roles.insert(ROLE_IS_RUNNING, QByteArray::from("isRunning"));
-        roles.insert(ROLE_WINDOW_COUNT, QByteArray::from("windowCount"));
-        roles
+        create_window_role_names()
     }
 
     /// Dispatches click interaction on taskbar item at `index`.
@@ -227,6 +240,11 @@ impl qobject::WindowListModel {
                     TaskbarAction::Activate { window_id } => {
                         if let Ok(proxy) = Windows1Proxy::new(&conn).await {
                             let _ = proxy.activate(&window_id).await;
+                        }
+                    }
+                    TaskbarAction::Restore { window_id } => {
+                        if let Ok(proxy) = Windows1Proxy::new(&conn).await {
+                            let _ = proxy.restore(&window_id).await;
                         }
                     }
                     TaskbarAction::Minimize { window_id } => {
@@ -315,12 +333,26 @@ impl qobject::WindowListModel {
 fn dispatch_taskbar(qt_thread: &cxx_qt::CxxQtThread<qobject::WindowListModel>, core: TaskbarCore) {
     let entries = core.entries().to_vec();
     let count = i32::try_from(entries.len()).unwrap_or(0);
+    let running_count = entries.iter().filter(|e| e.is_running).count();
+    let pinned_count = entries.iter().filter(|e| e.is_pinned).count();
+    info!(
+        "taskbar: {running_count} running windows, {pinned_count} pinned entries (total {count})"
+    );
     let _ = qt_thread.queue(move |mut qobj| {
+        #[cfg(feature = "test-hooks")]
+        if std::env::var("KYNEX_TEST_MUTANT_NO_NOTIFY").is_ok() {
+            // MUTANT-NO-NOTIFY: Mutate internal count without emitting reset or count_changed signal
+            qobj.as_mut().rust_mut().core = core;
+            qobj.as_mut().rust_mut().entries = entries;
+            qobj.as_mut().rust_mut().count = count;
+            return;
+        }
+
         qobj.as_mut().begin_reset_model();
         qobj.as_mut().rust_mut().core = core;
         qobj.as_mut().rust_mut().entries = entries;
-        qobj.as_mut().rust_mut().count = count;
         qobj.as_mut().end_reset_model();
+        // Emits countChanged() notify signal reactively updating QML bindings
         qobj.as_mut().set_count(count);
     });
 }
@@ -328,7 +360,7 @@ fn dispatch_taskbar(qt_thread: &cxx_qt::CxxQtThread<qobject::WindowListModel>, c
 /// Background listener task maintaining taskbar state from daemon services.
 #[allow(clippy::too_many_lines)]
 pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::WindowListModel>) {
-    let session_conn = match zbus::connection::Builder::session().build().await {
+    let session_conn = match crate::shared_session_conn().await {
         Ok(c) => c,
         Err(err) => {
             warn!("Taskbar listener failed to connect to session bus: {err}");
@@ -336,6 +368,9 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
             return;
         }
     };
+
+    let debug_hub = crate::debug::get_debug_hub();
+    let _ = crate::debug::register_shell_debug_service(&session_conn).await;
 
     let dbus_proxy = match DBusProxy::new(&session_conn).await {
         Ok(p) => p,
@@ -389,47 +424,88 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
 
     sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
 
-    // Check initial daemon presence
-    let wk_name: Result<WellKnownName<'_>, _> = DAEMON_DESTINATION.try_into();
-    let has_daemon = match wk_name {
-        Ok(ref name) => dbus_proxy
-            .get_name_owner(zbus::names::BusName::WellKnown(name.as_ref()))
-            .await
-            .is_ok(),
-        Err(_) => false,
-    };
+    #[cfg(feature = "test-hooks")]
+    let skip_initial_list = std::env::var("KYNEX_TEST_MUTANT_DISABLE_LIST").is_ok();
+    #[cfg(not(feature = "test-hooks"))]
+    let skip_initial_list = false;
 
-    if has_daemon {
-        if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
-            if let Ok(list) = proxy.list().await {
-                *local_windows.lock().await = list.clone();
-                let mut lock = taskbar_core.lock().await;
-                lock.set_windows(list);
-                dispatch_taskbar(&qt_thread, lock.clone());
+    // Initial sync of windows from daemon if available with bounded retry backoff
+    let mut initial_windows_synced = false;
+    let max_retries = 10;
+    let mut retry_delay = std::time::Duration::from_millis(50);
+    if !skip_initial_list {
+        for attempt in 1..=max_retries {
+            if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
+                if let Ok(list) = proxy.list().await {
+                    info!(
+                        "windows: initial List() returned {} (attempt {attempt})",
+                        list.len()
+                    );
+                    *local_windows.lock().await = list.clone();
+                    let mut lock = taskbar_core.lock().await;
+                    lock.set_windows(list.clone());
+                    debug_hub.update_taskbar(lock.clone(), list).await;
+                    debug_hub.set_daemon_connected(true);
+                    debug_hub.update_model_readiness(|m| m.windows = true).await;
+                    debug_hub
+                        .set_last_resync_time(chrono::Utc::now().to_rfc3339())
+                        .await;
+                    dispatch_taskbar(&qt_thread, lock.clone());
+                    initial_windows_synced = true;
+                    break;
+                }
+            }
+            if attempt < max_retries {
+                info!("windows: kynex-daemon Windows1 not yet available on bus (attempt {attempt}/{max_retries}), retrying in {retry_delay:?}...");
+                tokio::time::sleep(retry_delay).await;
+                retry_delay = (retry_delay * 2).min(std::time::Duration::from_millis(500));
             }
         }
-    } else {
-        info!("kynex-daemon not found on bus; setting empty windows");
+    }
+
+    if !initial_windows_synced {
+        info!("windows: initial List() timed out or daemon unavailable after {max_retries} attempts; initializing empty taskbar");
         let lock = taskbar_core.lock().await;
         dispatch_taskbar(&qt_thread, lock.clone());
     }
 
+    #[cfg(feature = "test-hooks")]
+    let skip_subscriptions = std::env::var("KYNEX_TEST_MUTANT_DISABLE_SUBSCRIPTION").is_ok();
+    #[cfg(not(feature = "test-hooks"))]
+    let skip_subscriptions = false;
+
     // Set up signal streams
-    let mut added_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_added().await.ok(),
-        Err(_) => None,
+    let mut added_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_added().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut changed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_changed().await.ok(),
-        Err(_) => None,
+    let mut changed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_changed().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut removed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_removed().await.ok(),
-        Err(_) => None,
+    let mut removed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_removed().await.ok(),
+            Err(_) => None,
+        }
     };
-    let mut active_changed_stream = match Windows1Proxy::builder(&session_conn).build().await {
-        Ok(proxy) => proxy.receive_active_changed().await.ok(),
-        Err(_) => None,
+    let mut active_changed_stream = if skip_subscriptions {
+        None
+    } else {
+        match Windows1Proxy::builder(&session_conn).build().await {
+            Ok(proxy) => proxy.receive_active_changed().await.ok(),
+            Err(_) => None,
+        }
     };
     let mut pins_changed_stream = match Pins1Proxy::builder(&session_conn).build().await {
         Ok(proxy) => proxy.receive_changed().await.ok(),
@@ -450,7 +526,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 dirty = false;
                 let windows = local_windows.lock().await.clone();
                 let mut lock = taskbar_core.lock().await;
-                lock.set_windows(windows);
+                lock.set_windows(windows.clone());
+                debug_hub.update_taskbar(lock.clone(), windows).await;
                 dispatch_taskbar(&qt_thread, lock.clone());
             }
 
@@ -465,6 +542,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                     if let Ok(pins) = proxy.get().await {
                         let mut lock = taskbar_core.lock().await;
                         lock.set_pinned_ids(pins);
+                        let wins = local_windows.lock().await.clone();
+                        debug_hub.update_taskbar(lock.clone(), wins).await;
                         dispatch_taskbar(&qt_thread, lock.clone());
                     }
                 }
@@ -479,6 +558,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 info!("Apps changed signal received on taskbar");
                 sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
                 let lock = taskbar_core.lock().await;
+                let wins = local_windows.lock().await.clone();
+                debug_hub.update_taskbar(lock.clone(), wins).await;
                 dispatch_taskbar(&qt_thread, lock.clone());
             }
 
@@ -490,6 +571,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Added id={}", args.id);
+                    trace!("windows: Added details: id={}, title='{}', app_id='{}', min={}, act={}", args.id, args.title, args.app_id, args.minimized, args.active);
                     let mut lock = local_windows.lock().await;
                     let item = WindowItem {
                         id: args.id.to_string(),
@@ -520,6 +603,8 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Changed id={}, minimized={}, active={}", args.id, args.minimized, args.active);
+                    trace!("windows: Changed details: id={}, title='{}', app_id='{}'", args.id, args.title, args.app_id);
                     let mut lock = local_windows.lock().await;
                     let mut need_update = false;
                     for w in lock.iter() {
@@ -558,6 +643,7 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal Removed id={}", args.id);
                     let mut lock = local_windows.lock().await;
                     lock.retain(|w| w.id != args.id);
                     dirty = true;
@@ -572,6 +658,7 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             } => {
                 if let Ok(args) = signal.args() {
+                    info!("windows: signal ActiveChanged id={}", args.id);
                     let mut lock = local_windows.lock().await;
                     let mut changed = false;
                     for w in lock.iter_mut() {
@@ -598,18 +685,24 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                     let new_owner = args.new_owner();
                     if new_owner.as_ref().is_none_or(|o| o.as_str().is_empty()) {
                         info!("kynex-daemon left the bus; clearing taskbar windows");
+                        debug_hub.set_daemon_connected(false);
                         *local_windows.lock().await = Vec::new();
                         let mut lock = taskbar_core.lock().await;
                         lock.set_windows(Vec::new());
+                        debug_hub.update_taskbar(lock.clone(), Vec::new()).await;
                         dispatch_taskbar(&qt_thread, lock.clone());
                     } else {
-                        info!("kynex-daemon appeared on the bus; resyncing taskbar");
+                        info!("kynex-daemon appeared on the bus (new_owner={:?}); resyncing taskbar", new_owner.as_ref().map(zbus::names::UniqueName::as_str));
+                        debug_hub.set_daemon_connected(true);
                         sync_catalog_and_pins(taskbar_core.clone(), session_conn.clone()).await;
                         if let Ok(proxy) = Windows1Proxy::builder(&session_conn).build().await {
                             if let Ok(list) = proxy.list().await {
+                                info!("windows: initial List() on daemon connect returned {}", list.len());
                                 *local_windows.lock().await = list.clone();
                                 let mut lock = taskbar_core.lock().await;
-                                lock.set_windows(list);
+                                lock.set_windows(list.clone());
+                                debug_hub.update_taskbar(lock.clone(), list).await;
+                                debug_hub.set_last_resync_time(chrono::Utc::now().to_rfc3339()).await;
                                 dispatch_taskbar(&qt_thread, lock.clone());
                             }
                             added_stream = proxy.receive_added().await.ok();
@@ -629,5 +722,114 @@ pub async fn run_taskbar_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Window
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kynex_shell_core::taskbar::TaskbarEntry;
+
+    #[test]
+    fn test_role_constants_and_names() {
+        let roles = create_window_role_names();
+
+        assert_eq!(
+            roles.get(&ROLE_ID).map(|b| b.to_string()),
+            Some("id".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_TITLE).map(|b| b.to_string()),
+            Some("title".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_APP_ID).map(|b| b.to_string()),
+            Some("appId".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_MINIMIZED).map(|b| b.to_string()),
+            Some("minimized".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_ACTIVE).map(|b| b.to_string()),
+            Some("active".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_ICON_NAME).map(|b| b.to_string()),
+            Some("iconName".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_LETTER_BADGE).map(|b| b.to_string()),
+            Some("letterBadge".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_IS_PINNED).map(|b| b.to_string()),
+            Some("isPinned".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_IS_RUNNING).map(|b| b.to_string()),
+            Some("isRunning".to_string())
+        );
+        assert_eq!(
+            roles.get(&ROLE_WINDOW_COUNT).map(|b| b.to_string()),
+            Some("windowCount".to_string())
+        );
+    }
+
+    #[test]
+    fn test_window_list_model_data_and_minimized_role() {
+        let entries = vec![
+            TaskbarEntry {
+                app_id: "org.gnome.Calculator.desktop".to_string(),
+                name: "Calculator".to_string(),
+                icon_name: "org.gnome.Calculator".to_string(),
+                letter_badge: "C".to_string(),
+                is_pinned: false,
+                is_running: true,
+                is_active: false,
+                is_minimized: true,
+                window_count: 1,
+                window_ids: vec!["win-1".to_string()],
+            },
+            TaskbarEntry {
+                app_id: "firefox.desktop".to_string(),
+                name: "Firefox".to_string(),
+                icon_name: "firefox".to_string(),
+                letter_badge: "F".to_string(),
+                is_pinned: true,
+                is_running: true,
+                is_active: false,
+                is_minimized: false, // in background, but NOT minimized!
+                window_count: 1,
+                window_ids: vec!["win-2".to_string()],
+            },
+        ];
+        let model = WindowListModelRust {
+            entries,
+            count: 2,
+            ..Default::default()
+        };
+
+        // Entry 0: minimized = true
+        let v_min_0 = model.data(0, ROLE_MINIMIZED);
+        assert_eq!(v_min_0.value::<bool>(), Some(true));
+        let v_title_0 = model.data(0, ROLE_TITLE);
+        assert_eq!(
+            v_title_0.value::<QString>().map(|s| s.to_string()),
+            Some("Calculator".to_string())
+        );
+
+        // Entry 1: background, minimized = false
+        let v_min_1 = model.data(1, ROLE_MINIMIZED);
+        assert_eq!(v_min_1.value::<bool>(), Some(false));
+        let v_title_1 = model.data(1, ROLE_TITLE);
+        assert_eq!(
+            v_title_1.value::<QString>().map(|s| s.to_string()),
+            Some("Firefox".to_string())
+        );
+
+        // Out-of-bounds row
+        let v_oob = model.data(99, ROLE_MINIMIZED);
+        assert_eq!(v_oob.value::<bool>(), None);
     }
 }

@@ -630,6 +630,20 @@ impl WindowsSharedState {
         *self.action_executor.write().await = executor;
     }
 
+    /// Programmatic window activation (used internally by daemon services such as Apps1).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the window ID does not exist or if executor dispatch fails.
+    pub async fn activate_window(&self, id: &str) -> Result<(), String> {
+        let exists = self.state.read().await.has_window(id);
+        if !exists {
+            return Err(format!("Window ID '{id}' does not exist in tracked state"));
+        }
+        let executor = Arc::clone(&*self.action_executor.read().await);
+        executor.execute_action(id, WindowAction::Activate).await
+    }
+
     /// Verifies window action caller credentials and enforces action rate limiting.
     ///
     /// # Errors

@@ -22,5 +22,9 @@ if [[ -f scripts/test-qml-stress.sh ]]; then
   echo; echo "### 8. QML suite 20x stress test under CPU load"
   ./scripts/test-qml-stress.sh || rc=1
 fi
+if [[ -f scripts/test-session-units.sh ]]; then
+  echo; echo "### 9. Unit-parity session rehearsal (systemd sandboxing & GL)"
+  ./scripts/test-session-units.sh || rc=1
+fi
 echo; echo "### 7. Manual review: re-read the diff as a hostile reviewer; verify security checklist for new code"
 exit $rc

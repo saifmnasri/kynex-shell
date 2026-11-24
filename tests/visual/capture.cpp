@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl" || variant == "quick-settings-rtl") {
+    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl" || variant == "quick-settings-rtl" || variant == "panel-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);
         QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
         QLocale::setDefault(QLocale(QLocale::English));
     }
 
-    if (variant.rfind("light", 0) == 0) {
+    if (variant.rfind("light", 0) == 0 || variant == "panel-light") {
         setLightTokens();
     } else {
         setDarkTokens();
@@ -209,6 +209,9 @@ int main(int argc, char *argv[]) {
     } else if (variant == "quick-settings-rtl") {
         qmlFile = "tests/visual/QuickSettingsHarness.qml";
         scenario = "rtl";
+    } else if (variant.rfind("panel-", 0) == 0) {
+        qmlFile = "tests/visual/PanelHarness.qml";
+        scenario = QString::fromStdString(variant.substr(6));
     }
 
     QString qmlPath = QDir::current().filePath(qmlFile);

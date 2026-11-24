@@ -53,8 +53,13 @@ pub trait Apps1 {
     /// Searches and ranks applications matching `query` up to `limit` entries.
     fn search(&self, query: &str, limit: u32) -> zbus::Result<Vec<AppItem>>;
 
-    /// Spawns the application binary associated with desktop entry `id`.
+    /// Spawns the application binary associated with desktop entry `id`,
+    /// or raises/activates an existing instance if one is already running.
     fn launch(&self, id: &str) -> zbus::Result<()>;
+
+    /// Spawns a new instance of the application binary associated with desktop entry `id`,
+    /// bypassing single-instance activation checks.
+    fn launch_new_instance(&self, id: &str) -> zbus::Result<()>;
 
     /// Signal emitted when application index changes across the filesystem.
     #[zbus(signal)]

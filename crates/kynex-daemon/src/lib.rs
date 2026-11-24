@@ -1,7 +1,9 @@
 //! Internal library components for `kynex-daemon`.
 
+pub mod introspection;
 pub mod server;
 pub mod services;
+pub mod systemd;
 pub mod window_state;
 
 pub use server::DaemonServer;

@@ -3,6 +3,7 @@
 pub mod apps;
 pub mod audio;
 pub mod daemon;
+pub mod debug;
 pub mod network;
 pub mod notifications;
 pub mod pins;
@@ -16,6 +17,9 @@ pub use apps::{AppItem, AppMappingItem, Apps1Proxy, APPS_INTERFACE, APPS_PATH};
 pub use audio::{Audio1Proxy, AUDIO_INTERFACE, AUDIO_MUTATION_RATE_LIMIT_PER_SEC, AUDIO_PATH};
 pub use daemon::{
     Core1Proxy, Daemon1Proxy, DaemonStatus, DAEMON_DESTINATION, DAEMON_INTERFACE, DAEMON_PATH,
+};
+pub use debug::{
+    Debug1Proxy, SHELL_DEBUG_INTERFACE, SHELL_DEBUG_PATH, SHELL_DEBUG_SUBPATH, SHELL_DESTINATION,
 };
 pub use network::{Network1Proxy, NetworkKind, NetworkState, NETWORK_INTERFACE, NETWORK_PATH};
 pub use notifications::{

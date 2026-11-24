@@ -39,6 +39,7 @@ LayerSurface {
     readonly property alias trayModel: trayModel
     readonly property alias trayMenuModel: trayMenuModel
     readonly property alias taskbarList: taskbarList
+    readonly property alias panelContent: panelContent
     readonly property alias launcherLoader: launcherLoader
     readonly property alias notificationLoader: notificationLoader
     readonly property alias menuOverlayLoader: menuOverlayLoader
@@ -49,9 +50,9 @@ LayerSurface {
     readonly property alias networkText: networkText
     readonly property alias statusFocusScope: statusFocusScope
     readonly property alias volumeStatusIcon: volumeStatusIcon
-    readonly property string networkTooltipText: networkModel.connected
+    readonly property string networkTooltipText: (networkModel && networkModel.connected)
         ? (networkModel.wifi
-            ? ("Wi-Fi: " + (networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + networkModel.strength + "%)")
+            ? ("Wi-Fi: " + (networkModel.ssid && networkModel.ssid.length > 0 ? networkModel.ssid : "Connected") + " (" + (networkModel.strength || 0) + "%)")
             : (networkModel.ethernet ? "Ethernet Connection" : "Connected"))
         : "Network Disconnected"
 
@@ -273,8 +274,11 @@ LayerSurface {
     }
 
     Rectangle {
+        id: panelContent
         anchors.fill: parent
         color: Style.colors.surfaceRaised
+        LayoutMirroring.enabled: Qt.locale().textDirection === Qt.RightToLeft
+        LayoutMirroring.childrenInherit: true
 
         ListView {
             id: taskbarList
@@ -310,8 +314,9 @@ LayerSurface {
                 iconSource: iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : ""
                 primary: active
                 showRunningIndicator: isRunning
+                visible: !Style.testMutantHiddenDelegate
                 opacity: (isRunning && minimized) ? Style.opacity.disabled : 1
-                width: Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
+                width: Style.testMutantZeroWidth ? 0 : Math.min(implicitWidth, Style.spacing.panel + Style.spacing.panel + Style.spacing.panel)
                 height: Style.spacing.panel - Style.spacing.small
 
                 Accessible.name: (title.length > 0 ? title : "App") + (active ? " (Active)" : (isRunning ? " (Running)" : " (Pinned)")) + (windowCount > 1 ? (" - " + windowCount + " windows") : "")
@@ -627,7 +632,7 @@ LayerSurface {
                     Text {
                         id: networkText
                         visible: networkModel.connected
-                        text: networkModel.wifi ? (networkModel.ssid.length > 0 ? networkModel.ssid : networkModel.strength + "%") : (networkModel.ethernet ? "Ethernet" : "Connected")
+                        text: networkModel.wifi ? ((networkModel.ssid && networkModel.ssid.length > 0) ? networkModel.ssid : ((networkModel.strength || 0) + "%")) : (networkModel.ethernet ? "Ethernet" : "Connected")
                         textFormat: Text.PlainText
                         color: networkModel.weak ? Style.colors.warning : Style.colors.text
                         font.family: Style.typography.family

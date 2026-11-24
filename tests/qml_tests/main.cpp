@@ -1303,7 +1303,7 @@ public:
         return anchorX;
     }
 
-    Q_INVOKABLE double computePlacementY(uint, double, double panelH, double, double, double, double, double popupH, double, double screenH, double) {
+    Q_INVOKABLE double computePlacementY(uint, double, double panelH, double, double, double, double, double, double popupH, double, double screenH) {
         return std::max(0.0, screenH - panelH - popupH);
     }
 

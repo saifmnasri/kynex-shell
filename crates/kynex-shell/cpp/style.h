@@ -187,9 +187,18 @@ class Style : public QObject {
     Q_PROPERTY(StyleMotion* motion READ motion CONSTANT FINAL)
     Q_PROPERTY(StyleTypography* typography READ typography CONSTANT FINAL)
     Q_PROPERTY(StyleOpacity* opacity READ opacity CONSTANT FINAL)
+    Q_PROPERTY(bool testMutantZeroWidth READ testMutantZeroWidth CONSTANT FINAL)
+    Q_PROPERTY(bool testMutantHiddenDelegate READ testMutantHiddenDelegate CONSTANT FINAL)
 
 public:
     static Style *instance();
+
+    bool testMutantZeroWidth() const {
+        return !qgetenv("KYNEX_TEST_MUTANT_ZERO_WIDTH").isEmpty();
+    }
+    bool testMutantHiddenDelegate() const {
+        return !qgetenv("KYNEX_TEST_MUTANT_HIDDEN_DELEGATE").isEmpty();
+    }
 
     StyleColors *colors() { return &m_colors; }
     StyleSpacing *spacing() { return &m_spacing; }

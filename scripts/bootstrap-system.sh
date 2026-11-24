@@ -24,7 +24,7 @@ PACKAGES=(
   libwayland-dev wayland-protocols libxkbcommon-dev
   # system services we reuse
   dbus dbus-user-session libdbus-1-dev d-spy upower network-manager bluez udisks2 polkitd
-  pipewire wireplumber libpipewire-0.3-dev
+  pipewire wireplumber libpipewire-0.3-dev pulseaudio-utils
   # tools for tests, profiling, benchmarks
   hyperfine sysstat smem valgrind heaptrack desktop-file-utils xdg-utils python3-pil fonts-noto-core
   # vm niceties

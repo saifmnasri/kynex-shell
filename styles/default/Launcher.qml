@@ -24,6 +24,13 @@ LayerSurface {
         }
     }
 
+    function triggerLaunchSelectedNewInstance(): void {
+        if (!root.launching && root.model) {
+            root.launching = true;
+            root.model.launchSelectedNewInstance();
+        }
+    }
+
     function triggerLaunch(index: int): void {
         if (!root.launching && root.model) {
             root.launching = true;
@@ -128,12 +135,20 @@ LayerSurface {
                 }
 
                 Keys.onReturnPressed: (event) => {
-                    root.triggerLaunchSelected();
+                    if (event.modifiers & Qt.ShiftModifier) {
+                        root.triggerLaunchSelectedNewInstance();
+                    } else {
+                        root.triggerLaunchSelected();
+                    }
                     event.accepted = true;
                 }
 
                 Keys.onEnterPressed: (event) => {
-                    root.triggerLaunchSelected();
+                    if (event.modifiers & Qt.ShiftModifier) {
+                        root.triggerLaunchSelectedNewInstance();
+                    } else {
+                        root.triggerLaunchSelected();
+                    }
                     event.accepted = true;
                 }
 
@@ -213,6 +228,22 @@ LayerSurface {
                         font.pixelSize: Style.typography.basePx
                         color: Style.colors.textMuted
                     }
+                }
+            }
+
+            Row {
+                id: hintRow
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Style.spacing.medium
+                visible: resultsList.visible
+
+                Text {
+                    id: hintText
+                    text: "Enter: launch/switch • Shift+Enter: launch new instance • Ctrl+P: pin"
+                    textFormat: Text.PlainText
+                    font.family: Style.typography.family
+                    font.pixelSize: Style.typography.basePx - Style.spacing.unit
+                    color: Style.colors.textMuted
                 }
             }
         }

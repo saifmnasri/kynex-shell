@@ -79,5 +79,7 @@ Module {
         Property { name: "motion"; type: "StyleMotion"; isPointer: true; read: "motion"; isReadonly: true; isFinal: true }
         Property { name: "typography"; type: "StyleTypography"; isPointer: true; read: "typography"; isReadonly: true; isFinal: true }
         Property { name: "opacity"; type: "StyleOpacity"; isPointer: true; read: "opacity"; isReadonly: true; isFinal: true }
+        Property { name: "testMutantZeroWidth"; type: "bool"; read: "testMutantZeroWidth"; isReadonly: true; isFinal: true }
+        Property { name: "testMutantHiddenDelegate"; type: "bool"; read: "testMutantHiddenDelegate"; isReadonly: true; isFinal: true }
     }
 }

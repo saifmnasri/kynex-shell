@@ -382,7 +382,7 @@ pub async fn run_audio_listener(
     qt_thread: cxx_qt::CxxQtThread<qobject::AudioModel>,
     mut cmd_rx: tokio::sync::mpsc::UnboundedReceiver<AudioCommand>,
 ) {
-    let session_conn = match zbus::connection::Builder::session().build().await {
+    let session_conn = match crate::shared_session_conn().await {
         Ok(c) => c,
         Err(err) => {
             warn!("AudioModel failed to connect to session bus: {err}");
@@ -402,6 +402,7 @@ pub async fn run_audio_listener(
         .await;
     let _ = session_conn.request_name("org.kynexos.Shell").await;
 
+    #[cfg(feature = "bench")]
     if std::env::var("KYNEX_BENCH_OPEN_QUICK_SETTINGS").unwrap_or_default() == "1" {
         let _ = qt_thread.queue(|mut qobj| {
             qobj.as_mut().set_open(true);

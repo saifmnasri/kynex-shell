@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Kynex Daemon
+Comment=Kynex Desktop Integration Daemon
+Exec=/usr/local/bin/kynex-daemon
+Icon=kynex
+Terminal=false
+Type=Application
+NoDisplay=true
+Categories=Core;System;

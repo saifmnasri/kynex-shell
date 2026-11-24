@@ -142,6 +142,8 @@ FocusScope {
             font.family: Style.typography.family
             font.pixelSize: Style.typography.basePx
             color: root.primary ? Style.colors.surface : Style.colors.text
+            elide: Text.ElideRight
+            width: Math.min(implicitWidth, Math.max(0, root.width - (Style.spacing.medium + Style.spacing.medium) - (iconImage.visible ? iconImage.width + contentRow.spacing : 0) - (badgeRect.visible ? badgeRect.width + contentRow.spacing : 0)))
             anchors.verticalCenter: parent.verticalCenter
         }
     }

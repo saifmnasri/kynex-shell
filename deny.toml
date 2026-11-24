@@ -5,7 +5,10 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []   # every ignore needs a comment with reason + expiry
+ignore = [
+    # RUSTSEC-2026-0543: chrono is unmaintained; transitively pulled in by cxx-qt-lib 0.10.0 pinned dependency
+    "RUSTSEC-2026-0543",
+]
 
 [licenses]
 version = 2

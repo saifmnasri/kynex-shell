@@ -15,7 +15,7 @@ for arg in "$@"; do
     --ci)   CI_MODE=1 ;;
   esac
 done
-pass=(); failed=(); skipped=(); skipped_local=()
+pass=(); failed=(); skipped=(); skipped_local=(); degraded=()
 
 step() { # step "name" cmd...
   local name="$1"; shift
@@ -38,7 +38,44 @@ if ((HAS_RUST)); then
     skip "cargo-deny / cargo-audit" "--fast"
   else
     have cargo-deny  && step "cargo-deny (licenses, bans, advisories)" cargo deny check || skip "cargo-deny" "not installed"
-    have cargo-audit && step "cargo-audit (RustSec)" cargo audit || skip "cargo-audit" "not installed"
+    if have cargo-audit; then
+      if [[ "${KYNEX_AUDIT_OFFLINE:-0}" == "1" ]]; then
+        if ((CI_MODE)) || [[ "${CI:-}" == "true" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+          echo "ERROR: KYNEX_AUDIT_OFFLINE=1 is strictly forbidden in CI environments." >&2
+          failed+=("cargo-audit (RustSec) [offline mode forbidden in CI]")
+        else
+          db_dir="${CARGO_HOME:-$HOME/.cargo}/advisory-db"
+          if [[ ! -d "$db_dir/crates" ]]; then
+            echo "ERROR: KYNEX_AUDIT_OFFLINE=1 requested but advisory database does not exist at $db_dir/crates" >&2
+            echo "Run 'cargo audit' once online to initialize the advisory database." >&2
+            failed+=("cargo-audit (RustSec) [missing advisory database for offline mode]")
+          else
+            db_mtime=$(stat -c %Y "$db_dir/crates" 2>/dev/null || stat -c %Y "$db_dir" 2>/dev/null || echo 0)
+            now=$(date +%s)
+            age_sec=$((now - db_mtime))
+            age_hours=$((age_sec / 3600))
+            age_days=$((age_sec / 86400))
+            echo "************************************************************************" >&2
+            echo "WARNING: KYNEX_AUDIT_OFFLINE=1 is enabled!" >&2
+            echo "Running cargo-audit in DEGRADED OFFLINE mode using --no-fetch." >&2
+            if ((age_days > 0)); then
+              echo "Local advisory database age: ~${age_days} day(s) (${age_hours} hours)." >&2
+            else
+              echo "Local advisory database age: ~${age_hours} hour(s)." >&2
+            fi
+            echo "Security advisories published since then WILL NOT BE CHECKED." >&2
+            echo "************************************************************************" >&2
+            step "cargo-audit (RustSec) [DEGRADED: offline]" cargo audit --no-fetch
+            skip_local "cargo-audit" "DEGRADED (offline --no-fetch, db age: ${age_hours}h)"
+            degraded+=("cargo-audit (RustSec) [offline --no-fetch, db age: ${age_hours}h]")
+          fi
+        fi
+      else
+        step "cargo-audit (RustSec)" cargo audit
+      fi
+    else
+      skip "cargo-audit" "not installed"
+    fi
   fi
 else
   skip "rust steps" "no Cargo.toml yet"
@@ -116,6 +153,7 @@ check_qml_wait_calls() {
 }
 
 step "qml wait check" check_qml_wait_calls
+step "test hooks gating check" ./scripts/check-test-hooks-gating.py
 
 mapfile -t SHFILES < <(find scripts dev .githooks -type f \( -name '*.sh' -o -path '.githooks/*' \) ! -path 'dev/tmp/*' 2>/dev/null)
 have shellcheck && ((${#SHFILES[@]})) && step "shellcheck" shellcheck "${SHFILES[@]}" || true
@@ -170,6 +208,7 @@ fi
 echo; echo "================ SUMMARY ================"
 printf 'PASSED : %s\n' "${#pass[@]}"; ((${#pass[@]})) && printf '  + %s\n' "${pass[@]}"
 printf 'SKIPPED: %s\n' "${#skipped[@]}"; ((${#skipped[@]})) && printf '  ~ %s\n' "${skipped[@]}"
+((${#degraded[@]})) && { printf 'DEGRADED: %s\n' "${#degraded[@]}"; printf '  ! %s\n' "${degraded[@]}"; }
 printf 'FAILED : %s\n' "${#failed[@]}"; ((${#failed[@]})) && printf '  - %s\n' "${failed[@]}"
 ((${#failed[@]})) && exit 1
 
