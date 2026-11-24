@@ -262,7 +262,8 @@ ln -sfn "$ROOT_DIR/kwin-scripts/kynex-windows" "$XDG_DATA_HOME/kwin/scripts/kyne
 ln -sfn "$ROOT_DIR/kwin-scripts/kynex-launcher" "$XDG_DATA_HOME/kwin/scripts/kynex-launcher"
 
 export QT_QPA_PLATFORM=wayland
-export KYNEX_STYLE_DIR="$ROOT_DIR/styles/default"
+export KYNEX_STYLE_DIR="${KYNEX_STYLE_DIR:-$ROOT_DIR/styles/default}"
+export KYNEX_QML_IMPORT_DIR="${KYNEX_QML_IMPORT_DIR:-$ROOT_DIR/crates/kynex-shell/qml}"
 export RUST_LOG="${RUST_LOG:-info}"
 
 # Start private session dbus-daemon directly as child with pdeathsig SIGKILL

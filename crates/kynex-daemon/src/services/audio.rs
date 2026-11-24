@@ -8,6 +8,7 @@
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -47,6 +48,28 @@ pub const CLEAN_ENV_ALLOWLIST: &[&str] = &[
     "LANG",
     "LC_ALL",
 ];
+
+static PROCESSED_AUDIO_EVENTS: AtomicU64 = AtomicU64::new(0);
+
+/// Returns the total count of audio subscribe events processed by the daemon.
+#[must_use]
+pub fn processed_audio_events_count() -> u64 {
+    PROCESSED_AUDIO_EVENTS.load(Ordering::Relaxed)
+}
+
+/// Resets the counter of processed audio subscribe events.
+pub fn reset_processed_audio_events_count() {
+    PROCESSED_AUDIO_EVENTS.store(0, Ordering::Relaxed);
+}
+
+fn record_processed_event() {
+    let count = PROCESSED_AUDIO_EVENTS.fetch_add(1, Ordering::Relaxed) + 1;
+    if let Ok(count_file) = std::env::var("KYNEX_AUDIO_EVENT_COUNTER_FILE") {
+        if !count_file.is_empty() && (count <= 10 || count.is_multiple_of(500)) {
+            let _ = std::fs::write(&count_file, count.to_string());
+        }
+    }
+}
 
 #[cfg(any(test, feature = "test-hooks"))]
 static PACTL_PATH_OVERRIDE: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
@@ -608,11 +631,11 @@ pub async fn run_audio_service(server: AudioServer, backend: Arc<dyn AudioBacken
                     }
                 } => {
                     timer = None;
-                    if let Ok(updated) = backend.get_status().await {
-                        server.update_state(updated).await;
-                    }
                     let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
                     if let Some(next_delay) = coalescer.on_debounced_run(now_ms) {
+                        if let Ok(updated) = backend.get_status().await {
+                            server.update_state(updated).await;
+                        }
                         timer = Some(Box::pin(tokio::time::sleep(Duration::from_millis(next_delay))));
                     }
                 }
@@ -620,24 +643,36 @@ pub async fn run_audio_service(server: AudioServer, backend: Arc<dyn AudioBacken
                     match read_res {
                         Ok(0) => {
                             debug!("Audio subscribe stream reached EOF");
-                            if coalescer.is_scheduled() {
+                            if coalescer.is_scheduled() || coalescer.is_dirty() {
                                 if let Ok(updated) = backend.get_status().await {
                                     server.update_state(updated).await;
                                 }
                                 let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
                                 let _ = coalescer.on_debounced_run(now_ms);
                             }
+                            if let Ok(count_file) = std::env::var("KYNEX_AUDIO_EVENT_COUNTER_FILE") {
+                                if !count_file.is_empty() {
+                                    let total = PROCESSED_AUDIO_EVENTS.load(Ordering::Relaxed);
+                                    let _ = std::fs::write(&count_file, total.to_string());
+                                }
+                            }
+                            info!(
+                                "Audio subscribe stream closed; processed {} total events",
+                                PROCESSED_AUDIO_EVENTS.load(Ordering::Relaxed)
+                            );
                             break;
                         }
                         Ok(n) => {
                             let now_ms = u64::try_from(start_instant.elapsed().as_millis()).unwrap_or(0);
+                            let mut leading_delay = None;
                             reader.feed_each(&buf[..n], |line_res| {
                                 if let Ok(line) = line_res {
                                     if let Some(event) = parse_subscribe_line(line) {
                                         if matches!(event, AudioEvent::SinkChanged(_) | AudioEvent::ServerChanged) {
+                                            record_processed_event();
                                             match coalescer.handle_event(now_ms) {
-                                                CoalesceAction::ScheduleDebounce(delay) => {
-                                                    timer = Some(Box::pin(tokio::time::sleep(Duration::from_millis(delay))));
+                                                CoalesceAction::DeliverLeadingAndSchedule(delay) => {
+                                                    leading_delay = Some(delay);
                                                 }
                                                 CoalesceAction::AlreadyScheduled => {}
                                             }
@@ -645,6 +680,13 @@ pub async fn run_audio_service(server: AudioServer, backend: Arc<dyn AudioBacken
                                     }
                                 }
                             });
+
+                            if let Some(delay) = leading_delay {
+                                if let Ok(updated) = backend.get_status().await {
+                                    server.update_state(updated).await;
+                                }
+                                timer = Some(Box::pin(tokio::time::sleep(Duration::from_millis(delay))));
+                            }
                         }
                         Err(e) => {
                             warn!("Error reading audio subscribe stream: {e}");
