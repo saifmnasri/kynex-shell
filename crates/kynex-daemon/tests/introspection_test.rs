@@ -14,6 +14,45 @@
 
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
+
+struct TestBus {
+    child: tokio::process::Child,
+    address: String,
+}
+
+impl TestBus {
+    async fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let mut cmd = Command::new("dbus-daemon");
+        cmd.arg("--session")
+            .arg("--print-address=1")
+            .arg("--nofork")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null());
+
+        let mut child = cmd.spawn()?;
+        let stdout = child.stdout.take().expect("dbus stdout");
+        let mut reader = BufReader::new(stdout);
+        let mut line = String::new();
+
+        tokio::time::timeout(Duration::from_secs(5), reader.read_line(&mut line)).await??;
+        let address = line.trim().to_string();
+
+        Ok(Self { child, address })
+    }
+
+    fn address(&self) -> &str {
+        &self.address
+    }
+}
+
+impl Drop for TestBus {
+    fn drop(&mut self) {
+        let _ = self.child.start_kill();
+    }
+}
 
 use kynex_daemon::services::apps::{AppsServer, AppsSharedState};
 use kynex_daemon::services::audio::{AudioServer, PactlAudioBackend};
@@ -76,7 +115,13 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
 
     let test_bus_name = "org.kynexos.Daemon.IntrospectValidationTest";
 
-    let conn = zbus::connection::Builder::session()
+    let test_bus = TestBus::new()
+        .await
+        .expect("Failed to spawn private dbus-daemon for introspection test");
+    let bus_addr = test_bus.address();
+    let addr_arg = format!("--address={bus_addr}");
+
+    let conn = zbus::connection::Builder::address(bus_addr)
         .name(test_bus_name)
         .serve_at(DAEMON_PATH, core_server)
         .serve_at(POWER_PATH, power_server)
@@ -101,9 +146,9 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         .await
         .unwrap();
 
-    // 0. Verify `busctl --user tree` produces exit code 0 and completely EMPTY stderr
+    // 0. Verify `busctl tree` produces exit code 0 and completely EMPTY stderr
     let tree_output = tokio::process::Command::new("busctl")
-        .args(["--user", "tree", test_bus_name])
+        .args([&addr_arg, "tree", test_bus_name])
         .output()
         .await
         .expect("Failed to run busctl tree");
@@ -138,7 +183,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
     for path in all_paths {
         // 1. Verify `busctl introspect` runs with zero warnings and empty stderr
         let output = tokio::process::Command::new("busctl")
-            .args(["--user", "introspect", test_bus_name, path])
+            .args([&addr_arg, "introspect", test_bus_name, path])
             .output()
             .await
             .unwrap_or_else(|e| panic!("Failed to run busctl introspect on {path}: {e}"));
@@ -160,7 +205,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         // 2. Fetch raw XML and parse with XML DOM to assert zero <signal> args specify direction="in"
         let xml_output = tokio::process::Command::new("busctl")
             .args([
-                "--user",
+                &addr_arg,
                 "introspect",
                 test_bus_name,
                 path,
@@ -220,12 +265,12 @@ if violations:
         );
     }
 
-    // 3. Verify busctl --user tree exits 0 with completely empty stderr
+    // 3. Verify busctl tree exits 0 with completely empty stderr
     let tree_output = tokio::process::Command::new("busctl")
-        .args(["--user", "tree", test_bus_name])
+        .args([&addr_arg, "tree", test_bus_name])
         .output()
         .await
-        .expect("Failed to run busctl --user tree");
+        .expect("Failed to run busctl tree");
     assert!(tree_output.status.success());
     let tree_stderr = String::from_utf8_lossy(&tree_output.stderr);
     assert!(
