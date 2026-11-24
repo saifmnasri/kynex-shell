@@ -753,6 +753,9 @@ pub async fn run_tray_listener(qt_thread: cxx_qt::CxxQtThread<qobject::TrayModel
     };
 
     let (_tx, rx) = tokio::sync::watch::channel(false);
+    crate::debug::get_debug_hub()
+        .update_model_readiness(|m| m.tray = true)
+        .await;
     run_tray_listener_loop(
         &session_conn,
         move |state| {

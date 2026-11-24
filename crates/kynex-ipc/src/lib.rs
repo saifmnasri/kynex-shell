@@ -9,6 +9,7 @@ pub mod notifications;
 pub mod pins;
 pub mod power;
 pub mod service;
+pub mod session;
 pub mod shell;
 pub mod tray;
 pub mod windows;
@@ -30,6 +31,9 @@ pub use notifications::{
 pub use pins::{Pins1Proxy, PINS_INTERFACE, PINS_PATH};
 pub use power::{BatteryState, Power1Proxy, POWER_INTERFACE, POWER_PATH};
 pub use service::{BoxFuture, Service, ServiceHealth};
+pub use session::{
+    Session1Proxy, SESSION_INTERFACE, SESSION_PATH, SESSION_RATE_LIMIT_SECS, SESSION_TIMEOUT_SECS,
+};
 pub use shell::{Shell1Proxy, ShellFeed1Proxy, SHELL_FEED_INTERFACE, SHELL_INTERFACE, SHELL_PATH};
 pub use tray::{
     fdo::FdoStatusNotifierWatcherProxy, DBusMenuProxy, MenuItemDto, StatusNotifierItemProxy,

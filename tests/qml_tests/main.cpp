@@ -46,10 +46,23 @@ public:
     Q_INVOKABLE void sendMouseMove(QQuickItem *item, qreal x, qreal y) {
         if (!item) return;
         QPointF pos(x, y);
+        QHoverEvent hoverEnter(QEvent::HoverEnter, pos, pos, QPointF(-1, -1));
+        QCoreApplication::sendEvent(item, &hoverEnter);
+        QHoverEvent hoverMove(QEvent::HoverMove, pos, pos, pos);
+        QCoreApplication::sendEvent(item, &hoverMove);
         QEnterEvent enter(pos, pos, pos);
         QCoreApplication::sendEvent(item, &enter);
         QMouseEvent move(QEvent::MouseMove, pos, pos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
         QCoreApplication::sendEvent(item, &move);
+    }
+    Q_INVOKABLE void sendMouseLeave(QQuickItem *item) {
+        if (!item) return;
+        QPointF outPos(-100, -100);
+        QPointF oldPos(0, 0);
+        QHoverEvent hoverLeave(QEvent::HoverLeave, outPos, outPos, oldPos);
+        QCoreApplication::sendEvent(item, &hoverLeave);
+        QEvent leave(QEvent::Leave);
+        QCoreApplication::sendEvent(item, &leave);
     }
     Q_INVOKABLE void sendWheel(QQuickItem *item, qreal x, qreal y, int deltaY, int deltaX = 0) {
         if (!item) return;
@@ -1322,6 +1335,97 @@ private:
     bool m_open;
 };
 
+class MockSessionModel : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool canLogout READ canLogout WRITE setCanLogout NOTIFY canLogoutChanged)
+    Q_PROPERTY(bool canRestart READ canRestart WRITE setCanRestart NOTIFY canRestartChanged)
+    Q_PROPERTY(bool canPowerOff READ canPowerOff WRITE setCanPowerOff NOTIFY canPowerOffChanged)
+    Q_PROPERTY(bool canSuspend READ canSuspend WRITE setCanSuspend NOTIFY canSuspendChanged)
+    Q_PROPERTY(bool confirmingRestart READ confirmingRestart WRITE setConfirmingRestart NOTIFY confirmingRestartChanged)
+    Q_PROPERTY(bool confirmingPowerOff READ confirmingPowerOff WRITE setConfirmingPowerOff NOTIFY confirmingPowerOffChanged)
+    Q_PROPERTY(bool actionInProgress READ actionInProgress WRITE setActionInProgress NOTIFY actionInProgressChanged)
+    Q_PROPERTY(QString errorMessage READ errorMessage WRITE setErrorMessage NOTIFY errorMessageChanged)
+    Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
+
+public:
+    explicit MockSessionModel(QObject *parent = nullptr)
+        : QObject(parent), m_canLogout(true), m_canRestart(true), m_canPowerOff(true), m_canSuspend(true),
+          m_confirmingRestart(false), m_confirmingPowerOff(false), m_actionInProgress(false),
+          m_errorMessage(""), m_visible(false) {}
+
+    bool canLogout() const { return m_canLogout; }
+    void setCanLogout(bool v) { if (m_canLogout != v) { m_canLogout = v; Q_EMIT canLogoutChanged(); } }
+
+    bool canRestart() const { return m_canRestart; }
+    void setCanRestart(bool v) { if (m_canRestart != v) { m_canRestart = v; Q_EMIT canRestartChanged(); } }
+
+    bool canPowerOff() const { return m_canPowerOff; }
+    void setCanPowerOff(bool v) { if (m_canPowerOff != v) { m_canPowerOff = v; Q_EMIT canPowerOffChanged(); } }
+
+    bool canSuspend() const { return m_canSuspend; }
+    void setCanSuspend(bool v) { if (m_canSuspend != v) { m_canSuspend = v; Q_EMIT canSuspendChanged(); } }
+
+    bool confirmingRestart() const { return m_confirmingRestart; }
+    void setConfirmingRestart(bool v) { if (m_confirmingRestart != v) { m_confirmingRestart = v; Q_EMIT confirmingRestartChanged(); } }
+
+    bool confirmingPowerOff() const { return m_confirmingPowerOff; }
+    void setConfirmingPowerOff(bool v) { if (m_confirmingPowerOff != v) { m_confirmingPowerOff = v; Q_EMIT confirmingPowerOffChanged(); } }
+
+    bool actionInProgress() const { return m_actionInProgress; }
+    void setActionInProgress(bool v) { if (m_actionInProgress != v) { m_actionInProgress = v; Q_EMIT actionInProgressChanged(); } }
+
+    QString errorMessage() const { return m_errorMessage; }
+    void setErrorMessage(const QString &v) { if (m_errorMessage != v) { m_errorMessage = v; Q_EMIT errorMessageChanged(); } }
+
+    bool visible() const { return m_visible; }
+    void setVisible(bool v) { if (m_visible != v) { m_visible = v; Q_EMIT visibleChanged(); } }
+
+    Q_INVOKABLE void init() {}
+    Q_INVOKABLE void open() { setVisible(true); }
+    Q_INVOKABLE void dismiss() {
+        setConfirmingRestart(false);
+        setConfirmingPowerOff(false);
+        setVisible(false);
+    }
+    Q_INVOKABLE void requestLogout() { dismiss(); }
+    Q_INVOKABLE void requestSuspend() { dismiss(); }
+    Q_INVOKABLE void requestRestart() {
+        setConfirmingPowerOff(false);
+        setConfirmingRestart(true);
+    }
+    Q_INVOKABLE void requestPowerOff() {
+        setConfirmingRestart(false);
+        setConfirmingPowerOff(true);
+    }
+    Q_INVOKABLE void confirmAction() { dismiss(); }
+    Q_INVOKABLE void cancelConfirmation() {
+        setConfirmingRestart(false);
+        setConfirmingPowerOff(false);
+    }
+
+Q_SIGNALS:
+    void canLogoutChanged();
+    void canRestartChanged();
+    void canPowerOffChanged();
+    void canSuspendChanged();
+    void confirmingRestartChanged();
+    void confirmingPowerOffChanged();
+    void actionInProgressChanged();
+    void errorMessageChanged();
+    void visibleChanged();
+
+private:
+    bool m_canLogout;
+    bool m_canRestart;
+    bool m_canPowerOff;
+    bool m_canSuspend;
+    bool m_confirmingRestart;
+    bool m_confirmingPowerOff;
+    bool m_actionInProgress;
+    QString m_errorMessage;
+    bool m_visible;
+};
+
 class Setup : public QObject {
     Q_OBJECT
 public:
@@ -1353,6 +1457,7 @@ public slots:
         qmlRegisterType<MockPowerModel>("Kynex.Shell", 1, 0, "PowerModel");
         qmlRegisterType<MockNetworkModel>("Kynex.Shell", 1, 0, "NetworkModel");
         qmlRegisterType<MockAudioModel>("Kynex.Shell", 1, 0, "AudioModel");
+        qmlRegisterType<MockSessionModel>("Kynex.Shell", 1, 0, "SessionModel");
         qmlRegisterType<MockWindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
         qmlRegisterType<MockNotificationModel>("Kynex.Shell", 1, 0, "NotificationModel");
         qmlRegisterType<MockTrayModel>("Kynex.Shell", 1, 0, "TrayModel");

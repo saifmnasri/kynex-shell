@@ -6,6 +6,7 @@ pub mod network;
 pub mod notifications;
 pub mod pins;
 pub mod power;
+pub mod session;
 pub mod shell;
 pub mod tray;
 pub mod tray_menu;
@@ -26,6 +27,10 @@ pub use pins::{PinsServer, PinsSharedState, MAX_PINS, PINS_MUTATION_RATE_LIMIT_P
 pub use power::{
     read_device_snapshot, run_power_service, sanitize_percentage, sanitize_state, sanitize_time,
     PowerServer, PowerSnapshot, UPowerDeviceProxy,
+};
+pub use session::{
+    sanitize_error_text, LogindClient, SessionRateLimiter, SessionServer, SystemdClient,
+    ZbusLogindClient, ZbusSystemdClient, RATE_LIMIT_WINDOW, UPSTREAM_TIMEOUT,
 };
 pub use shell::{
     run_shell_kwin_watcher, ShellFeedServer, ShellServer, ShellSharedState,

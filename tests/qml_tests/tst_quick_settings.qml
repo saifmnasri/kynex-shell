@@ -96,6 +96,7 @@ Item {
             compare(quickSettings.volumeSliderItem.Accessible.name, "Master Volume Slider");
             compare(quickSettings.muteSwitchItem.Accessible.name, "Audio Mute Switch");
             compare(quickSettings.dndSwitchItem.Accessible.name, "Do Not Disturb Switch");
+            compare(quickSettings.powerSessionButtonItem.Accessible.name, "Power and Session Button");
 
             // Audio icons and device name label
             compare(quickSettings.volumeIconItem.text, "🔊");

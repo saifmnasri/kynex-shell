@@ -710,5 +710,20 @@ Item {
             shell.quickSettingsOpen = false;
             tryVerify(function() { return shell.audioModel.open === false; });
         }
+
+        function test_shell_session_overlay_loader_and_binding() {
+            compare(shell.sessionOverlayLoaded, false);
+            compare(shell.sessionOverlayLoader.status, Loader.Null);
+
+            shell.sessionModel.open();
+            tryVerify(function() { return shell.sessionOverlayLoaded; });
+            tryVerify(function() { return shell.sessionOverlayLoader.status === Loader.Ready; });
+            tryVerify(function() { return shell.sessionOverlayLoader.item !== null; });
+            tryVerify(function() { return shell.sessionOverlayLoader.item.sessionModel === shell.sessionModel; });
+            compare(shell.sessionOverlayLoader.item.visible, true);
+
+            shell.sessionModel.dismiss();
+            tryVerify(function() { return !shell.sessionOverlayLoader.item.visible; });
+        }
     }
 }

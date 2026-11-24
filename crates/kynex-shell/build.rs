@@ -12,6 +12,7 @@ fn main() {
             "src/network.rs",
             "src/notifications.rs",
             "src/power.rs",
+            "src/session.rs",
             "src/shim.rs",
             "src/tray.rs",
             "src/windows.rs",

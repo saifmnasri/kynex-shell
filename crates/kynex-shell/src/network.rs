@@ -233,6 +233,9 @@ pub async fn run_network_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Networ
             state.present, state.connected, state.kind, state.strength
         );
         dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.network = true)
+            .await;
     } else {
         info!("kynex-daemon not found on bus; setting present=false");
         dispatch_state(&qt_thread, NetworkClientState::default());
@@ -259,6 +262,9 @@ pub async fn run_network_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Networ
                             state.present, state.connected, state.kind, state.strength, state.ssid
                         );
                         dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.network = true)
+            .await;
                     }
                 }
             }
@@ -282,6 +288,9 @@ pub async fn run_network_listener(qt_thread: cxx_qt::CxxQtThread<qobject::Networ
                         if let Some(ref proxy) = network_proxy {
                             let state = fetch_network_state(proxy).await;
                             dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.network = true)
+            .await;
                         }
                     }
                 }

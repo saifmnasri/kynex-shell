@@ -8,6 +8,7 @@ pub mod debug;
 pub mod launcher;
 pub mod matching;
 pub mod menu;
+pub mod session;
 pub mod taskbar;
 pub mod tray;
 
@@ -18,8 +19,8 @@ pub use coordinates::{
 
 pub use audio::{compute_quick_settings_placement, AudioState, DebounceAction, SliderDebouncer};
 pub use debug::{
-    ModelReadinessState, NotificationDebugState, ShellDebugState, TaskbarDebugState,
-    TaskbarEntryDebugState, WindowDebugState,
+    ModelReadinessState, NotificationDebugState, SessionDebugState, ShellDebugState,
+    TaskbarDebugState, TaskbarEntryDebugState, WindowDebugState,
 };
 
 pub use launcher::{
@@ -37,5 +38,6 @@ pub use menu::{
     ROLE_MENU_LABEL, ROLE_MENU_PARENT_ID, ROLE_MENU_SHORTCUT, ROLE_MENU_TOGGLE,
     ROLE_MENU_TOGGLE_STATE, ROLE_MENU_VISIBLE,
 };
+pub use session::{ActionRequestResult, ConfirmationState, SessionAction, SessionCore};
 pub use taskbar::{TaskbarAction, TaskbarCore, TaskbarEntry};
 pub use tray::{compute_letter_badge as compute_tray_letter_badge, TrayUiItem, TrayUiState};

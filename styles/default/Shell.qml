@@ -31,6 +31,7 @@ LayerSurface {
     }
 
     readonly property alias powerModel: powerModel
+    readonly property alias sessionModel: sessionModel
     readonly property alias networkModel: networkModel
     readonly property alias audioModel: audioModel
     readonly property alias windowListModel: windowListModel
@@ -44,6 +45,7 @@ LayerSurface {
     readonly property alias notificationLoader: notificationLoader
     readonly property alias menuOverlayLoader: menuOverlayLoader
     readonly property alias quickSettingsLoader: quickSettingsLoader
+    readonly property alias sessionOverlayLoader: sessionOverlayLoader
     readonly property alias statusArea: statusArea
     readonly property alias trayArea: trayArea
     readonly property alias trayRepeater: trayRepeater
@@ -102,6 +104,35 @@ LayerSurface {
             property: "launcherModel"
             value: launcherModel
             when: launcherLoader.status === Loader.Ready
+        }
+    }
+
+    SessionModel {
+        id: sessionModel
+        Component.onCompleted: sessionModel.init()
+    }
+
+    property bool sessionOverlayLoaded: false
+
+    Connections {
+        target: sessionModel
+        function onVisibleChanged(): void {
+            if (sessionModel.visible) {
+                panel.sessionOverlayLoaded = true;
+            }
+        }
+    }
+
+    Loader {
+        id: sessionOverlayLoader
+        active: panel.sessionOverlayLoaded
+        source: "SessionOverlay.qml"
+
+        Binding {
+            target: sessionOverlayLoader.item
+            property: "sessionModel"
+            value: sessionModel
+            when: sessionOverlayLoader.status === Loader.Ready
         }
     }
 
@@ -200,6 +231,11 @@ LayerSurface {
             target: quickSettingsLoader.item
             property: "powerModel"
             value: powerModel
+        }
+        Binding {
+            target: quickSettingsLoader.item
+            property: "sessionModel"
+            value: sessionModel
         }
         Binding {
             target: quickSettingsLoader.item

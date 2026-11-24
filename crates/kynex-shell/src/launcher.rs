@@ -457,6 +457,12 @@ async fn run_launcher_service(
     };
 
     let latest_query = Arc::new(Mutex::new(String::new()));
+    crate::debug::get_debug_hub()
+        .update_model_readiness(|m| {
+            m.apps = true;
+            m.pins = true;
+        })
+        .await;
     info!("LauncherModel connected to session bus");
 
     loop {

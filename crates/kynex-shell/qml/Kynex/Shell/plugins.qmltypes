@@ -91,6 +91,50 @@ Module {
         }
     }
     Component {
+        file: "src/session.rs"
+        name: "SessionModel"
+        accessSemantics: "reference"
+        prototype: "QObject"
+        exports: ["Kynex.Shell/SessionModel 1.0"]
+        exportMetaObjectRevisions: [256]
+        Property { name: "canLogout"; type: "bool"; read: "canLogout"; notify: "canLogoutChanged"; isFinal: true }
+        Property { name: "canRestart"; type: "bool"; read: "canRestart"; notify: "canRestartChanged"; isFinal: true }
+        Property { name: "canPowerOff"; type: "bool"; read: "canPowerOff"; notify: "canPowerOffChanged"; isFinal: true }
+        Property { name: "canSuspend"; type: "bool"; read: "canSuspend"; notify: "canSuspendChanged"; isFinal: true }
+        Property { name: "confirmingRestart"; type: "bool"; read: "confirmingRestart"; notify: "confirmingRestartChanged"; isFinal: true }
+        Property { name: "confirmingPowerOff"; type: "bool"; read: "confirmingPowerOff"; notify: "confirmingPowerOffChanged"; isFinal: true }
+        Property { name: "actionInProgress"; type: "bool"; read: "actionInProgress"; notify: "actionInProgressChanged"; isFinal: true }
+        Property { name: "errorMessage"; type: "QString"; read: "errorMessage"; notify: "errorMessageChanged"; isFinal: true }
+        Property { name: "visible"; type: "bool"; read: "visible"; write: "setVisible"; notify: "visibleChanged"; isFinal: true }
+        Method {
+            name: "init"
+        }
+        Method {
+            name: "open"
+        }
+        Method {
+            name: "dismiss"
+        }
+        Method {
+            name: "requestLogout"
+        }
+        Method {
+            name: "requestRestart"
+        }
+        Method {
+            name: "requestPowerOff"
+        }
+        Method {
+            name: "requestSuspend"
+        }
+        Method {
+            name: "confirmAction"
+        }
+        Method {
+            name: "cancelConfirmation"
+        }
+    }
+    Component {
         file: "src/network.rs"
         name: "NetworkModel"
         accessSemantics: "reference"

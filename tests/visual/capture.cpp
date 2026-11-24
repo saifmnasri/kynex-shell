@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl" || variant == "quick-settings-rtl" || variant == "panel-rtl") {
+    if (variant == "rtl-100" || variant == "launcher-rtl" || variant == "menu-rtl" || variant == "quick-settings-rtl" || variant == "panel-rtl" || variant == "session-rtl") {
         app.setLayoutDirection(Qt::RightToLeft);
         QLocale::setDefault(QLocale(QLocale::Arabic));
     } else {
@@ -208,6 +208,18 @@ int main(int argc, char *argv[]) {
         scenario = "no-audio";
     } else if (variant == "quick-settings-rtl") {
         qmlFile = "tests/visual/QuickSettingsHarness.qml";
+        scenario = "rtl";
+    } else if (variant == "session-normal") {
+        qmlFile = "tests/visual/SessionHarness.qml";
+        scenario = "normal";
+    } else if (variant == "session-disabled") {
+        qmlFile = "tests/visual/SessionHarness.qml";
+        scenario = "disabled";
+    } else if (variant == "session-confirmation") {
+        qmlFile = "tests/visual/SessionHarness.qml";
+        scenario = "confirmation";
+    } else if (variant == "session-rtl") {
+        qmlFile = "tests/visual/SessionHarness.qml";
         scenario = "rtl";
     } else if (variant.rfind("panel-", 0) == 0) {
         qmlFile = "tests/visual/PanelHarness.qml";

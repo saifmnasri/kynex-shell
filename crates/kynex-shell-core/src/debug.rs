@@ -27,6 +27,8 @@ pub struct ModelReadinessState {
     pub notifications: bool,
     /// Whether system tray model is connected.
     pub tray: bool,
+    /// Whether session and power model is connected.
+    pub session: bool,
 }
 
 /// Sanitized representation of a single taskbar entry.
@@ -86,6 +88,24 @@ pub struct NotificationDebugState {
     pub notification_ids: Vec<u32>,
 }
 
+/// Sanitized session and power state.
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct SessionDebugState {
+    /// Whether logout is available.
+    pub can_logout: bool,
+    /// Whether restart is available.
+    pub can_restart: bool,
+    /// Whether power off is available.
+    pub can_power_off: bool,
+    /// Whether suspend is available.
+    pub can_suspend: bool,
+    /// Whether overlay is open.
+    pub overlay_open: bool,
+    /// Confirmation state ("none", "restart", "`power_off`").
+    pub confirmation: String,
+}
+
 /// Complete sanitized snapshot of shell state.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ShellDebugState {
@@ -103,6 +123,8 @@ pub struct ShellDebugState {
     pub windows: Vec<WindowDebugState>,
     /// Notifications state (no bodies or summaries).
     pub notifications: NotificationDebugState,
+    /// Session and power state.
+    pub session: SessionDebugState,
 }
 
 impl ShellDebugState {
@@ -138,6 +160,7 @@ mod tests {
                 power: true,
                 notifications: true,
                 tray: true,
+                session: true,
             },
             taskbar: TaskbarDebugState {
                 entry_count: 1,
@@ -163,6 +186,14 @@ mod tests {
             notifications: NotificationDebugState {
                 active_count: 1,
                 notification_ids: vec![42],
+            },
+            session: SessionDebugState {
+                can_logout: true,
+                can_restart: true,
+                can_power_off: true,
+                can_suspend: true,
+                overlay_open: false,
+                confirmation: "none".to_string(),
             },
         };
 

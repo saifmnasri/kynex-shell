@@ -14,8 +14,8 @@ use kynex_ipc::debug::{
 };
 use kynex_ipc::windows::WindowItem;
 use kynex_shell_core::debug::{
-    ModelReadinessState, NotificationDebugState, ShellDebugState, TaskbarDebugState,
-    TaskbarEntryDebugState, WindowDebugState,
+    ModelReadinessState, NotificationDebugState, SessionDebugState, ShellDebugState,
+    TaskbarDebugState, TaskbarEntryDebugState, WindowDebugState,
 };
 use kynex_shell_core::taskbar::TaskbarCore;
 
@@ -29,6 +29,7 @@ pub struct ShellDebugHub {
     taskbar_core: Mutex<TaskbarCore>,
     local_windows: Mutex<Vec<WindowItem>>,
     notification_ids: Mutex<Vec<u32>>,
+    session_state: Mutex<SessionDebugState>,
 }
 
 static DEBUG_HUB: OnceLock<Arc<ShellDebugHub>> = OnceLock::new();
@@ -67,7 +68,15 @@ impl ShellDebugHub {
     pub async fn update_model_readiness<F: FnOnce(&mut ModelReadinessState)>(&self, f: F) {
         let mut lock = self.model_readiness.lock().await;
         f(&mut lock);
-        let ready = lock.windows && lock.apps && lock.pins && lock.audio && lock.power;
+        let ready = lock.windows
+            && lock.apps
+            && lock.pins
+            && lock.audio
+            && lock.network
+            && lock.power
+            && lock.notifications
+            && lock.tray
+            && lock.session;
         self.models_ready.store(ready, Ordering::SeqCst);
     }
 
@@ -82,12 +91,18 @@ impl ShellDebugHub {
         *self.notification_ids.lock().await = ids;
     }
 
+    /// Updates session and power debug state.
+    pub async fn update_session(&self, state: SessionDebugState) {
+        *self.session_state.lock().await = state;
+    }
+
     /// Takes a sanitized snapshot of the current shell state.
     pub async fn snapshot(&self) -> ShellDebugState {
         let daemon_connected = self.daemon_connected.load(Ordering::SeqCst);
         let models_ready = self.models_ready.load(Ordering::SeqCst);
         let last_resync_time = self.last_resync_time.lock().await.clone();
         let models = self.model_readiness.lock().await.clone();
+        let session = self.session_state.lock().await.clone();
 
         let (taskbar_debug, windows_debug) = {
             let core = self.taskbar_core.lock().await;
@@ -148,6 +163,7 @@ impl ShellDebugHub {
             taskbar: taskbar_debug,
             windows: windows_debug,
             notifications: notification_state,
+            session,
         }
     }
 }

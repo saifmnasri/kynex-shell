@@ -14,6 +14,7 @@ LayerSurface {
     property NotificationModel notificationModel: null
     property NetworkModel networkModel: null
     property PowerModel powerModel: null
+    property SessionModel sessionModel: null
 
     property bool isOpen: false
     property int panelAnchorsBits: 0
@@ -37,6 +38,7 @@ LayerSurface {
     readonly property alias dndSwitchItem: dndSwitch
     readonly property alias networkSummaryItem: networkSummaryText
     readonly property alias backdropArea: backdropMouse
+    readonly property alias powerSessionButtonItem: powerSessionButton
     readonly property alias escShortcutItem: escShortcut
 
     visible: root.isOpen
@@ -402,6 +404,33 @@ LayerSurface {
                             font.pixelSize: Style.typography.basePx
                             color: (root.powerModel && Boolean(root.powerModel.low)) ? Style.colors.warning : Style.colors.text
                             anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                // Separator
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Style.colors.surfaceRaised
+                }
+
+                // Power & Session footer entry
+                Row {
+                    id: powerFooterSection
+                    width: parent.width
+                    spacing: Style.spacing.small
+
+                    KynexButton {
+                        id: powerSessionButton
+                        text: "Power & Session…"
+                        width: parent.width
+                        Accessible.name: "Power and Session Button"
+                        onClicked: {
+                            if (root.sessionModel) {
+                                root.sessionModel.open();
+                            }
+                            root.close();
                         }
                     }
                 }

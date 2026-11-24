@@ -111,6 +111,7 @@ pub async fn setup_clean_introspection(conn: &Connection) -> zbus::Result<()> {
   <node name="Audio"/>
   <node name="Notifications"/>
   <node name="Pins"/>
+  <node name="Session"/>
   <node name="Shell"/>
   <node name="Tray"/>
   <node name="Windows"/>
