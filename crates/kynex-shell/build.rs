@@ -3,6 +3,22 @@
 use cxx_qt_build::{CxxQtBuilder, QmlModule};
 
 fn main() {
+    let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    if let Some(parent) = manifest_dir.parent() {
+        if let Some(root_dir) = parent.parent() {
+            let mocks_h = root_dir.join("tests/qml_tests/mocks.h");
+            let mocks_moc = root_dir.join("tests/qml_tests/mocks.moc.cpp");
+            if mocks_h.exists() {
+                println!("cargo:rerun-if-changed={}", mocks_h.display());
+                let _ = std::process::Command::new("/usr/lib/qt6/libexec/moc")
+                    .arg(&mocks_h)
+                    .arg("-o")
+                    .arg(&mocks_moc)
+                    .status();
+            }
+        }
+    }
+
     CxxQtBuilder::new_qml_module(QmlModule::new("Kynex.Shell"))
         .files([
             "src/audio.rs",
@@ -12,6 +28,7 @@ fn main() {
             "src/network.rs",
             "src/notifications.rs",
             "src/power.rs",
+            "src/session.rs",
             "src/shim.rs",
             "src/tray.rs",
             "src/windows.rs",
@@ -27,6 +44,8 @@ fn main() {
             "cpp/shim.h",
             "cpp/qml_harness.cpp",
             "cpp/qml_harness.h",
+            "cpp/mock_contract.cpp",
+            "cpp/mock_contract.h",
         ])
         .include_dir("cpp")
         .include_dir("/usr/include/LayerShellQt")

@@ -62,6 +62,9 @@ use kynex_daemon::services::notifications::{
 };
 use kynex_daemon::services::pins::PinsServer;
 use kynex_daemon::services::power::PowerServer;
+use kynex_daemon::services::session::{
+    SessionRateLimiter, SessionServer, ZbusLogindClient, ZbusSystemdClient,
+};
 use kynex_daemon::services::shell::{ShellFeedServer, ShellServer, ShellSharedState};
 use kynex_daemon::services::tray::{
     FdoStatusNotifierWatcherServer, StatusNotifierWatcherServer, TrayServer, TraySharedState,
@@ -72,7 +75,7 @@ use kynex_daemon::services::windows::{
 use kynex_daemon::DaemonServer;
 use kynex_ipc::{
     apps::APPS_PATH, audio::AUDIO_PATH, notifications::FDO_NOTIFICATIONS_PATH,
-    notifications::NOTIFICATIONS_PATH, pins::PINS_PATH, shell::SHELL_PATH,
+    notifications::NOTIFICATIONS_PATH, pins::PINS_PATH, session::SESSION_PATH, shell::SHELL_PATH,
     tray::STATUS_NOTIFIER_WATCHER_PATH, tray::TRAY_PATH, DAEMON_PATH, NETWORK_PATH, POWER_PATH,
     WINDOWS_PATH,
 };
@@ -113,6 +116,12 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
     let audio_backend = Arc::new(PactlAudioBackend::new());
     let audio_server = AudioServer::new(audio_backend);
 
+    let session_server = SessionServer::new(
+        Arc::new(ZbusLogindClient::new(None)),
+        Arc::new(ZbusSystemdClient::new(None)),
+        Arc::new(SessionRateLimiter::new_default()),
+    );
+
     let test_bus_name = "org.kynexos.Daemon.IntrospectValidationTest";
 
     let test_bus = TestBus::new()
@@ -138,6 +147,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         .serve_at(STATUS_NOTIFIER_WATCHER_PATH, fdo_watcher_server)
         .serve_at(TRAY_PATH, tray_server)
         .serve_at(AUDIO_PATH, audio_server)
+        .serve_at(SESSION_PATH, session_server)
         .build()
         .await
         .unwrap();
@@ -174,6 +184,7 @@ async fn test_all_leaf_object_paths_introspect_cleanly() {
         SHELL_PATH,
         PINS_PATH,
         AUDIO_PATH,
+        SESSION_PATH,
         NOTIFICATIONS_PATH,
         TRAY_PATH,
         STATUS_NOTIFIER_WATCHER_PATH,

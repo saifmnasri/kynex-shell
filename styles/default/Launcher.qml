@@ -181,7 +181,7 @@ LayerSurface {
                     anchors.top: parent.top
                     visible: root.launcherModel ? (root.launcherModel.count > 0) : false
                     model: root.launcherModel
-                    currentIndex: (root.launcherModel && root.launcherModel.selectedIndex !== undefined) ? root.launcherModel.selectedIndex : 0
+                    currentIndex: (root.launcherModel && root.launcherModel.selected_index !== undefined) ? root.launcherModel.selected_index : 0
                     clip: true
                     spacing: Style.spacing.small
                     implicitHeight: contentHeight
@@ -203,7 +203,7 @@ LayerSurface {
                         letterBadge: letterBadge
                         iconSource: iconName.length > 0 ? ("image://kynex-icon/" + iconName + "?size=24&scale=1") : ""
                         pinned: isPinned
-                        selected: root.launcherModel ? (root.launcherModel.selectedIndex === index) : false
+                        selected: root.launcherModel ? (root.launcherModel.selected_index === index) : false
 
                         onClicked: {
                             root.triggerLaunch(index);

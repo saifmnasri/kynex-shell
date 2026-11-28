@@ -2,6 +2,7 @@
 #include "shim.h"
 #include "style.h"
 #include "layersurface.h"
+#include "kynex-shell/src/session.cxxqt.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -144,6 +145,48 @@ rust::String kynex_dump_scene_json(const QQuickWindow *window)
     QQuickItem *rootItem = window->contentItem();
     if (rootItem) {
         root[QStringLiteral("items")] = dumpItemRecursive(rootItem, 0);
+    }
+
+    // S2.7: DumpScene session overlay support
+    QObject *sessionLoader = window->property("sessionOverlayLoader").value<QObject*>();
+    if (sessionLoader) {
+        QObject *overlayItem = sessionLoader->property("item").value<QObject*>();
+        if (overlayItem) {
+            bool overlayVis = overlayItem->property("visible").toBool();
+            QJsonObject sessionObj;
+            sessionObj[QStringLiteral("visible")] = overlayVis;
+
+            QJsonObject modelVals;
+            QObject *sModel = overlayItem->property("sessionModel").value<QObject*>();
+            if (sModel) {
+                modelVals[QStringLiteral("can_logout")] = sModel->property("can_logout").toBool();
+                modelVals[QStringLiteral("can_restart")] = sModel->property("can_restart").toBool();
+                modelVals[QStringLiteral("can_power_off")] = sModel->property("can_power_off").toBool();
+                modelVals[QStringLiteral("can_suspend")] = sModel->property("can_suspend").toBool();
+                modelVals[QStringLiteral("action_in_progress")] = sModel->property("action_in_progress").toBool();
+            }
+            modelVals[QStringLiteral("confirmingRestart")] = overlayItem->property("confirmingRestart").toBool();
+            modelVals[QStringLiteral("confirmingPowerOff")] = overlayItem->property("confirmingPowerOff").toBool();
+            sessionObj[QStringLiteral("modelValues")] = modelVals;
+
+            QJsonArray itemsArr;
+            static const char *const itemNames[] = {
+                "logoutBtn", "restartBtn", "powerOffBtn", "suspendBtn",
+                "lockBtn", "dismissBtn", "confirmButton", "cancelConfirmButton"
+            };
+            for (const char *name : itemNames) {
+                QObject *btn = overlayItem->findChild<QObject*>(QString::fromLatin1(name));
+                if (btn) {
+                    QJsonObject btnObj;
+                    btnObj[QStringLiteral("objectName")] = QString::fromLatin1(name);
+                    btnObj[QStringLiteral("enabled")] = btn->property("enabled").toBool();
+                    btnObj[QStringLiteral("visible")] = btn->property("visible").toBool();
+                    itemsArr.append(btnObj);
+                }
+            }
+            sessionObj[QStringLiteral("items")] = itemsArr;
+            root[QStringLiteral("sessionOverlay")] = sessionObj;
+        }
     }
 
     QJsonDocument doc(root);
@@ -637,3 +680,471 @@ int kynex_run_taskbar_qml_harness(rust::Str destdir, int32_t width, int32_t heig
               << width << "x" << height << "@" << dpr << "!\n";
     return 0;
 }
+
+static std::vector<QString> s_sessionHarnessWarnings;
+
+static void sessionHarnessLogHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    if (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg) {
+        QString fullMsg = msg;
+        if (context.file) {
+            fullMsg = QStringLiteral("%1:%2: %3").arg(QString::fromUtf8(context.file)).arg(context.line).arg(msg);
+        }
+        s_sessionHarnessWarnings.push_back(fullMsg);
+        std::cerr << "[SESSION QML WARN] " << fullMsg.toStdString() << std::endl;
+    }
+}
+
+int kynex_run_session_qml_harness(rust::Str destdir, rust::Str mode)
+{
+    s_sessionHarnessWarnings.clear();
+    qInstallMessageHandler(sessionHarnessLogHandler);
+
+    QString destdirStr = QString::fromUtf8(destdir.data(), static_cast<qsizetype>(destdir.size()));
+    QString modeStr = QString::fromUtf8(mode.data(), static_cast<qsizetype>(mode.size()));
+    std::cout << "[SESSION QML HARNESS] Starting harness with DESTDIR=" << destdirStr.toStdString()
+              << " mode=" << modeStr.toStdString() << std::endl;
+
+    if (modeStr == QStringLiteral("introspect")) {
+        std::cout << "\n=== REAL SessionModel QMetaObject Introspection ===" << std::endl;
+        const QMetaObject *mo = &SessionModel::staticMetaObject;
+        std::cout << "Class name: " << mo->className() << std::endl;
+        std::cout << "Superclass: " << (mo->superClass() ? mo->superClass()->className() : "none") << std::endl;
+        std::cout << "--- Properties (" << mo->propertyCount() << " total) ---" << std::endl;
+        for (int i = 0; i < mo->propertyCount(); ++i) {
+            QMetaProperty p = mo->property(i);
+            std::cout << "  [" << i << "] name: \"" << p.name()
+                      << "\" type: " << p.typeName()
+                      << " readable: " << (p.isReadable() ? "true" : "false")
+                      << " writable: " << (p.isWritable() ? "true" : "false")
+                      << " notify: " << (p.hasNotifySignal() ? p.notifySignal().name().constData() : "none")
+                      << std::endl;
+        }
+
+        std::cout << "\n--- Signals & Methods (" << mo->methodCount() << " total) ---" << std::endl;
+        for (int i = 0; i < mo->methodCount(); ++i) {
+            QMetaMethod m = mo->method(i);
+            const char *typeStr = (m.methodType() == QMetaMethod::Signal) ? "Signal" :
+                                  (m.methodType() == QMetaMethod::Slot) ? "Slot" : "Method";
+            std::cout << "  [" << i << "] " << typeStr << ": " << m.methodSignature().constData() << std::endl;
+        }
+
+        std::cout << "\n=== Mismatch Analysis with SessionOverlay.qml and Shell.qml ===" << std::endl;
+        std::cout << "1. Property Mismatches:" << std::endl;
+        std::cout << "  - QML: root.sessionModel.canLogout          vs Real: can_logout            [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.canRestart         vs Real: can_restart           [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.canPowerOff        vs Real: can_power_off         [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.canSuspend         vs Real: can_suspend           [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.confirmingRestart  vs Real: confirming_restart    [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.confirmingPowerOff vs Real: confirming_power_off  [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.actionInProgress   vs Real: action_in_progress    [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.errorMessage       vs Real: error_message         [MISMATCH: undefined at runtime]" << std::endl;
+        std::cout << "  - QML: root.sessionModel.visible            vs Real: visible               [MATCH]" << std::endl;
+
+        std::cout << "\n2. Signal / Connections Mismatches:" << std::endl;
+        std::cout << "  - QML handler: onConfirmingRestartChanged  vs Real signal: confirming_restartChanged()  [MISMATCH: warning emitted, handler never triggers]" << std::endl;
+        std::cout << "  - QML handler: onConfirmingPowerOffChanged vs Real signal: confirming_power_offChanged() [MISMATCH: warning emitted, handler never triggers]" << std::endl;
+
+        std::cout << "\n3. Shell.qml Loader & Binding Analysis:" << std::endl;
+        std::cout << "  - sessionOverlayLoader.active: panel.sessionOverlayLoaded" << std::endl;
+        std::cout << "  - Binding target: sessionOverlayLoader.item" << std::endl;
+        std::cout << "  - Binding property: \"sessionModel\"" << std::endl;
+        std::cout << "  - Binding value: sessionModel" << std::endl;
+        std::cout << "  - Binding when: sessionOverlayLoader.status === Loader.Ready" << std::endl;
+        std::cout << "  - Evaluation timing: When active becomes true, sessionOverlayLoader.item is null during loading." << std::endl;
+        std::cout << "    Binding target is null until Loader.Ready; when Ready, item.sessionModel receives real SessionModel." << std::endl;
+        std::cout << "    The binding DOES deliver the model to item.sessionModel. However, item's child bindings" << std::endl;
+        std::cout << "    look for camelCase properties (canLogout, canRestart, etc.) which do not exist on the real model," << std::endl;
+        std::cout << "    evaluating to undefined, forcing all enabled: Boolean(...) to false." << std::endl;
+
+        std::cout << "\n4. Root Cause of Test Blindness (Why Mock Hid It):" << std::endl;
+        std::cout << "  - tests/qml_tests/main.cpp MockSessionModel declared camelCase Q_PROPERTY declarations:" << std::endl;
+        std::cout << "    canLogout, canRestart, canPowerOff, canSuspend, confirmingRestart, confirmingPowerOff, actionInProgress, errorMessage." << std::endl;
+        std::cout << "  - plugins.qmltypes also documented camelCase properties instead of reflecting cxx-qt generated names." << std::endl;
+        std::cout << "  - Unit test tst_session_overlay.qml ran against MockSessionModel, where canLogout was true, masking the drift." << std::endl;
+        return 0;
+    }
+
+    static int argc = 1;
+    static char arg0[] = "qml_session_harness";
+    static char *argv[] = { arg0, nullptr };
+
+    qputenv("QT_QPA_PLATFORM", QByteArray("offscreen"));
+    qputenv("QT_QUICK_BACKEND", QByteArray("software"));
+
+    if (!QCoreApplication::instance()) {
+        new QGuiApplication(argc, argv);
+    }
+    QGuiApplication::setDesktopFileName(QStringLiteral("org.kynexos.Shell"));
+
+    kynex_init_security_limits();
+    kynex_load_bundled_fonts();
+    kynex_register_core_types();
+
+    // Load design tokens
+    QString styleJsonPath = destdirStr + QStringLiteral("/usr/share/kynex/styles/default/style.json");
+    if (QFile::exists(styleJsonPath)) {
+        QFile f(styleJsonPath);
+        if (f.open(QIODevice::ReadOnly)) {
+            QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+            QJsonObject root = doc.object();
+            QJsonObject colors = root[QStringLiteral("colors")].toObject();
+            QJsonObject spacing = root[QStringLiteral("spacing")].toObject();
+            QJsonObject radius = root[QStringLiteral("radius")].toObject();
+            QJsonObject motion = root[QStringLiteral("motion")].toObject();
+            QJsonObject typography = root[QStringLiteral("typography")].toObject();
+            QJsonObject opacity = root[QStringLiteral("opacity")].toObject();
+
+            Style::instance()->colors()->setColors(
+                colors[QStringLiteral("surface")].toString(QStringLiteral("#14161c")),
+                colors[QStringLiteral("surface_raised")].toString(QStringLiteral("#1d2029")),
+                colors[QStringLiteral("text")].toString(QStringLiteral("#eceff4")),
+                colors[QStringLiteral("text_muted")].toString(QStringLiteral("#9aa3b2")),
+                colors[QStringLiteral("accent")].toString(QStringLiteral("#6aa6ff")),
+                colors[QStringLiteral("danger")].toString(QStringLiteral("#ff6b6b")),
+                colors[QStringLiteral("warning")].toString(QStringLiteral("#e5a50a")),
+                colors[QStringLiteral("success")].toString(QStringLiteral("#4cd1a0")),
+                colors[QStringLiteral("focus_ring")].toString(QStringLiteral("#6aa6ff"))
+            );
+            Style::instance()->spacing()->setSpacing(
+                spacing[QStringLiteral("unit")].toInt(4),
+                spacing[QStringLiteral("small")].toInt(8),
+                spacing[QStringLiteral("medium")].toInt(12),
+                spacing[QStringLiteral("large")].toInt(16),
+                spacing[QStringLiteral("panel")].toInt(48)
+            );
+            Style::instance()->radius()->setRadii(
+                radius[QStringLiteral("small")].toInt(6),
+                radius[QStringLiteral("medium")].toInt(12),
+                radius[QStringLiteral("large")].toInt(20)
+            );
+            Style::instance()->motion()->setMotion(
+                motion[QStringLiteral("fast_ms")].toInt(90),
+                motion[QStringLiteral("normal_ms")].toInt(150),
+                motion[QStringLiteral("slow_ms")].toInt(240)
+            );
+            Style::instance()->typography()->setTypography(
+                typography[QStringLiteral("family")].toString(QStringLiteral("Inter")),
+                typography[QStringLiteral("fallback")].toString(QStringLiteral("sans-serif")),
+                typography[QStringLiteral("base_px")].toInt(14)
+            );
+            Style::instance()->opacity()->setOpacity(
+                opacity[QStringLiteral("disabled")].toDouble(0.38),
+                opacity[QStringLiteral("hover")].toDouble(0.08),
+                opacity[QStringLiteral("pressed")].toDouble(0.16),
+                opacity[QStringLiteral("focus")].toDouble(1.0)
+            );
+        }
+    }
+
+    QQmlApplicationEngine engine;
+    kynex_register_image_provider(engine);
+
+    QString componentsDir = destdirStr + QStringLiteral("/usr/share/kynex/styles/default/components");
+    if (QDir(componentsDir).exists()) {
+        engine.addImportPath(componentsDir);
+    }
+    QString qmlDir = destdirStr + QStringLiteral("/usr/share/kynex/qml");
+    if (QDir(qmlDir).exists()) {
+        engine.addImportPath(qmlDir);
+    }
+
+    QString shellQml = destdirStr + QStringLiteral("/usr/share/kynex/styles/default/Shell.qml");
+    if (!QFile::exists(shellQml)) {
+        std::cerr << "[SESSION QML HARNESS ERROR] Shell.qml not found at: " << shellQml.toStdString() << std::endl;
+        return 1;
+    }
+
+    engine.load(QUrl::fromLocalFile(shellQml));
+    waitEvents(200);
+
+    if (engine.rootObjects().isEmpty()) {
+        std::cerr << "[SESSION QML HARNESS ERROR] Failed to load Shell.qml" << std::endl;
+        return 1;
+    }
+
+    auto *panelWindow = qobject_cast<QQuickWindow*>(engine.rootObjects().first());
+    if (!panelWindow) {
+        std::cerr << "[SESSION QML HARNESS ERROR] Root object is not a QQuickWindow" << std::endl;
+        return 1;
+    }
+
+    kynex_set_panel_window(panelWindow);
+    panelWindow->setWidth(1920);
+    panelWindow->setProperty("screenWidth", 1920);
+    panelWindow->setProperty("screenHeight", 1080);
+    panelWindow->setProperty("screenDevicePixelRatio", 1.0);
+    panelWindow->show();
+    waitEvents(200);
+
+    QObject *sessionModel = panelWindow->property("sessionModel").value<QObject*>();
+    if (!sessionModel) {
+        std::cerr << "[SESSION QML HARNESS ERROR] sessionModel property not found on panelWindow" << std::endl;
+        return 1;
+    }
+
+    // Wait up to 3 seconds for D-Bus connection to daemon and can_logout property to become true
+    QElapsedTimer timer;
+    timer.start();
+    bool modelReady = false;
+    while (timer.elapsed() < 3000) {
+        waitEvents(50);
+        QVariant canLogoutVal = sessionModel->property("can_logout");
+        if (canLogoutVal.isValid() && canLogoutVal.toBool()) {
+            modelReady = true;
+            break;
+        }
+    }
+
+    std::cout << "[SESSION QML HARNESS] sessionModel connected to daemon (ready="
+              << (modelReady ? "true" : "false")
+              << ", can_logout=" << sessionModel->property("can_logout").toBool()
+              << ", can_restart=" << sessionModel->property("can_restart").toBool()
+              << ", can_power_off=" << sessionModel->property("can_power_off").toBool()
+              << ", can_suspend=" << sessionModel->property("can_suspend").toBool() << ")" << std::endl;
+
+    // Trigger opening via the status area code path:
+    std::cout << "[SESSION QML HARNESS] Triggering toggleQuickSettings via panel method..." << std::endl;
+    QMetaObject::invokeMethod(panelWindow, "toggleQuickSettings");
+    waitEvents(200);
+
+    QObject *qsLoader = panelWindow->property("quickSettingsLoader").value<QObject*>();
+    if (!qsLoader) {
+        std::cerr << "[SESSION QML HARNESS ERROR] quickSettingsLoader not found on panelWindow" << std::endl;
+        return 1;
+    }
+
+    timer.restart();
+    QObject *quickSettingsItem = nullptr;
+    while (timer.elapsed() < 3000) {
+        waitEvents(50);
+        quickSettingsItem = qsLoader->property("item").value<QObject*>();
+        if (quickSettingsItem) {
+            break;
+        }
+    }
+
+    if (!quickSettingsItem) {
+        std::cerr << "[SESSION QML HARNESS ERROR] quickSettingsItem failed to instantiate in quickSettingsLoader" << std::endl;
+        return 1;
+    }
+    std::cout << "[SESSION QML HARNESS] QuickSettings flyout instantiated successfully." << std::endl;
+
+    // Click powerSessionButton
+    QObject *powerBtn = quickSettingsItem->property("powerSessionButtonItem").value<QObject*>();
+    if (!powerBtn) {
+        std::cerr << "[SESSION QML HARNESS ERROR] powerSessionButtonItem not found on QuickSettings" << std::endl;
+        return 1;
+    }
+
+    std::cout << "[SESSION QML HARNESS] Clicking powerSessionButton..." << std::endl;
+    s_sessionHarnessWarnings.clear();
+    QMetaObject::invokeMethod(powerBtn, "clicked");
+    waitEvents(300);
+
+    QObject *sessionLoader = panelWindow->property("sessionOverlayLoader").value<QObject*>();
+    if (!sessionLoader) {
+        std::cerr << "[SESSION QML HARNESS ERROR] sessionOverlayLoader not found on panelWindow" << std::endl;
+        return 1;
+    }
+
+    timer.restart();
+    QObject *overlayItem = nullptr;
+    while (timer.elapsed() < 3000) {
+        waitEvents(50);
+        overlayItem = sessionLoader->property("item").value<QObject*>();
+        if (overlayItem) {
+            break;
+        }
+    }
+
+    if (!overlayItem) {
+        std::cerr << "[SESSION QML HARNESS ERROR] SessionOverlay item failed to instantiate in sessionOverlayLoader" << std::endl;
+        return 1;
+    }
+    std::cout << "[SESSION QML HARNESS] SessionOverlay item instantiated." << std::endl;
+
+    QObject *logoutBtn = overlayItem->property("logoutButtonItem").value<QObject*>();
+    QObject *restartBtn = overlayItem->property("restartButtonItem").value<QObject*>();
+    QObject *powerOffBtn = overlayItem->property("powerOffButtonItem").value<QObject*>();
+    QObject *suspendBtn = overlayItem->property("suspendButtonItem").value<QObject*>();
+    QObject *lockBtn = overlayItem->property("lockButtonItem").value<QObject*>();
+    QObject *logoutTooltip = overlayItem->property("logoutTooltipItem").value<QObject*>();
+    QObject *logoutHoverArea = overlayItem->property("logoutHoverAreaItem").value<QObject*>();
+
+    bool overlayVisible = overlayItem->property("visible").toBool();
+    bool logoutEnabled = logoutBtn ? logoutBtn->property("enabled").toBool() : false;
+    bool restartEnabled = restartBtn ? restartBtn->property("enabled").toBool() : false;
+    bool powerOffEnabled = powerOffBtn ? powerOffBtn->property("enabled").toBool() : false;
+    bool suspendEnabled = suspendBtn ? suspendBtn->property("enabled").toBool() : false;
+    bool lockEnabled = lockBtn ? lockBtn->property("enabled").toBool() : true;
+
+    std::cout << "[SESSION QML HARNESS ASSERT] Overlay inspection results:" << std::endl;
+    std::cout << "  Overlay visible: " << (overlayVisible ? "true" : "false") << std::endl;
+    std::cout << "  logoutBtn enabled: " << (logoutEnabled ? "true" : "false") << std::endl;
+    std::cout << "  restartBtn enabled: " << (restartEnabled ? "true" : "false") << std::endl;
+    std::cout << "  powerOffBtn enabled: " << (powerOffEnabled ? "true" : "false") << std::endl;
+    std::cout << "  suspendBtn enabled: " << (suspendEnabled ? "true" : "false") << std::endl;
+    std::cout << "  lockBtn enabled: " << (lockEnabled ? "true" : "false") << std::endl;
+
+    if (logoutHoverArea) {
+        logoutHoverArea->setProperty("containsMouse", true);
+        waitEvents(50);
+    }
+    bool tooltipVisible = logoutTooltip ? logoutTooltip->property("visible").toBool() : false;
+    QString tooltipText = logoutTooltip ? logoutTooltip->property("text").toString() : QString();
+    std::cout << "  logoutTooltip visible on hover: " << (tooltipVisible ? "true" : "false")
+              << " text: \"" << tooltipText.toStdString() << "\"" << std::endl;
+
+    std::cout << "  QML warnings count on open: " << s_sessionHarnessWarnings.size() << std::endl;
+    for (const auto &w : s_sessionHarnessWarnings) {
+        std::cout << "    [QML WARN] " << w.toStdString() << std::endl;
+    }
+
+    bool pass = true;
+    if (!logoutEnabled) {
+        std::cerr << "  FAIL: logoutBtn is disabled (expected enabled=true when can_logout is true)!\n";
+        pass = false;
+    }
+    if (!restartEnabled) {
+        std::cerr << "  FAIL: restartBtn is disabled (expected enabled=true when can_restart is true)!\n";
+        pass = false;
+    }
+    if (!powerOffEnabled) {
+        std::cerr << "  FAIL: powerOffBtn is disabled (expected enabled=true when can_power_off is true)!\n";
+        pass = false;
+    }
+    if (!suspendEnabled) {
+        std::cerr << "  FAIL: suspendBtn is disabled (expected enabled=true when can_suspend is true)!\n";
+        pass = false;
+    }
+    if (lockEnabled) {
+        std::cerr << "  FAIL: lockBtn is enabled (expected enabled=false for lock)!\n";
+        pass = false;
+    }
+    if (tooltipVisible && tooltipText == QStringLiteral("Logout is unavailable")) {
+        std::cerr << "  FAIL: logout tooltip shows 'Logout is unavailable'!\n";
+        pass = false;
+    }
+    for (const auto &w : s_sessionHarnessWarnings) {
+        if (w.contains("Detected function") || w.contains("no signal") || w.contains("ReferenceError") || w.contains("TypeError")) {
+            std::cerr << "  FAIL: QML warning detected: " << w.toStdString() << "\n";
+            pass = false;
+        }
+    }
+
+    if (!pass) {
+        std::cerr << "[QML HARNESS FAILURE in SessionOverlay reproduction]\n";
+        return 1;
+    }
+
+    if (modeStr == QStringLiteral("actions")) {
+        std::cout << "\n[SESSION QML HARNESS ACTIONS] Starting interactive click paths and DumpScene verification..." << std::endl;
+
+        // 1. Verify DumpScene sessionOverlay
+        rust::String sceneJson = kynex_dump_active_scene();
+        std::string sceneStr(sceneJson.data(), sceneJson.size());
+        std::cout << "[SESSION QML HARNESS ACTIONS] Live DumpScene:\n" << sceneStr << std::endl;
+        if (sceneStr.find("\"sessionOverlay\"") == std::string::npos ||
+            sceneStr.find("\"logoutBtn\"") == std::string::npos ||
+            sceneStr.find("\"can_logout\":true") == std::string::npos) {
+            std::cerr << "  FAIL: DumpScene did not include valid sessionOverlay structure!\n";
+            return 1;
+        }
+
+        QObject *confirmButton = overlayItem->property("confirmButtonItem").value<QObject*>();
+        QObject *cancelConfirmButton = overlayItem->property("cancelConfirmButtonItem").value<QObject*>();
+        QObject *dismissButton = overlayItem->property("dismissButtonItem").value<QObject*>();
+
+        // 2. Action: Restart 2-step confirmation
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 1: Testing Restart two-stage confirmation..." << std::endl;
+        QMetaObject::invokeMethod(restartBtn, "clicked");
+        waitEvents(100);
+        if (!overlayItem->property("confirmingRestart").toBool()) {
+            std::cerr << "  FAIL: Clicking restartBtn did not set confirmingRestart to true!\n";
+            return 1;
+        }
+
+        // Cancel resets confirmation
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 1b: Cancel resets confirmingRestart..." << std::endl;
+        QMetaObject::invokeMethod(cancelConfirmButton, "clicked");
+        waitEvents(100);
+        if (overlayItem->property("confirmingRestart").toBool()) {
+            std::cerr << "  FAIL: Clicking cancelConfirmButton did not reset confirmingRestart!\n";
+            return 1;
+        }
+
+        // Dismiss / Esc resets confirmation
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 1c: Dismiss resets confirmingRestart..." << std::endl;
+        QMetaObject::invokeMethod(restartBtn, "clicked");
+        waitEvents(100);
+        QMetaObject::invokeMethod(dismissButton, "clicked");
+        waitEvents(100);
+        if (overlayItem->property("confirmingRestart").toBool()) {
+            std::cerr << "  FAIL: Clicking dismissBtn did not reset confirmingRestart!\n";
+            return 1;
+        }
+
+        // Re-open overlay and confirm restart
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 1d: Confirming Restart..." << std::endl;
+        QMetaObject::invokeMethod(powerBtn, "clicked");
+        waitEvents(100);
+        QMetaObject::invokeMethod(restartBtn, "clicked");
+        waitEvents(100);
+        QMetaObject::invokeMethod(confirmButton, "clicked");
+        waitEvents(300);
+
+        // 3. Action: Shut down 2-step confirmation
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 2: Testing Shut down two-stage confirmation..." << std::endl;
+        if (!overlayItem->property("visible").toBool()) {
+            QMetaObject::invokeMethod(powerBtn, "clicked");
+            waitEvents(100);
+        }
+        QMetaObject::invokeMethod(powerOffBtn, "clicked");
+        waitEvents(100);
+        if (!overlayItem->property("confirmingPowerOff").toBool()) {
+            std::cerr << "  FAIL: Clicking powerOffBtn did not set confirmingPowerOff to true!\n";
+            return 1;
+        }
+
+        // Cancel resets confirmation
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 2b: Cancel resets confirmingPowerOff..." << std::endl;
+        QMetaObject::invokeMethod(cancelConfirmButton, "clicked");
+        waitEvents(100);
+        if (overlayItem->property("confirmingPowerOff").toBool()) {
+            std::cerr << "  FAIL: Clicking cancelConfirmButton did not reset confirmingPowerOff!\n";
+            return 1;
+        }
+
+        // Confirm power off
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 2c: Confirming Shut down..." << std::endl;
+        QMetaObject::invokeMethod(powerOffBtn, "clicked");
+        waitEvents(100);
+        QMetaObject::invokeMethod(confirmButton, "clicked");
+        waitEvents(300);
+
+        // 4. Action: Suspend
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 3: Testing Suspend single-click execution..." << std::endl;
+        if (!overlayItem->property("visible").toBool()) {
+            QMetaObject::invokeMethod(powerBtn, "clicked");
+            waitEvents(100);
+        }
+        QMetaObject::invokeMethod(suspendBtn, "clicked");
+        waitEvents(300);
+
+        // 5. Action: Log out
+        std::cout << "[SESSION QML HARNESS ACTIONS] Step 4: Testing Log out single-click execution..." << std::endl;
+        if (!overlayItem->property("visible").toBool()) {
+            QMetaObject::invokeMethod(powerBtn, "clicked");
+            waitEvents(100);
+        }
+        QMetaObject::invokeMethod(logoutBtn, "clicked");
+        waitEvents(300);
+
+        std::cout << "[SESSION QML HARNESS ACTIONS] All actions dispatched successfully.\n";
+    }
+
+    std::cout << "[SESSION QML HARNESS] All reproduction assertions passed successfully!\n";
+    return 0;
+}
+

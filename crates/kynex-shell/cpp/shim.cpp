@@ -12,6 +12,7 @@
 #include "kynex-shell/src/menu.cxxqt.h"
 #include "kynex-shell/src/windows.cxxqt.h"
 #include "kynex-shell/src/audio.cxxqt.h"
+#include "kynex-shell/src/session.cxxqt.h"
 #include <QtQml>
 #include <QFontDatabase>
 #include <QDir>
@@ -31,6 +32,7 @@ void kynex_register_core_types()
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "WindowListModel");
     qmlRegisterType<WindowListModel>("Kynex.Shell", 1, 0, "TaskbarModel");
     qmlRegisterType<AudioModel>("Kynex.Shell", 1, 0, "AudioModel");
+    qmlRegisterType<SessionModel>("Kynex.Shell", 1, 0, "SessionModel");
     qmlRegisterSingletonInstance<Style>("Kynex.Style", 1, 0, "Style", Style::instance());
 }
 

@@ -9,6 +9,7 @@ pub mod menu;
 pub mod network;
 pub mod notifications;
 pub mod power;
+pub mod session;
 pub mod shim;
 pub mod tray;
 pub mod windows;

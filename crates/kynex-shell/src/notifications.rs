@@ -770,6 +770,10 @@ pub async fn run_notification_listener(qt_thread: cxx_qt::CxxQtThread<qobject::N
         }
     }
 
+    crate::debug::get_debug_hub()
+        .update_model_readiness(|m| m.notifications = true)
+        .await;
+
     let (_tx, rx) = tokio::sync::watch::channel(false);
     let qt_thread_dnd = qt_thread.clone();
     run_notification_listener_loop(

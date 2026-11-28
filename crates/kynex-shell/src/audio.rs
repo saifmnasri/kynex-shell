@@ -432,6 +432,9 @@ pub async fn run_audio_listener(
             state.present, state.volume, state.muted, state.device_name
         );
         dispatch_state(&qt_thread, &state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.audio = true)
+            .await;
     } else {
         info!("kynex-daemon not found on bus; setting present=false");
         dispatch_state(&qt_thread, &AudioState::default());
@@ -509,6 +512,9 @@ pub async fn run_audio_listener(
                     if let Some(ref proxy) = audio_proxy {
                         let state = fetch_audio_state(proxy).await;
                         dispatch_state(&qt_thread, &state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.audio = true)
+            .await;
                     }
                 }
             }
@@ -537,6 +543,9 @@ pub async fn run_audio_listener(
                         if let Some(ref proxy) = audio_proxy {
                             let state = fetch_audio_state(proxy).await;
                             dispatch_state(&qt_thread, &state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.audio = true)
+            .await;
                         }
                     }
                 }

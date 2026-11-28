@@ -145,8 +145,8 @@ LayerSurface {
 
     Item {
         id: menuContainer
-        x: root.menuModel ? root.menuModel.menuX : 0
-        y: root.menuModel ? root.menuModel.menuY : 0
+        x: root.menuModel ? root.menuModel.menu_x : 0
+        y: root.menuModel ? root.menuModel.menu_y : 0
         width: kynexMenu.width
         height: kynexMenu.height
 
@@ -158,7 +158,7 @@ LayerSurface {
         KynexMenu {
             id: kynexMenu
             model: root.menuModel
-            selectedIndex: root.menuModel ? root.menuModel.selectedIndex : -1
+            selectedIndex: root.menuModel ? root.menuModel.selected_index : -1
 
             onItemTriggered: function(id) {
                 if (root.model) {

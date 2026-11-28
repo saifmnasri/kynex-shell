@@ -105,6 +105,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Arc::new(kynex_daemon::services::audio::PactlAudioBackend::new());
     let audio_server = kynex_daemon::services::audio::AudioServer::new(Arc::clone(&audio_backend));
 
+    let logind_backend = Arc::new(kynex_daemon::services::session::ZbusLogindClient::new(None));
+    let systemd_backend = Arc::new(kynex_daemon::services::session::ZbusSystemdClient::new(
+        None,
+    ));
+    #[cfg(feature = "test-hooks")]
+    let rate_limiter = if let Ok(ms) = std::env::var("KYNEX_TEST_RATE_LIMIT_MS") {
+        let ms_val: u64 = ms.parse().unwrap_or(0);
+        Arc::new(kynex_daemon::services::session::SessionRateLimiter::new(
+            std::time::Duration::from_millis(ms_val),
+        ))
+    } else {
+        Arc::new(kynex_daemon::services::session::SessionRateLimiter::new_default())
+    };
+    #[cfg(not(feature = "test-hooks"))]
+    let rate_limiter = Arc::new(kynex_daemon::services::session::SessionRateLimiter::new_default());
+
+    let session_server = kynex_daemon::services::session::SessionServer::new(
+        Arc::clone(&logind_backend) as Arc<dyn kynex_daemon::services::session::LogindClient>,
+        Arc::clone(&systemd_backend) as Arc<dyn kynex_daemon::services::session::SystemdClient>,
+        rate_limiter,
+    );
+
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");
     let session_conn = zbus::connection::Builder::session()
         .name(DAEMON_DESTINATION)
@@ -123,6 +145,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .serve_at(STATUS_NOTIFIER_WATCHER_PATH, fdo_watcher_server.clone())
         .serve_at(TRAY_PATH, tray_server.clone())
         .serve_at(kynex_ipc::audio::AUDIO_PATH, audio_server.clone())
+        .serve_at(kynex_ipc::session::SESSION_PATH, session_server.clone())
         .build()
         .await?;
 
@@ -241,6 +264,46 @@ async fn main() -> Result<(), Box<dyn Error>> {
         warn!("Failed to create SignalEmitter for Apps1");
         None
     };
+
+    // Initialize session service connection, emitter, and logind connection
+    systemd_backend.set_connection(session_conn.clone()).await;
+    if let Ok(session_emitter) = SignalEmitter::new(&session_conn, kynex_ipc::session::SESSION_PATH)
+    {
+        session_server.set_emitter(session_emitter).await;
+    } else {
+        warn!("Failed to create SignalEmitter for Session1");
+    }
+
+    #[cfg(feature = "test-hooks")]
+    let logind_system_conn = if std::env::var("KYNEX_TEST_LOGIND_BUS").as_deref() == Ok("session") {
+        info!("KYNEX_TEST_LOGIND_BUS=session: using session bus for logind");
+        Some(session_conn.clone())
+    } else {
+        match zbus::connection::Builder::system().build().await {
+            Ok(conn) => Some(conn),
+            Err(err) => {
+                warn!("Failed to connect to system bus for logind: {err}. Power actions will be unavailable.");
+                None
+            }
+        }
+    };
+    #[cfg(not(feature = "test-hooks"))]
+    let logind_system_conn = match zbus::connection::Builder::system().build().await {
+        Ok(conn) => Some(conn),
+        Err(err) => {
+            warn!("Failed to connect to system bus for logind: {err}. Power actions will be unavailable.");
+            None
+        }
+    };
+
+    if let Some(lconn) = logind_system_conn {
+        logind_backend.set_connection(lconn).await;
+    }
+
+    let session_server_refresh = session_server.clone();
+    tokio::spawn(async move {
+        session_server_refresh.refresh_capabilities().await;
+    });
 
     // Create emitter for power property change signals on session bus
     let emitter = match SignalEmitter::new(&session_conn, POWER_PATH) {

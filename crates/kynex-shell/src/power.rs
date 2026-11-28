@@ -181,6 +181,9 @@ pub async fn run_power_listener(qt_thread: cxx_qt::CxxQtThread<qobject::PowerMod
             state.present, state.percentage
         );
         dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.power = true)
+            .await;
     } else {
         info!("kynex-daemon not found on bus; setting present=false");
         dispatch_state(&qt_thread, PowerState::default());
@@ -208,6 +211,9 @@ pub async fn run_power_listener(qt_thread: cxx_qt::CxxQtThread<qobject::PowerMod
                             state.present, state.percentage, state.charging
                         );
                         dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.power = true)
+            .await;
                     }
                 }
             }
@@ -236,6 +242,9 @@ pub async fn run_power_listener(qt_thread: cxx_qt::CxxQtThread<qobject::PowerMod
                         if let Some(ref proxy) = power_proxy {
                             let state = fetch_power_state(proxy).await;
                             dispatch_state(&qt_thread, state);
+        crate::debug::get_debug_hub()
+            .update_model_readiness(|m| m.power = true)
+            .await;
                         }
                     }
                 }

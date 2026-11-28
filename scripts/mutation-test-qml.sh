@@ -98,6 +98,9 @@ EQUIVALENT_JUSTIFICATIONS = {
     ("Shell.qml", "when: menuOverlayLoader.status === Loader.Ready", "delete"): (
         "Qt Quick Binding evaluates target property assignment only when target is non-null; since menuOverlayLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: menuOverlayLoader.status === Loader.Ready semantically equivalent to unconditional binding."
     ),
+    ("Shell.qml", "when: sessionOverlayLoader.status === Loader.Ready", "delete"): (
+        "Qt Quick Binding evaluates target property assignment only when target is non-null; since sessionOverlayLoader.item is null until status is Loader.Ready, target remains null prior to completion, making when: sessionOverlayLoader.status === Loader.Ready semantically equivalent to unconditional binding."
+    ),
 }
 
 killed = 0

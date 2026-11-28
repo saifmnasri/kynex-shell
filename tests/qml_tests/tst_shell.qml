@@ -514,18 +514,18 @@ Item {
             LayoutHelper.sendMouseClick(btn.mouseArea, clickX, clickY, Qt.RightButton);
 
             compare(shell.trayMenuModel.visible, true);
-            compare(shell.trayMenuModel.itemId, "dbusmenu-item-id");
+            compare(shell.trayMenuModel.item_id, "dbusmenu-item-id");
             compare(shell.trayModel.lastContextMenuId, "");
 
             // Placement proof: menu is placed strictly ABOVE the bottom panel and above the tray icon
             let panelTopY = shell.screenHeight - shell.height;
             let iconTopY = panelTopY + (shell.height - btn.height) / 2;
-            console.log("BOTTOM PANEL MENU PLACEMENT: icon_y=" + iconTopY + " panel_y=" + panelTopY + " menu_y=" + shell.trayMenuModel.menuY + " menu_h=" + shell.trayMenuModel.menuHeight + " menu_x=" + shell.trayMenuModel.menuX + " menu_w=" + shell.trayMenuModel.menuWidth + " screen_h=" + shell.screenHeight);
-            verify(shell.trayMenuModel.menuY < panelTopY, "Menu Y must be above bottom panel");
-            verify(shell.trayMenuModel.menuY < iconTopY, "Menu Y must be above tray icon");
-            verify(shell.trayMenuModel.menuY >= 0, "Menu Y must be inside output top edge");
-            verify(shell.trayMenuModel.menuX >= 0, "Menu X must be inside output left edge");
-            verify(shell.trayMenuModel.menuX + shell.trayMenuModel.menuWidth <= shell.screenWidth, "Menu X + width must be inside output right edge");
+            console.log("BOTTOM PANEL MENU PLACEMENT: icon_y=" + iconTopY + " panel_y=" + panelTopY + " menu_y=" + shell.trayMenuModel.menu_y + " menu_h=" + shell.trayMenuModel.lastMenuHeight + " menu_x=" + shell.trayMenuModel.menu_x + " menu_w=" + shell.trayMenuModel.lastMenuWidth + " screen_h=" + shell.screenHeight);
+            verify(shell.trayMenuModel.menu_y < panelTopY, "Menu Y must be above bottom panel");
+            verify(shell.trayMenuModel.menu_y < iconTopY, "Menu Y must be above tray icon");
+            verify(shell.trayMenuModel.menu_y >= 0, "Menu Y must be inside output top edge");
+            verify(shell.trayMenuModel.menu_x >= 0, "Menu X must be inside output left edge");
+            verify(shell.trayMenuModel.menu_x + shell.trayMenuModel.lastMenuWidth <= shell.screenWidth, "Menu X + width must be inside output right edge");
 
             // Closing menu hides overlay
             shell.trayMenuModel.close();
@@ -709,6 +709,21 @@ Item {
             tryVerify(function() { return shell.audioModel.open === true; });
             shell.quickSettingsOpen = false;
             tryVerify(function() { return shell.audioModel.open === false; });
+        }
+
+        function test_shell_session_overlay_loader_and_binding() {
+            compare(shell.sessionOverlayLoaded, false);
+            compare(shell.sessionOverlayLoader.status, Loader.Null);
+
+            shell.sessionModel.open();
+            tryVerify(function() { return shell.sessionOverlayLoaded; });
+            tryVerify(function() { return shell.sessionOverlayLoader.status === Loader.Ready; });
+            tryVerify(function() { return shell.sessionOverlayLoader.item !== null; });
+            tryVerify(function() { return shell.sessionOverlayLoader.item.sessionModel === shell.sessionModel; });
+            compare(shell.sessionOverlayLoader.item.visible, true);
+
+            shell.sessionModel.dismiss();
+            tryVerify(function() { return !shell.sessionOverlayLoader.item.visible; });
         }
     }
 }

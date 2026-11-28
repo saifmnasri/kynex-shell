@@ -39,8 +39,8 @@ Item {
             mockAudio.present = true;
             mockAudio.volume = 50;
             mockAudio.muted = false;
-            mockAudio.deviceName = "Speakers";
-            mockNotifications.doNotDisturb = false;
+            mockAudio.device_name = "Speakers";
+            mockNotifications.do_not_disturb = false;
             mockNetwork.present = true;
             mockNetwork.connected = true;
             mockNetwork.wifi = true;
@@ -96,6 +96,7 @@ Item {
             compare(quickSettings.volumeSliderItem.Accessible.name, "Master Volume Slider");
             compare(quickSettings.muteSwitchItem.Accessible.name, "Audio Mute Switch");
             compare(quickSettings.dndSwitchItem.Accessible.name, "Do Not Disturb Switch");
+            compare(quickSettings.powerSessionButtonItem.Accessible.name, "Power and Session Button");
 
             // Audio icons and device name label
             compare(quickSettings.volumeIconItem.text, "🔊");
@@ -112,9 +113,9 @@ Item {
             mockAudio.volume = 50;
             compare(quickSettings.volumeIconItem.text, "🔊");
 
-            mockAudio.deviceName = "";
+            mockAudio.device_name = "";
             compare(quickSettings.deviceNameLabelItem.visible, false);
-            mockAudio.deviceName = "Speakers";
+            mockAudio.device_name = "Speakers";
             compare(quickSettings.deviceNameLabelItem.visible, true);
 
             // Network summary formatting
@@ -155,10 +156,10 @@ Item {
             compare(quickSettings.dndSwitchItem.checked, false);
 
             quickSettings.dndSwitchItem.toggled(true);
-            tryCompare(mockNotifications, "doNotDisturb", true);
+            tryCompare(mockNotifications, "do_not_disturb", true);
 
             quickSettings.dndSwitchItem.toggled(false);
-            tryCompare(mockNotifications, "doNotDisturb", false);
+            tryCompare(mockNotifications, "do_not_disturb", false);
         }
 
         function test_esc_closes() {
@@ -293,7 +294,7 @@ Item {
 
             // 1. Initially unpopulated models (present=false, no device name, etc.)
             lateAudio.present = false;
-            lateAudio.deviceName = "";
+            lateAudio.device_name = "";
             lateNet.present = false;
             latePower.present = false;
 
@@ -325,8 +326,8 @@ Item {
             lateAudio.present = true;
             lateAudio.volume = 75;
             lateAudio.muted = false;
-            lateAudio.deviceName = "Headphones High Fidelity Stereo Sink";
-            lateNotif.doNotDisturb = true;
+            lateAudio.device_name = "Headphones High Fidelity Stereo Sink";
+            lateNotif.do_not_disturb = true;
             lateNet.present = true;
             lateNet.connected = true;
             lateNet.wifi = true;

@@ -106,7 +106,45 @@ def main():
     assert shell_obj is not None, "Timed out waiting for org.kynexos.Shell"
     iface = dbus.Interface(shell_obj, "org.kynexos.Shell.Debug1")
 
-    # 1. Test DumpScene()
+    # 1. Test DumpState() (Models readiness and Session1 state)
+    print("[DEBUG TEST] Testing DumpState()...")
+    state = None
+    start = time.monotonic()
+    while time.monotonic() - start < 8.0:
+        state_str = str(iface.DumpState())
+        s = json.loads(state_str)
+        if s.get("models_ready"):
+            state = s
+            break
+        time.sleep(0.1)
+
+    if state is None:
+        state = json.loads(str(iface.DumpState()))
+        print(f"DumpState before assert: {json.dumps(state, indent=2)}")
+
+    assert state.get("daemon_connected") is True, f"daemon_connected is {state.get('daemon_connected')}"
+    assert state.get("models_ready") is True, f"models_ready is {state.get('models_ready')}"
+    models = state.get("models", {})
+    for flag in ["windows", "apps", "pins", "audio", "network", "power", "notifications", "tray", "session"]:
+        assert models.get(flag) is True, f"Model readiness flag '{flag}' is False or missing: {models}"
+
+    # Verify Session1 state in DumpState
+    assert "session" in state, "session missing in DumpState"
+    sess = state["session"]
+    assert "can_logout" in sess, "can_logout missing in session state"
+    assert "can_restart" in sess, "can_restart missing in session state"
+    assert "can_power_off" in sess, "can_power_off missing in session state"
+    assert "can_suspend" in sess, "can_suspend missing in session state"
+    assert "overlay_open" in sess, "overlay_open missing in session state"
+    assert "confirmation" in sess, "confirmation missing in session state"
+
+    # Verify Hard Security Invariant: NO titles
+    state_raw = str(iface.DumpState())
+    assert "Calculator" not in state_raw, "Found sensitive Calculator window title in DumpState!"
+    assert "Terminal" not in state_raw, "Found sensitive Terminal window title in DumpState!"
+    print("PASS: DumpState readiness flags and Session1 state verified.")
+
+    # 2. Test DumpScene()
     print("[DEBUG TEST] Testing DumpScene()...")
     scene_json_str = str(iface.DumpScene())
     scene = json.loads(scene_json_str)
@@ -124,7 +162,7 @@ def main():
     assert "Terminal" not in scene_json_str, "Found Terminal window title in DumpScene output!"
     print("PASS: DumpScene structure and sanitization verified.")
 
-    # 2. Test GrabPanel()
+    # 3. Test GrabPanel()
     print("[DEBUG TEST] Testing GrabPanel()...")
     png_path = str(iface.GrabPanel())
     print(f"GrabPanel returned path: {png_path}")
