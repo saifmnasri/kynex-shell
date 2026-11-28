@@ -33,3 +33,7 @@ rust::String kynex_grab_active_panel();
 /// Runs the taskbar QML test harness for a given geometry and DESTDIR.
 /// Returns 0 if all assertions pass, non-zero if assertions fail.
 int kynex_run_taskbar_qml_harness(rust::Str destdir, int32_t width, int32_t height, double dpr);
+
+/// Runs the session QML test harness for reproduction and verification.
+/// Returns 0 if all assertions pass, non-zero if assertions fail.
+int kynex_run_session_qml_harness(rust::Str destdir, rust::Str mode);

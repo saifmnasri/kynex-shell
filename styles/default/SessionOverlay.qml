@@ -11,6 +11,9 @@ LayerSurface {
 
     property SessionModel sessionModel: null
 
+    property bool confirmingRestart: false
+    property bool confirmingPowerOff: false
+
     readonly property alias titleTextItem: titleText
     readonly property alias cardContainerItem: cardContainer
     readonly property alias actionsSectionItem: actionsSection
@@ -63,6 +66,8 @@ LayerSurface {
         id: backdropMouse
         anchors.fill: parent
         onClicked: {
+            root.confirmingRestart = false;
+            root.confirmingPowerOff = false;
             if (root.sessionModel) {
                 root.sessionModel.dismiss();
             }
@@ -74,12 +79,11 @@ LayerSurface {
         id: escShortcut
         sequence: "Esc"
         onActivated: {
-            if (root.sessionModel) {
-                if (root.sessionModel.confirmingRestart || root.sessionModel.confirmingPowerOff) {
-                    root.sessionModel.cancelConfirmation();
-                } else {
-                    root.sessionModel.dismiss();
-                }
+            if (root.confirmingRestart || root.confirmingPowerOff) {
+                root.confirmingRestart = false;
+                root.confirmingPowerOff = false;
+            } else if (root.sessionModel) {
+                root.sessionModel.dismiss();
             }
         }
     }
@@ -89,8 +93,16 @@ LayerSurface {
         id: returnShortcut
         sequence: "Return"
         onActivated: {
-            if (root.sessionModel && (root.sessionModel.confirmingRestart || root.sessionModel.confirmingPowerOff)) {
-                root.sessionModel.confirmAction();
+            if (root.confirmingRestart) {
+                root.confirmingRestart = false;
+                if (root.sessionModel) {
+                    root.sessionModel.requestRestart();
+                }
+            } else if (root.confirmingPowerOff) {
+                root.confirmingPowerOff = false;
+                if (root.sessionModel) {
+                    root.sessionModel.requestPowerOff();
+                }
             }
         }
     }
@@ -99,36 +111,42 @@ LayerSurface {
         id: enterShortcut
         sequence: "Enter"
         onActivated: {
-            if (root.sessionModel && (root.sessionModel.confirmingRestart || root.sessionModel.confirmingPowerOff)) {
-                root.sessionModel.confirmAction();
-            }
-        }
-    }
-
-    Connections {
-        target: root
-        function onVisibleChanged(): void {
-            if (root.visible) {
-                if (root.sessionModel && (root.sessionModel.confirmingRestart || root.sessionModel.confirmingPowerOff)) {
-                    confirmButton.forceActiveFocus();
-                } else {
-                    logoutBtn.forceActiveFocus();
+            if (root.confirmingRestart) {
+                root.confirmingRestart = false;
+                if (root.sessionModel) {
+                    root.sessionModel.requestRestart();
+                }
+            } else if (root.confirmingPowerOff) {
+                root.confirmingPowerOff = false;
+                if (root.sessionModel) {
+                    root.sessionModel.requestPowerOff();
                 }
             }
         }
     }
 
-    Connections {
-        target: root.sessionModel
-        function onConfirmingRestartChanged(): void {
-            if (root.sessionModel && root.sessionModel.confirmingRestart) {
+    onVisibleChanged: {
+        if (!root.visible) {
+            root.confirmingRestart = false;
+            root.confirmingPowerOff = false;
+        } else {
+            if (root.confirmingRestart || root.confirmingPowerOff) {
                 confirmButton.forceActiveFocus();
+            } else {
+                logoutBtn.forceActiveFocus();
             }
         }
-        function onConfirmingPowerOffChanged(): void {
-            if (root.sessionModel && root.sessionModel.confirmingPowerOff) {
-                confirmButton.forceActiveFocus();
-            }
+    }
+
+    onConfirmingRestartChanged: {
+        if (root.confirmingRestart) {
+            confirmButton.forceActiveFocus();
+        }
+    }
+
+    onConfirmingPowerOffChanged: {
+        if (root.confirmingPowerOff) {
+            confirmButton.forceActiveFocus();
         }
     }
 
@@ -161,13 +179,13 @@ LayerSurface {
             Text {
                 id: titleText
                 text: {
-                    if (root.sessionModel && root.sessionModel.confirmingRestart) {
+                    if (root.confirmingRestart) {
                         return "Restart Computer";
                     }
-                    if (root.sessionModel && root.sessionModel.confirmingPowerOff) {
+                    if (root.confirmingPowerOff) {
                         return "Shut Down Computer";
                     }
-                    if (root.sessionModel && root.sessionModel.actionInProgress) {
+                    if (root.sessionModel && root.sessionModel.action_in_progress) {
                         return "Please Wait";
                     }
                     return "Session & Power";
@@ -186,7 +204,7 @@ LayerSurface {
             // In Progress State
             Column {
                 id: progressSection
-                visible: Boolean(root.sessionModel && root.sessionModel.actionInProgress)
+                visible: Boolean(root.sessionModel && root.sessionModel.action_in_progress)
                 width: parent.width
                 spacing: Style.spacing.medium
 
@@ -204,13 +222,13 @@ LayerSurface {
             // Confirmation Dialog State
             Column {
                 id: confirmationSection
-                visible: Boolean(root.sessionModel && !root.sessionModel.actionInProgress && (root.sessionModel.confirmingRestart || root.sessionModel.confirmingPowerOff))
+                visible: Boolean(!root.sessionModel || (!root.sessionModel.action_in_progress && (root.confirmingRestart || root.confirmingPowerOff)))
                 width: parent.width
                 spacing: Style.spacing.medium
 
                 Text {
                     id: confirmationPrompt
-                    text: (root.sessionModel && root.sessionModel.confirmingRestart)
+                    text: root.confirmingRestart
                         ? "Are you sure you want to restart your computer? Unsaved changes will be lost."
                         : "Are you sure you want to shut down your computer? Unsaved changes will be lost."
                     textFormat: Text.PlainText
@@ -228,26 +246,35 @@ LayerSurface {
 
                     KynexButton {
                         id: confirmButton
-                        text: (root.sessionModel && root.sessionModel.confirmingRestart) ? "Restart" : "Shut Down"
+                        objectName: "confirmButton"
+                        text: root.confirmingRestart ? "Restart" : "Shut Down"
                         primary: true
                         width: (parent.width - Style.spacing.medium) / Number("2")
                         Accessible.name: text + " Confirm Button"
                         onClicked: {
-                            if (root.sessionModel) {
-                                root.sessionModel.confirmAction();
+                            if (root.confirmingRestart) {
+                                root.confirmingRestart = false;
+                                if (root.sessionModel) {
+                                    root.sessionModel.requestRestart();
+                                }
+                            } else if (root.confirmingPowerOff) {
+                                root.confirmingPowerOff = false;
+                                if (root.sessionModel) {
+                                    root.sessionModel.requestPowerOff();
+                                }
                             }
                         }
                     }
 
                     KynexButton {
                         id: cancelConfirmButton
+                        objectName: "cancelConfirmButton"
                         text: "Cancel"
                         width: (parent.width - Style.spacing.medium) / Number("2")
                         Accessible.name: "Cancel Confirmation Button"
                         onClicked: {
-                            if (root.sessionModel) {
-                                root.sessionModel.cancelConfirmation();
-                            }
+                            root.confirmingRestart = false;
+                            root.confirmingPowerOff = false;
                         }
                     }
                 }
@@ -256,7 +283,7 @@ LayerSurface {
             // Normal Menu State
             Column {
                 id: actionsSection
-                visible: Boolean(!root.sessionModel || (!root.sessionModel.actionInProgress && !root.sessionModel.confirmingRestart && !root.sessionModel.confirmingPowerOff))
+                visible: Boolean(!root.sessionModel || (!root.sessionModel.action_in_progress && !root.confirmingRestart && !root.confirmingPowerOff))
                 width: parent.width
                 spacing: Style.spacing.small
 
@@ -267,9 +294,10 @@ LayerSurface {
 
                     KynexButton {
                         id: logoutBtn
+                        objectName: "logoutBtn"
                         text: "Log out"
                         width: parent.width
-                        enabled: Boolean(root.sessionModel && root.sessionModel.canLogout)
+                        enabled: Boolean(root.sessionModel && root.sessionModel.can_logout)
                         Accessible.name: "Log out Button"
                         onClicked: {
                             if (root.sessionModel) {
@@ -301,14 +329,13 @@ LayerSurface {
 
                     KynexButton {
                         id: restartBtn
+                        objectName: "restartBtn"
                         text: "Restart…"
                         width: parent.width
-                        enabled: Boolean(root.sessionModel && root.sessionModel.canRestart)
+                        enabled: Boolean(root.sessionModel && root.sessionModel.can_restart)
                         Accessible.name: "Restart Button"
                         onClicked: {
-                            if (root.sessionModel) {
-                                root.sessionModel.requestRestart();
-                            }
+                            root.confirmingRestart = true;
                         }
                     }
 
@@ -335,14 +362,13 @@ LayerSurface {
 
                     KynexButton {
                         id: powerOffBtn
+                        objectName: "powerOffBtn"
                         text: "Shut down…"
                         width: parent.width
-                        enabled: Boolean(root.sessionModel && root.sessionModel.canPowerOff)
+                        enabled: Boolean(root.sessionModel && root.sessionModel.can_power_off)
                         Accessible.name: "Shut down Button"
                         onClicked: {
-                            if (root.sessionModel) {
-                                root.sessionModel.requestPowerOff();
-                            }
+                            root.confirmingPowerOff = true;
                         }
                     }
 
@@ -369,9 +395,10 @@ LayerSurface {
 
                     KynexButton {
                         id: suspendBtn
+                        objectName: "suspendBtn"
                         text: "Suspend"
                         width: parent.width
-                        enabled: Boolean(root.sessionModel && root.sessionModel.canSuspend)
+                        enabled: Boolean(root.sessionModel && root.sessionModel.can_suspend)
                         Accessible.name: "Suspend Button"
                         onClicked: {
                             if (root.sessionModel) {
@@ -403,6 +430,7 @@ LayerSurface {
 
                     KynexButton {
                         id: lockBtn
+                        objectName: "lockBtn"
                         text: "Lock (not available yet)"
                         width: parent.width
                         enabled: false
@@ -435,10 +463,13 @@ LayerSurface {
                 // Dismiss / Cancel Button
                 KynexButton {
                     id: dismissBtn
+                    objectName: "dismissBtn"
                     text: "Cancel"
                     width: parent.width
                     Accessible.name: "Dismiss Session Overlay Button"
                     onClicked: {
+                        root.confirmingRestart = false;
+                        root.confirmingPowerOff = false;
                         if (root.sessionModel) {
                             root.sessionModel.dismiss();
                         }
@@ -449,7 +480,7 @@ LayerSurface {
             // Error Banner
             Rectangle {
                 id: errorBanner
-                visible: Boolean(root.sessionModel && root.sessionModel.errorMessage && root.sessionModel.errorMessage.length > 0)
+                visible: Boolean(root.sessionModel && root.sessionModel.error_message && root.sessionModel.error_message.length > 0)
                 width: parent.width
                 implicitHeight: errorText.implicitHeight + Style.spacing.medium
                 radius: Style.radius.small
@@ -461,7 +492,7 @@ LayerSurface {
                     id: errorText
                     anchors.fill: parent
                     anchors.margins: Style.spacing.small
-                    text: (root.sessionModel && root.sessionModel.errorMessage) ? root.sessionModel.errorMessage : ""
+                    text: (root.sessionModel && root.sessionModel.error_message) ? root.sessionModel.error_message : ""
                     textFormat: Text.PlainText
                     font.family: Style.typography.family
                     font.pixelSize: Style.typography.basePx

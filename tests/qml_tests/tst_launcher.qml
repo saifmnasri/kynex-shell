@@ -129,7 +129,7 @@ Item {
             // Kills Launcher.qml:164 & 166 delegate mutants
             mockModel.addItem("app-browser", "Browser", "Web Browser", "Explore web", "B");
             mockModel.addItem("app-term", "Terminal", "", "CLI terminal emulator", "T");
-            mockModel.selectedIndex = 0;
+            mockModel.selected_index = 0;
             mockModel.visible = true;
 
             tryVerify(function() { return launcher.visible; });
@@ -164,7 +164,7 @@ Item {
             compare(delegates[1].selected, false, "Item 1 must not be selected");
 
             // Change selected index to 1
-            mockModel.selectedIndex = 1;
+            mockModel.selected_index = 1;
             tryVerify(function() { return launcher.listView.currentIndex === 1; }, 1000, "ListView currentIndex must track selectedIndex 1");
             tryVerify(function() { return delegates[1].selected; });
             compare(delegates[0].selected, false);
@@ -182,7 +182,7 @@ Item {
             tryVerify(function() { return launcher.searchFieldItem.focus; });
 
             compare(mockModel.count, 0);
-            compare(mockModel.selectedIndex, -1);
+            compare(mockModel.selected_index, -1);
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Return);
             tryCompare(mockModel, "launchCallCount", 0, 1000);
             compare(mockModel.launchCallCount, 0, "Enter on empty list must not launch anything");
@@ -193,8 +193,8 @@ Item {
             mockModel.addItem("app-web", "Browser", "Web Browser", "Explore the web", "B");
             compare(mockModel.count, 3);
 
-            mockModel.selectedIndex = 2; // last index
-            compare(mockModel.selectedIndex, 2);
+            mockModel.selected_index = 2; // last index
+            compare(mockModel.selected_index, 2);
 
             launcher.launching = false;
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Return);
@@ -209,28 +209,28 @@ Item {
             compare(mockModel.count, 3);
 
             mockModel.visible = true;
-            mockModel.selectedIndex = 0;
+            mockModel.selected_index = 0;
             tryVerify(function() { return launcher.visible; });
             tryVerify(function() { return launcher.searchFieldItem.focus; });
 
             // Press Up from index 0 -> wraps to last index (2)
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Up);
-            compare(mockModel.selectedIndex, 2, "Up from first index must wrap to last index");
+            compare(mockModel.selected_index, 2, "Up from first index must wrap to last index");
             compare(launcher.listView.currentIndex, 2, "ListView currentIndex must follow selection");
 
             // Press Down from index 2 -> wraps back to first index (0)
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Down);
-            compare(mockModel.selectedIndex, 0, "Down from last index must wrap to first index");
+            compare(mockModel.selected_index, 0, "Down from last index must wrap to first index");
 
             // Press Down to index 1
             LayoutHelper.sendKey(launcher.searchFieldItem, Qt.Key_Down);
-            compare(mockModel.selectedIndex, 1, "Down from index 0 must advance to index 1");
+            compare(mockModel.selected_index, 1, "Down from index 0 must advance to index 1");
         }
 
         function test_no_double_launch_on_repeated_enter() {
             mockModel.addItem("app-1", "App 1", "", "", "1");
             mockModel.addItem("app-2", "App 2", "", "", "2");
-            mockModel.selectedIndex = 0;
+            mockModel.selected_index = 0;
             mockModel.visible = true;
             tryVerify(function() { return launcher.visible; });
             tryVerify(function() { return launcher.searchFieldItem.focus; });
@@ -249,7 +249,7 @@ Item {
 
         function test_ctrl_p_pin_toggle() {
             mockModel.addItem("app-1", "App 1", "", "", "1", "icon-1", false);
-            mockModel.selectedIndex = 0;
+            mockModel.selected_index = 0;
             mockModel.visible = true;
             tryVerify(function() { return launcher.visible; });
             tryVerify(function() { return launcher.searchFieldItem.focus; });

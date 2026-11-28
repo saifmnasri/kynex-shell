@@ -109,10 +109,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let systemd_backend = Arc::new(kynex_daemon::services::session::ZbusSystemdClient::new(
         None,
     ));
+    #[cfg(feature = "test-hooks")]
+    let rate_limiter = if let Ok(ms) = std::env::var("KYNEX_TEST_RATE_LIMIT_MS") {
+        let ms_val: u64 = ms.parse().unwrap_or(0);
+        Arc::new(kynex_daemon::services::session::SessionRateLimiter::new(
+            std::time::Duration::from_millis(ms_val),
+        ))
+    } else {
+        Arc::new(kynex_daemon::services::session::SessionRateLimiter::new_default())
+    };
+    #[cfg(not(feature = "test-hooks"))]
+    let rate_limiter = Arc::new(kynex_daemon::services::session::SessionRateLimiter::new_default());
+
     let session_server = kynex_daemon::services::session::SessionServer::new(
         Arc::clone(&logind_backend) as Arc<dyn kynex_daemon::services::session::LogindClient>,
         Arc::clone(&systemd_backend) as Arc<dyn kynex_daemon::services::session::SystemdClient>,
-        Arc::new(kynex_daemon::services::session::SessionRateLimiter::new_default()),
+        rate_limiter,
     );
 
     info!("Connecting to session D-Bus and claiming '{DAEMON_DESTINATION}'");

@@ -97,14 +97,12 @@ Module {
         prototype: "QObject"
         exports: ["Kynex.Shell/SessionModel 1.0"]
         exportMetaObjectRevisions: [256]
-        Property { name: "canLogout"; type: "bool"; read: "canLogout"; notify: "canLogoutChanged"; isFinal: true }
-        Property { name: "canRestart"; type: "bool"; read: "canRestart"; notify: "canRestartChanged"; isFinal: true }
-        Property { name: "canPowerOff"; type: "bool"; read: "canPowerOff"; notify: "canPowerOffChanged"; isFinal: true }
-        Property { name: "canSuspend"; type: "bool"; read: "canSuspend"; notify: "canSuspendChanged"; isFinal: true }
-        Property { name: "confirmingRestart"; type: "bool"; read: "confirmingRestart"; notify: "confirmingRestartChanged"; isFinal: true }
-        Property { name: "confirmingPowerOff"; type: "bool"; read: "confirmingPowerOff"; notify: "confirmingPowerOffChanged"; isFinal: true }
-        Property { name: "actionInProgress"; type: "bool"; read: "actionInProgress"; notify: "actionInProgressChanged"; isFinal: true }
-        Property { name: "errorMessage"; type: "QString"; read: "errorMessage"; notify: "errorMessageChanged"; isFinal: true }
+        Property { name: "can_logout"; type: "bool"; read: "can_logout"; notify: "can_logoutChanged"; isFinal: true }
+        Property { name: "can_restart"; type: "bool"; read: "can_restart"; notify: "can_restartChanged"; isFinal: true }
+        Property { name: "can_power_off"; type: "bool"; read: "can_power_off"; notify: "can_power_offChanged"; isFinal: true }
+        Property { name: "can_suspend"; type: "bool"; read: "can_suspend"; notify: "can_suspendChanged"; isFinal: true }
+        Property { name: "action_in_progress"; type: "bool"; read: "action_in_progress"; notify: "action_in_progressChanged"; isFinal: true }
+        Property { name: "error_message"; type: "QString"; read: "error_message"; notify: "error_messageChanged"; isFinal: true }
         Property { name: "visible"; type: "bool"; read: "visible"; write: "setVisible"; notify: "visibleChanged"; isFinal: true }
         Method {
             name: "init"
@@ -197,7 +195,7 @@ Module {
         exports: ["Kynex.Shell/LauncherModel 1.0"]
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
-        Property { name: "selectedIndex"; type: "int"; read: "selectedIndex"; notify: "selectedIndexChanged"; isFinal: true }
+        Property { name: "selected_index"; type: "int"; read: "selected_index"; notify: "selected_indexChanged"; isFinal: true }
         Property { name: "visible"; type: "bool"; read: "visible"; notify: "visibleChanged"; isFinal: true }
         Property { name: "query"; type: "QString"; read: "query"; notify: "queryChanged"; isFinal: true }
         Method {
@@ -241,7 +239,7 @@ Module {
         exports: ["Kynex.Shell/NotificationModel 1.0"]
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
-        Property { name: "doNotDisturb"; type: "bool"; read: "doNotDisturb"; notify: "doNotDisturbChanged"; isFinal: true }
+        Property { name: "do_not_disturb"; type: "bool"; read: "do_not_disturb"; notify: "do_not_disturbChanged"; isFinal: true }
         Method {
             name: "init"
         }
@@ -280,7 +278,7 @@ Module {
         Property { name: "present"; type: "bool"; read: "present"; notify: "presentChanged"; isFinal: true }
         Property { name: "volume"; type: "int"; read: "volume"; notify: "volumeChanged"; isFinal: true }
         Property { name: "muted"; type: "bool"; read: "muted"; notify: "mutedChanged"; isFinal: true }
-        Property { name: "deviceName"; type: "QString"; read: "deviceName"; notify: "deviceNameChanged"; isFinal: true }
+        Property { name: "device_name"; type: "QString"; read: "device_name"; notify: "device_nameChanged"; isFinal: true }
         Property { name: "open"; type: "bool"; read: "open"; write: "setOpen"; notify: "openChanged" }
         Method {
             name: "init"
@@ -338,9 +336,9 @@ Module {
         exports: ["Kynex.Shell/TrayModel 1.0"]
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
-        Property { name: "hasItems"; type: "bool"; read: "hasItems"; notify: "hasItemsChanged"; isFinal: true }
+        Property { name: "has_items"; type: "bool"; read: "has_items"; notify: "has_itemsChanged"; isFinal: true }
         Signal { name: "countChanged" }
-        Signal { name: "hasItemsChanged" }
+        Signal { name: "has_itemsChanged" }
         Method {
             name: "init"
         }
@@ -405,18 +403,18 @@ Module {
         exportMetaObjectRevisions: [256]
         Property { name: "count"; type: "int"; read: "count"; notify: "countChanged"; isFinal: true }
         Property { name: "visible"; type: "bool"; read: "visible"; notify: "visibleChanged"; isFinal: true }
-        Property { name: "menuX"; type: "double"; read: "menuX"; notify: "menuXChanged"; isFinal: true }
-        Property { name: "menuY"; type: "double"; read: "menuY"; notify: "menuYChanged"; isFinal: true }
-        Property { name: "selectedIndex"; type: "int"; read: "selectedIndex"; notify: "selectedIndexChanged"; isFinal: true }
-        Property { name: "activeParentId"; type: "int"; read: "activeParentId"; notify: "activeParentIdChanged"; isFinal: true }
-        Property { name: "itemId"; type: "QString"; read: "itemId"; notify: "itemIdChanged"; isFinal: true }
+        Property { name: "menu_x"; type: "double"; read: "menu_x"; notify: "menu_xChanged"; isFinal: true }
+        Property { name: "menu_y"; type: "double"; read: "menu_y"; notify: "menu_yChanged"; isFinal: true }
+        Property { name: "selected_index"; type: "int"; read: "selected_index"; notify: "selected_indexChanged"; isFinal: true }
+        Property { name: "active_parent_id"; type: "int"; read: "active_parent_id"; notify: "active_parent_idChanged"; isFinal: true }
+        Property { name: "item_id"; type: "QString"; read: "item_id"; notify: "item_idChanged"; isFinal: true }
         Signal { name: "countChanged" }
         Signal { name: "visibleChanged" }
-        Signal { name: "menuXChanged" }
-        Signal { name: "menuYChanged" }
-        Signal { name: "selectedIndexChanged" }
-        Signal { name: "activeParentIdChanged" }
-        Signal { name: "itemIdChanged" }
+        Signal { name: "menu_xChanged" }
+        Signal { name: "menu_yChanged" }
+        Signal { name: "selected_indexChanged" }
+        Signal { name: "active_parent_idChanged" }
+        Signal { name: "item_idChanged" }
         Method {
             name: "init"
         }

@@ -13,12 +13,22 @@ pub mod ffi {
 
         include!("cpp/shim.h");
         include!("cpp/qml_harness.h");
+        include!("cpp/mock_contract.h");
+
+        /// Verifies mock contracts against real CXX-Qt models via `QMetaObject` introspection.
+        #[must_use]
+        fn kynex_verify_mock_contracts() -> String;
+
         /// Registers `LayerSurface` in `Kynex.Shell` and `Style` in `Kynex.Style`.
         fn kynex_register_core_types();
 
         /// Runs taskbar QML replay harness for a geometry and DESTDIR.
         #[must_use]
         fn kynex_run_taskbar_qml_harness(destdir: &str, width: i32, height: i32, dpr: f64) -> i32;
+
+        /// Runs session QML replay harness for a given mode and DESTDIR.
+        #[must_use]
+        fn kynex_run_session_qml_harness(destdir: &str, mode: &str) -> i32;
 
         /// Dumps active panel scene as sanitized JSON.
         #[must_use]
@@ -215,6 +225,12 @@ pub fn run_taskbar_qml_harness(destdir: &str, width: i32, height: i32, dpr: f64)
     ffi::kynex_run_taskbar_qml_harness(destdir, width, height, dpr)
 }
 
+/// Runs the session QML replay test harness.
+#[must_use]
+pub fn run_session_qml_harness(destdir: &str, mode: &str) -> i32 {
+    ffi::kynex_run_session_qml_harness(destdir, mode)
+}
+
 /// Dumps the active scene tree as sanitized JSON.
 #[must_use]
 pub fn dump_active_scene() -> String {
@@ -230,4 +246,12 @@ pub fn grab_active_panel() -> String {
 /// Registers the root panel window from `QQmlApplicationEngine` for D-Bus introspection.
 pub fn register_engine_panel(engine: Pin<&mut cxx_qt_lib::QQmlApplicationEngine>) {
     ffi::kynex_register_engine_panel(engine);
+}
+
+/// Verifies mock contracts against real CXX-Qt models via `QMetaObject` introspection.
+#[must_use]
+pub fn verify_mock_contracts() -> (bool, String) {
+    let report = ffi::kynex_verify_mock_contracts();
+    let passed = report.contains("MOCK CONTRACT AUDIT PASSED");
+    (passed, report)
 }

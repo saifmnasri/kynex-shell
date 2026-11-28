@@ -20,14 +20,12 @@ Item {
         property var overlay: null
 
         function init() {
-            mockSession.canLogout = true;
-            mockSession.canRestart = true;
-            mockSession.canPowerOff = true;
-            mockSession.canSuspend = true;
-            mockSession.confirmingRestart = false;
-            mockSession.confirmingPowerOff = false;
-            mockSession.actionInProgress = false;
-            mockSession.errorMessage = "";
+            mockSession.can_logout = true;
+            mockSession.can_restart = true;
+            mockSession.can_power_off = true;
+            mockSession.can_suspend = true;
+            mockSession.action_in_progress = false;
+            mockSession.error_message = "";
             mockSession.visible = false;
 
             if (overlay) {
@@ -100,7 +98,7 @@ Item {
 
             // Click Restart
             overlay.restartButtonItem.click();
-            tryVerify(function() { return mockSession.confirmingRestart; });
+            tryVerify(function() { return overlay.confirmingRestart; });
             tryVerify(function() { return overlay.confirmationSectionItem.visible; });
             tryVerify(function() { return !overlay.actionsSectionItem.visible; });
             compare(overlay.titleTextItem.text, "Restart Computer");
@@ -110,13 +108,13 @@ Item {
 
             // Test Cancellation
             overlay.cancelConfirmButtonItem.click();
-            tryVerify(function() { return !mockSession.confirmingRestart; });
+            tryVerify(function() { return !overlay.confirmingRestart; });
             tryVerify(function() { return overlay.actionsSectionItem.visible; });
             compare(mockSession.visible, true);
 
             // Click Restart again and confirm
             overlay.restartButtonItem.click();
-            tryVerify(function() { return mockSession.confirmingRestart; });
+            tryVerify(function() { return overlay.confirmingRestart; });
             overlay.confirmButtonItem.click();
             tryVerify(function() { return !overlay.visible; });
             compare(mockSession.visible, false);
@@ -128,19 +126,19 @@ Item {
 
             // Click Shut Down
             overlay.powerOffButtonItem.click();
-            tryVerify(function() { return mockSession.confirmingPowerOff; });
+            tryVerify(function() { return overlay.confirmingPowerOff; });
             compare(overlay.titleTextItem.text, "Shut Down Computer");
             tryVerify(function() { return overlay.confirmButtonItem.activeFocus; });
             compare(overlay.confirmButtonItem.Accessible.name, "Shut Down Confirm Button");
 
             // Test Esc cancels confirmation back to menu
             overlay.escShortcutItem.activated();
-            tryVerify(function() { return !mockSession.confirmingPowerOff; });
+            tryVerify(function() { return !overlay.confirmingPowerOff; });
             compare(mockSession.visible, true);
 
             // Click Shut Down again and use Enter shortcut
             overlay.powerOffButtonItem.click();
-            tryVerify(function() { return mockSession.confirmingPowerOff; });
+            tryVerify(function() { return overlay.confirmingPowerOff; });
             overlay.enterShortcutItem.activated();
             tryVerify(function() { return !overlay.visible; });
             compare(mockSession.visible, false);
@@ -163,10 +161,10 @@ Item {
         }
 
         function test_disabled_items_and_tooltips() {
-            mockSession.canLogout = false;
-            mockSession.canRestart = false;
-            mockSession.canPowerOff = false;
-            mockSession.canSuspend = false;
+            mockSession.can_logout = false;
+            mockSession.can_restart = false;
+            mockSession.can_power_off = false;
+            mockSession.can_suspend = false;
             mockSession.open();
             tryVerify(function() { return overlay.visible; });
 
@@ -180,9 +178,9 @@ Item {
             overlay.logoutButtonItem.click();
             compare(mockSession.visible, true);
             overlay.restartButtonItem.click();
-            compare(mockSession.confirmingRestart, false);
+            compare(overlay.confirmingRestart, false);
             overlay.powerOffButtonItem.click();
-            compare(mockSession.confirmingPowerOff, false);
+            compare(overlay.confirmingPowerOff, false);
             overlay.suspendButtonItem.click();
             compare(mockSession.visible, true);
 
@@ -244,7 +242,7 @@ Item {
 
         function test_error_banner() {
             mockSession.open();
-            mockSession.errorMessage = "Failed to suspend system: permission denied";
+            mockSession.error_message = "Failed to suspend system: permission denied";
             tryVerify(function() { return overlay.errorBannerItem.visible; });
         }
     }

@@ -43,8 +43,6 @@ pub mod qobject {
         #[qproperty(bool, can_restart)]
         #[qproperty(bool, can_power_off)]
         #[qproperty(bool, can_suspend)]
-        #[qproperty(bool, confirming_restart)]
-        #[qproperty(bool, confirming_power_off)]
         #[qproperty(bool, action_in_progress)]
         #[qproperty(QString, error_message)]
         #[qproperty(bool, visible)]
@@ -67,12 +65,12 @@ pub mod qobject {
         #[cxx_name = "requestLogout"]
         fn request_logout(self: Pin<&mut Self>);
 
-        /// Requests system reboot (transitions to confirmation state).
+        /// Requests system reboot.
         #[qinvokable]
         #[cxx_name = "requestRestart"]
         fn request_restart(self: Pin<&mut Self>);
 
-        /// Requests system poweroff (transitions to confirmation state).
+        /// Requests system poweroff.
         #[qinvokable]
         #[cxx_name = "requestPowerOff"]
         fn request_power_off(self: Pin<&mut Self>);
@@ -81,16 +79,6 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "requestSuspend"]
         fn request_suspend(self: Pin<&mut Self>);
-
-        /// Confirms a pending destructive action (reboot or poweroff).
-        #[qinvokable]
-        #[cxx_name = "confirmAction"]
-        fn confirm_action(self: Pin<&mut Self>);
-
-        /// Cancels a pending confirmation prompt.
-        #[qinvokable]
-        #[cxx_name = "cancelConfirmation"]
-        fn cancel_confirmation(self: Pin<&mut Self>);
     }
 
     impl cxx_qt::Threading for SessionModel {}
@@ -103,8 +91,6 @@ pub struct SessionModelRust {
     can_restart: bool,
     can_power_off: bool,
     can_suspend: bool,
-    confirming_restart: bool,
-    confirming_power_off: bool,
     action_in_progress: bool,
     error_message: QString,
     visible: bool,
@@ -118,8 +104,6 @@ impl Default for SessionModelRust {
             can_restart: false,
             can_power_off: false,
             can_suspend: false,
-            confirming_restart: false,
-            confirming_power_off: false,
             action_in_progress: false,
             error_message: QString::from(""),
             visible: false,
@@ -144,16 +128,12 @@ impl qobject::SessionModel {
     pub fn open(mut self: Pin<&mut Self>) {
         self.as_mut().set_visible(true);
         self.as_mut().set_error_message(QString::from(""));
-        self.as_mut().set_confirming_restart(false);
-        self.as_mut().set_confirming_power_off(false);
         self.as_mut().set_action_in_progress(false);
     }
 
     /// Dismisses the session overlay and resets all confirmation states.
     pub fn dismiss(mut self: Pin<&mut Self>) {
         self.as_mut().set_visible(false);
-        self.as_mut().set_confirming_restart(false);
-        self.as_mut().set_confirming_power_off(false);
         self.as_mut().set_action_in_progress(false);
         self.as_mut().set_error_message(QString::from(""));
     }
@@ -176,8 +156,10 @@ impl qobject::SessionModel {
             return;
         }
         self.as_mut().set_error_message(QString::from(""));
-        self.as_mut().set_confirming_restart(true);
-        self.as_mut().set_confirming_power_off(false);
+        self.as_mut().set_action_in_progress(true);
+        if let Some(ref tx) = self.rust().cmd_tx {
+            let _ = tx.send(SessionCommand::Restart);
+        }
     }
 
     /// Requests machine poweroff.
@@ -186,8 +168,10 @@ impl qobject::SessionModel {
             return;
         }
         self.as_mut().set_error_message(QString::from(""));
-        self.as_mut().set_confirming_power_off(true);
-        self.as_mut().set_confirming_restart(false);
+        self.as_mut().set_action_in_progress(true);
+        if let Some(ref tx) = self.rust().cmd_tx {
+            let _ = tx.send(SessionCommand::PowerOff);
+        }
     }
 
     /// Requests system suspend.
@@ -200,33 +184,6 @@ impl qobject::SessionModel {
         if let Some(ref tx) = self.rust().cmd_tx {
             let _ = tx.send(SessionCommand::Suspend);
         }
-    }
-
-    /// Confirms a pending destructive action.
-    pub fn confirm_action(mut self: Pin<&mut Self>) {
-        let is_restart = self.rust().confirming_restart;
-        let is_power_off = self.rust().confirming_power_off;
-
-        self.as_mut().set_confirming_restart(false);
-        self.as_mut().set_confirming_power_off(false);
-
-        if is_restart {
-            self.as_mut().set_action_in_progress(true);
-            if let Some(ref tx) = self.rust().cmd_tx {
-                let _ = tx.send(SessionCommand::Restart);
-            }
-        } else if is_power_off {
-            self.as_mut().set_action_in_progress(true);
-            if let Some(ref tx) = self.rust().cmd_tx {
-                let _ = tx.send(SessionCommand::PowerOff);
-            }
-        }
-    }
-
-    /// Cancels confirmation.
-    pub fn cancel_confirmation(mut self: Pin<&mut Self>) {
-        self.as_mut().set_confirming_restart(false);
-        self.as_mut().set_confirming_power_off(false);
     }
 }
 

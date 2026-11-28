@@ -8,13 +8,14 @@ BUILD_DIR="tests/qml_tests"
 RUNNER="$BUILD_DIR/controls_test_runner"
 
 # Compile if needed
-if [[ ! -x "$RUNNER" || "$BUILD_DIR/main.cpp" -nt "$RUNNER" || "crates/kynex-shell/cpp/style.cpp" -nt "$RUNNER" || "crates/kynex-shell/cpp/style.h" -nt "$RUNNER" || "crates/kynex-shell/cpp/layersurface.cpp" -nt "$RUNNER" || "crates/kynex-shell/cpp/layersurface.h" -nt "$RUNNER" ]]; then
+if [[ ! -x "$RUNNER" || "$BUILD_DIR/main.cpp" -nt "$RUNNER" || "$BUILD_DIR/mocks.h" -nt "$RUNNER" || "crates/kynex-shell/cpp/style.cpp" -nt "$RUNNER" || "crates/kynex-shell/cpp/style.h" -nt "$RUNNER" || "crates/kynex-shell/cpp/layersurface.cpp" -nt "$RUNNER" || "crates/kynex-shell/cpp/layersurface.h" -nt "$RUNNER" ]]; then
     mkdir -p "$BUILD_DIR"
     /usr/lib/qt6/libexec/moc "$BUILD_DIR/main.cpp" -o "$BUILD_DIR/main.moc"
+    /usr/lib/qt6/libexec/moc "$BUILD_DIR/mocks.h" -o "$BUILD_DIR/mocks.moc.cpp"
     /usr/lib/qt6/libexec/moc crates/kynex-shell/cpp/style.h -o "$BUILD_DIR/style.moc.cpp"
     /usr/lib/qt6/libexec/moc crates/kynex-shell/cpp/layersurface.h -o "$BUILD_DIR/layersurface.moc.cpp"
     # shellcheck disable=SC2046
-    g++ -std=c++17 -fPIC "$BUILD_DIR/main.cpp" "$BUILD_DIR/style.moc.cpp" "$BUILD_DIR/layersurface.moc.cpp" \
+    g++ -std=c++17 -fPIC "$BUILD_DIR/main.cpp" "$BUILD_DIR/mocks.moc.cpp" "$BUILD_DIR/style.moc.cpp" "$BUILD_DIR/layersurface.moc.cpp" \
         crates/kynex-shell/cpp/style.cpp crates/kynex-shell/cpp/layersurface.cpp \
         -I/usr/include/LayerShellQt -lLayerShellQtInterface \
         $(pkg-config --cflags --libs Qt6QuickTest Qt6Quick Qt6Qml Qt6Gui Qt6Core) \

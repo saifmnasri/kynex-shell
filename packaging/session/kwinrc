@@ -10,6 +10,7 @@ BorderlessMaximizedWindows=true
 [Plugins]
 kynex-windowsEnabled=true
 kynex-launcherEnabled=true
+overviewEnabled=false
 
 # Optional Modifier-Only Shortcut Experiment (ADR-009 / ADR-017)
 # Note: Inactive in KWin 6.6 without kglobalacceld; Meta+Space remains primary shortcut.

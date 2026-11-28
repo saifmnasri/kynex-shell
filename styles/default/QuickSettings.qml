@@ -277,8 +277,8 @@ LayerSurface {
 
                         Text {
                             id: deviceNameLabel
-                            visible: Boolean(root.audioModel && root.audioModel.present && root.audioModel.deviceName && root.audioModel.deviceName.length > 0)
-                            text: (root.audioModel && root.audioModel.deviceName) ? root.audioModel.deviceName : ""
+                            visible: Boolean(root.audioModel && root.audioModel.present && root.audioModel.device_name && root.audioModel.device_name.length > 0)
+                            text: (root.audioModel && root.audioModel.device_name) ? root.audioModel.device_name : ""
                             textFormat: Text.PlainText
                             elide: Text.ElideRight
                             width: parent.width - muteSwitch.width - Style.spacing.medium
@@ -306,7 +306,7 @@ LayerSurface {
                     KynexSwitch {
                         id: dndSwitch
                         text: "Do Not Disturb"
-                        checked: Boolean(root.notificationModel && root.notificationModel.doNotDisturb)
+                        checked: Boolean(root.notificationModel && root.notificationModel.do_not_disturb)
                         Accessible.name: "Do Not Disturb Switch"
 
                         onToggled: function(c) {
